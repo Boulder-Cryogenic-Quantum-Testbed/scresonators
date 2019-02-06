@@ -1,4 +1,4 @@
 numpy==1.16.*
-pandas==0.24.*
+pandas==0.22.*
 pylabrad==0.97.*
 pytest==4.2.*
