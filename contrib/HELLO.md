@@ -1,4 +1,3 @@
 # Participants
 
 * kunalq
-* joshmutus
