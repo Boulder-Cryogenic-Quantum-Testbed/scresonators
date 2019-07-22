@@ -1,0 +1,7 @@
+Here data was generated from AWR and an impedance mismatch was created by varying the inductance of an inductor in the transmission line to create complex impedance.
+The Diameter Correction Method and the Phi Rotation Method are both graphed with their respective percent error for three Qi values across changing impedance
+mismatches. Note that while Qi changes due to the impedance mismatch, the actual change is very small (less than 0.01% across the 40 Ohm span, see mathematica file 
+for equation to calculate loaded frequency which can be used to calculate Qi) and can be neglected for the calculation of percent error for these results considering
+the scale of percent error being graphed. It is clear from the results that the Phi Rotation Method has a large percent error when exposed to an environment of high 
+impedance mismatch, above even 30 percent for the 11135 Qi resonator. This matches with results we would expect as the DCM is the corrected version of the Phi 
+Rotation Method to account for impedance mismatches.
