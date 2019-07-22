@@ -1,0 +1,6 @@
+In this set of data generated in AWR, an impedance mismatch was created using an inductor with changing inductance to create complex impedance. Here, data is shown
+using both fits (DCM & INV) for three different impedance values (impedance in the transmission line) each taken across different values of Qc which is changed by 
+altering the coupling capacitance for the circiut in AWR. One can see from these graphs that the impedance does not seem to have a large effect on percent error of 
+these fits and that Qc appears to be of greater concern when attempting to find the sources that contribute the highest percent error. Considering that the points 
+not exceeding a ratio of 100 for Qi/Qc do not appear to have considerable error (above 2%) it is safe to say that for this Qi of 1113555, as long as Qc and Qi are 
+within two orders of magnitude of each other, the fitting appears to be very accurate.

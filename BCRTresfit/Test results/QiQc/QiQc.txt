@@ -1,0 +1,10 @@
+Here, three lines are shown for three different Qi values each taken across changing Qc values. Qc is altered by changing coupling capacitance in AWR. 
+
+DCM.png illustrates that there appears to be a range of Qi/Qc where the accuracy of Qi is high for the DCM fit. This range appears to be between 10^-2 and 10 for Qi
+on the order of 10^2, between 10^-2 and 10^2 for Qi on the order of 10^4, and between 10^-2 and 10^3 for Qi on the order of 10^6. In short, it appears that as long as
+Qc and Qi are within two orders of magnitude from each other, the result will be quite accurate for determining Qi.
+
+Similary for INV.png, there appears to be another range of Qi/Qc where the accuracy of Qi is high. This range appears to be the same as the DCM fitting image for Qi
+on the order of 10^2 and clear limits where the percent error goes above 2% are not shown in this graph for the other two Qi values.
+
+These graphs demonstrate that the INV fitting method appears to be more robust across high and low Qi/Qc ratios.
