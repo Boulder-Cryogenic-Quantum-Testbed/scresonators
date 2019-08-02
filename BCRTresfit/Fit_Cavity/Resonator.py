@@ -7,7 +7,7 @@ Created on Thu Dec  6 10:53:51 2018
 
 import numpy as np
 import matplotlib.pyplot as plt
-from .fitS21 import Cavity_DCM,Cavity_inverse,Cavity_CPZM,fit_raw_compare,Fit_Resonator,convert_params #look for fitS21 in subdir., get functions
+from .fitS21 import Cavity_DCM,Cavity_DCM_REFLECTION,Cavity_inverse,Cavity_CPZM,fit_raw_compare,Fit_Resonator,convert_params #look for fitS21 in subdir., get functions
 class resonator(object): # object is defined in init below
 
     """
@@ -31,7 +31,7 @@ class resonator(object): # object is defined in init below
 
 
     """
-    def __init__(self, freq, magnitude, phase, name = '', date = None,temp = None,bias = None):#frequency, S21, pwr, delay, name = '', date = None,temp = None,bias = None):
+    def __init__(self, freq, S21, name = '', date = None,temp = None,bias = None):#frequency, S21, pwr, delay, name = '', date = None,temp = None,bias = None):
         self.name = name #start definitions of class (as part of a full directory of definitions)
         self.freq = np.asarray(freq)
         #self.I = np.asarray(I)
@@ -44,7 +44,7 @@ class resonator(object): # object is defined in init below
 
         #S21 = I + 1j*Q
         #S21 = np.multiply(S21,np.exp(1j*delay*2*np.pi*freq))
-        self.S21 = np.multiply(magnitude,np.exp(1j*phase))
+        self.S21 = S21
         self.phase = np.angle(self.S21)
         self.method = None #code will put DCM or INV method after fitting
 #        self.uphase = np.unwrap(self.phase) #Unwrap the 2pi phase jumps
@@ -61,6 +61,14 @@ class resonator(object): # object is defined in init below
                 self.method.append("DCM")
                 self.DCMparams= DCMparams_class(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
+            elif method == 'PHI':
+                self.method.append("PHI")
+                self.DCMparams= DCMparams_class(params, chi)
+                self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
+            if method == 'DCM REFLECTION':
+                self.method.append("DCM REFLECTION")
+                self.DCMparams= DCMparams_class(params, chi)
+                self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'INV':
                 self.method.append("INV")
                 self.INVparams = INVparams_class(params, chi)
@@ -69,13 +77,21 @@ class resonator(object): # object is defined in init below
                 self.method.append("CPZM")
                 self.CPZMparams = CPZMparams_class(params, chi)
             else:
-                print('Please input DCM or INV or CPZM')
+                print('Please input DCM, DCM REFLECTION, PHI, INV or CPZM')
         else:
             if method not in self.method:
                 self.method.append(method)
 
                 if method == 'DCM':
                     self.method.append("DCM")
+                    self.DCMparams= DCMparams_class(params, chi)
+
+                elif method == 'PHI':
+                    self.method.append("PHI")
+                    self.DCMparams= DCMparams_class(params, chi)
+
+                elif method == 'DCM REFLECTION':
+                    self.method.append("DCM REFLECTION")
                     self.DCMparams= DCMparams_class(params, chi)
 
                 elif method == 'INV':
@@ -92,7 +108,7 @@ class resonator(object): # object is defined in init below
         if  method in self.method:
             print(self.name + ' changed params')
             self.fc = params[3]
-            if method == 'DCM':
+            if method == 'DCM REFLECTION':
                 self.DCMparams= DCMparams_class(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'INV':
@@ -269,10 +285,14 @@ class Fit_Method(object):
                  MC_weight = 'no',MC_weightvalue = 2,\
                  MC_fix = ['Amp','w1','theta'],MC_step_const= 0.6,\
                  find_circle = True,manual_init=None,vary = None):
-        assert method in ['DCM','INV','CPZM'],"Wrong Method, DCM,INV "
+        assert method in ['DCM','DCM REFLECTION','PHI','INV','CPZM'],"Wrong Method, please input:PHI, DCM, INV or CPZM"
         assert (manual_init == None) or (type(manual_init)==list and len(manual_init)==4),'Wrong manual_init, None or len = 6'
         self.method = method
         if method == 'DCM':
+            self.func = Cavity_DCM
+        elif method == 'DCM REFLECTION':
+            self.func = Cavity_DCM_REFLECTION
+        elif method == 'PHI':
             self.func = Cavity_DCM
         elif method == 'INV':
             self.func = Cavity_inverse
@@ -289,7 +309,7 @@ class Fit_Method(object):
         self.vary =  vary if vary is not None else [True]*6
 
     def change_method(self,method):
-        assert method in ['DCM','INV','CPZM'],"Wrong Method, DCM,INV "
+        assert method in ['DCM','DCM REFLECTION','INV','CPZM'],"Wrong Method, DCM,INV "
         if self.method == method:
             print("Fit method does not change")
         else:
@@ -297,6 +317,10 @@ class Fit_Method(object):
 
             if method == 'DCM':
                 self.func = Cavity_DCM
+            if method == 'PHI':
+                self.func = Cavity_DCM
+            elif method == 'DCM REFLECTION':
+                self.func = Cavity_DCM_REFLECTION
             elif method == 'INV':
                 self.func = Cavity_inverse
             elif method == 'CPZM':

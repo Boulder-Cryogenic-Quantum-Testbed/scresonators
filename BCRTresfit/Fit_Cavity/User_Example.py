@@ -19,31 +19,32 @@ np.set_printoptions(precision=4,suppress=True)# display numbers with 4 sig. figu
 
                          ## Code Starts Here ##
 
-dir = "path to folder with your data here" #path to directory with data, make sure to use \\ instead of just \
-filename = 'example.txt'
+dir = "path to folder with your data here" #path to directory with data, make sure to use // instead of just /
+filename = 'example.csv'
 filepath = dir+'\\'+filename
 
 #############################################
 ## create Method
 
+fit_type = 'DCM REFLECTION'
+MC_iteration = 10
 MC_rounds = 1e3
-manual_init = [118.33,165.97,5.3801,0.0000001]#make your own initial guess: [Qi, Qc, freq, phi]
+MC_fix = ['w1']
+#manual_init = [Qi,Qc,freq,phi]        #make your own initial guess: [Qi, Qc, freq, phi] (instead of phi used Qa for CPZM)
 manual_init = None # find initial guess by itself
 
-MC_fix = ['w1']
-fit_type = 'DCM'
-#try:
-Method = Fit_Method(fit_type,1,MC_rounds = MC_rounds,\
-             MC_fix = MC_fix,\
-             manual_init=manual_init,MC_step_const= 0.3) #mcrounds = 100,000 unless otherwise specified
-#except:
-#    print("Failed to initialize method, please change parameters")
-#    quit()
+try:
+    Method = Fit_Method(fit_type, MC_iteration, MC_rounds=MC_rounds,\
+                 MC_fix=MC_fix, manual_init=manual_init, MC_step_const=0.3) #mcrounds = 100,000 unless otherwise specified
+except:
+    print("Failed to initialize method, please change parameters")
+    quit()
 
 ##############################################################
 
 normalize = 10
-params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize) # Fit Resonator A with method, get fit result=params, fig1 is figure, chi is chi^2, init=initial_guess
+path_to_background = dir+'\\'+'example_background.csv'
+params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,path_to_background) # Fit Resonator A with method, get fit result=params, fig1 is figure, chi is chi^2, init=initial_guess
 
 fig1.savefig(dir+'\\'+filename+'_'+fit_type+'_fit.png')
 ###############################################
