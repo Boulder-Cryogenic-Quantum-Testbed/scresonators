@@ -75,8 +75,6 @@ User will need the following python modules:
 * numpy
 * matplotlib
 * pandas
-* sys
-* os
 * lmfit
 * sympy
 * scipy

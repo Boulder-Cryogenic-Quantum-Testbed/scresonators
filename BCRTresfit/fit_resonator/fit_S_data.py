@@ -23,7 +23,7 @@ import os
 
 from scipy.interpolate import interp1d
 
-from Fit_Cavity import Resonator as Res
+from fit_resonator import resonator as res
 
 params = {'legend.fontsize': 10,
           'figure.figsize': (10, 8),
@@ -401,9 +401,9 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
         tick.label.set_fontsize(12)
 
 
-    line1 = ax.plot(np.real(y),np.imag(y),'bo',label = 'normalized data',markersize = 3)
-    #ax.plot(np.real(y_fit_full),np.imag(y_fit_full),'--',color = 'lightgreen',label = 'fit past 3dB from resonance',linewidth = 4.5, alpha=0.7)
     line2 = ax.plot(np.real(y_fit),np.imag(y_fit),'g-',label = 'fit function',linewidth = 6)
+    line1 = ax.plot(np.real(y),np.imag(y),'bo',label = 'normalized data',markersize = 2)
+    #ax.plot(np.real(y_fit_full),np.imag(y_fit_full),'--',color = 'lightgreen',label = 'fit past 3dB from resonance',linewidth = 4.5, alpha=0.7)
     if x_c ==0 and y_c ==0 and radius == 0:
         pass
     #"""
@@ -442,81 +442,81 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
     for line in leg.get_lines():
         line.set_linewidth(10)
 
-    #try:
-    if params != []:
-        if func == Cavity_inverse:
-            if params[0] < 0:
-                print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
-            textstr = r'$Q_c^*$ = '+'%s' % float('{0:.5g}'.format(params[1]))+ \
-            '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(params[0]))+\
-            '\n' + r'$f_c$ = '+'%s' % float('{0:.5g}'.format(params[2]))+' GHz'+\
-            '\n' + r'$\phi$ = '+'%s' % float('{0:.5g}'.format(params[3]))+' radians'+\
-            '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
-            plt.gcf().text(0.7, 0.1, textstr, fontsize=18)
-        elif func == Cavity_CPZM:
-            if params[0] < 0:
-                print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
-            textstr = r'$Q_c$ = '+'%s' % float('{0:.5g}'.format(params[0]*params[1]**-1)) + \
-            '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(params[0]))+\
-            '\n' + r'$Q_a$ = '+'%s' % float('{0:.5g}'.format(params[0]*params[3]**-1))+\
-            '\n' + r'$f_c$ = '+'%s' % float('{0:.5g}'.format(params[2]))+' GHz'+\
-            '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
-            plt.gcf().text(0.7, 0.1, textstr, fontsize=18)
-        else:
-            Qc = params[1]/np.exp(1j*params[3])
-            if Method.method == 'PHI':
-                Qi = (params[0]**-1-np.abs(Qc**-1))**-1
-            else:
-                Qi = (params[0]**-1-np.real(Qc**-1))**-1
-
-            if Qi < 0:
-                print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
-            if 1/np.real(1/Qc) < 0:
-                print("Warning: Real[1/Qc] is less than 0. Calculating Qi anyway")
-                textstr = 'Q = '+ '%s' % float('{0:.5g}'.format(params[0])) + \
-                '\n' + r'$Q_c$ = '+'%s' % float('{0:.5g}'.format(params[1])) + \
-                '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(Qi))+\
+    try:
+        if params != []:
+            if func == Cavity_inverse:
+                if params[0] < 0:
+                    print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
+                textstr = r'$Q_c^*$ = '+'%s' % float('{0:.5g}'.format(params[1]))+ \
+                '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(params[0]))+\
                 '\n' + r'$f_c$ = '+'%s' % float('{0:.5g}'.format(params[2]))+' GHz'+\
-                '\n' + r'$\phi$ = '+'{0:.5f}'.format(params[3])+' radians'+\
-                '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
-                Qc_str = r'1/Re[1/$Q_c$] = ' +'{0:,.5g}'.format(1/np.real(1/Qc))
-                plt.gcf().text(0.7, 0.25, Qc_str, fontsize=18, color = 'red')
-                plt.gcf().text(0.7, 0.07, textstr, fontsize=18)
-            else:
-                textstr = 'Q = '+ '%s' % float('{0:.5g}'.format(params[0])) + \
-                '\n' + r'1/Re[1/$Q_c$] = ' +'%s' % float('{0:.5g}'.format(1/np.real(1/Qc))) + \
-                '\n' + r'$Q_c$ = '+'%s' % float('{0:.5g}'.format(params[1])) + \
-                '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(Qi))+\
-                '\n' + r'$f_c$ = '+'%s' % float('{0:.6g}'.format(params[2]))+' GHz'+\
-                '\n' + r'$\phi$ = '+'{0:.5f}'.format(params[3])+' radians'+\
+                '\n' + r'$\phi$ = '+'%s' % float('{0:.5g}'.format(params[3]))+' radians'+\
                 '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
                 plt.gcf().text(0.7, 0.1, textstr, fontsize=18)
+            elif func == Cavity_CPZM:
+                if params[0] < 0:
+                    print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
+                textstr = r'$Q_c$ = '+'%s' % float('{0:.5g}'.format(params[0]*params[1]**-1)) + \
+                '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(params[0]))+\
+                '\n' + r'$Q_a$ = '+'%s' % float('{0:.5g}'.format(params[0]*params[3]**-1))+\
+                '\n' + r'$f_c$ = '+'%s' % float('{0:.5g}'.format(params[2]))+' GHz'+\
+                '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
+                plt.gcf().text(0.7, 0.1, textstr, fontsize=18)
+            else:
+                Qc = params[1]/np.exp(1j*params[3])
+                if Method.method == 'PHI':
+                    Qi = (params[0]**-1-np.abs(Qc**-1))**-1
+                else:
+                    Qi = (params[0]**-1-np.real(Qc**-1))**-1
 
-        #write to output csv file
-        file = open(title + "_output.csv","w")
-        if func == Cavity_inverse:
-            textstr = r'Q_c = '+'{0:01f}'.format(params[1]) + \
-            '\n' + r'Q_i = '+'{0:01f}'.format(params[0])+\
-            '\n' + r'f_c = '+'{0:01f}'.format(params[2])+' GHz'+\
-            '\n' + r'phi = '+'{0:01f}'.format(params[3])+' radians'
-        elif func == Cavity_CPZM:
-            textstr = r'Q_c = '+'{0:01f}'.format(params[0]*params[1]**-1) + \
-            '\n' + r'Q_i = '+'{0:01f}'.format(params[0])+\
-            '\n' + r'Q_a = '+'{0:01f}'.format(params[0]*params[3]**-1)+\
-            '\n' + r'f_c = '+'{0:01f}'.format(params[2])+' GHz'
-        else:
-            Qc = params[1]/np.exp(1j*params[3])
-            Qi = (params[0]**-1-abs(np.real(Qc**-1)))**-1
-            textstr = 'Q = '+ '{0:01f}'.format(params[0]) + \
-            '\n' + r'1/Re[1/Q_c] = ' +'{0:01f}'.format(1/np.real(1/Qc)) + \
-            '\n' + r'Q_c = '+'{0:01f}'.format(params[1]) + \
-            '\n' + r'Q_i = '+'{0:01f}'.format(Qi)+\
-            '\n' + r'f_c = '+'{0:01f}'.format(params[2])+' GHz'+\
-            '\n' + r'phi = '+'{0:01f}'.format(params[3])+' radians'
-    file.write(textstr)
-    #except:
-    #    print(">Error when trying to write parameters on plot")
-    #    quit()
+                if Qi < 0:
+                    print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
+                if 1/np.real(1/Qc) < 0:
+                    print("Warning: Real[1/Qc] is less than 0. Calculating Qi anyway")
+                    textstr = 'Q = '+ '%s' % float('{0:.5g}'.format(params[0])) + \
+                    '\n' + r'$Q_c$ = '+'%s' % float('{0:.5g}'.format(params[1])) + \
+                    '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(Qi))+\
+                    '\n' + r'$f_c$ = '+'%s' % float('{0:.5g}'.format(params[2]))+' GHz'+\
+                    '\n' + r'$\phi$ = '+'{0:.5f}'.format(params[3])+' radians'+\
+                    '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
+                    Qc_str = r'1/Re[1/$Q_c$] = ' +'{0:,.5g}'.format(1/np.real(1/Qc))
+                    plt.gcf().text(0.7, 0.25, Qc_str, fontsize=18, color = 'red')
+                    plt.gcf().text(0.7, 0.07, textstr, fontsize=18)
+                else:
+                    textstr = 'Q = '+ '%s' % float('{0:.5g}'.format(params[0])) + \
+                    '\n' + r'1/Re[1/$Q_c$] = ' +'%s' % float('{0:.5g}'.format(1/np.real(1/Qc))) + \
+                    '\n' + r'$Q_c$ = '+'%s' % float('{0:.5g}'.format(params[1])) + \
+                    '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(Qi))+\
+                    '\n' + r'$f_c$ = '+'%s' % float('{0:.6g}'.format(params[2]))+' GHz'+\
+                    '\n' + r'$\phi$ = '+'{0:.5f}'.format(params[3])+' radians'+\
+                    '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
+                    plt.gcf().text(0.7, 0.1, textstr, fontsize=18)
+
+            #write to output csv file
+            file = open(title + "_output.csv","w")
+            if func == Cavity_inverse:
+                textstr = r'Q_c = '+'{0:01f}'.format(params[1]) + \
+                '\n' + r'Q_i = '+'{0:01f}'.format(params[0])+\
+                '\n' + r'f_c = '+'{0:01f}'.format(params[2])+' GHz'+\
+                '\n' + r'phi = '+'{0:01f}'.format(params[3])+' radians'
+            elif func == Cavity_CPZM:
+                textstr = r'Q_c = '+'{0:01f}'.format(params[0]*params[1]**-1) + \
+                '\n' + r'Q_i = '+'{0:01f}'.format(params[0])+\
+                '\n' + r'Q_a = '+'{0:01f}'.format(params[0]*params[3]**-1)+\
+                '\n' + r'f_c = '+'{0:01f}'.format(params[2])+' GHz'
+            else:
+                Qc = params[1]/np.exp(1j*params[3])
+                Qi = (params[0]**-1-abs(np.real(Qc**-1)))**-1
+                textstr = 'Q = '+ '{0:01f}'.format(params[0]) + \
+                '\n' + r'1/Re[1/Q_c] = ' +'{0:01f}'.format(1/np.real(1/Qc)) + \
+                '\n' + r'Q_c = '+'{0:01f}'.format(params[1]) + \
+                '\n' + r'Q_i = '+'{0:01f}'.format(Qi)+\
+                '\n' + r'f_c = '+'{0:01f}'.format(params[2])+' GHz'+\
+                '\n' + r'phi = '+'{0:01f}'.format(params[3])+' radians'
+        file.write(textstr)
+    except:
+        print(">Error when trying to write parameters on plot")
+        quit()
 
     plt.tight_layout()
     return fig
@@ -736,8 +736,8 @@ def Fit_Resonator(filename,filepath,Method,normalize,background = None):
             fmag = interp1d(xbg, y1bg, kind='cubic')
             fang = interp1d(xbg, y2bg, kind='cubic')
 
-            plot2(xdata,y1data,xbg,y1bg,"VS_mag")
-            plot2(xdata,y2data,xbg,y2bg,"VS_ang")
+            plot2(xdata,y1data,xbg,y1bg,"magnitude_background")
+            plot2(xdata,y2data,xbg,y2bg,"angle_background")
 
             y1data = np.divide(y1data,y1bg)
             y2data = np.subtract(y2data,y2bg)
@@ -747,7 +747,7 @@ def Fit_Resonator(filename,filepath,Method,normalize,background = None):
         print("Background file unable to be loaded, running code without user background removal")
 
     try:
-        Resonator = Res.resonator(xdata, ydata, name = filename)
+        Resonator = res.resonator(xdata, ydata, name = filename)
     except:
         print("Problem loading resonator. Please make sure the resonator class has correct frequency values and S21 values")
         quit()
@@ -999,7 +999,7 @@ def plot(x,y,name,x_c=None,y_c=None,r=None,p_x=None,p_y=None):
     if p_x!=None and p_y!=None:
         ax.plot(p_x,p_y,'*',color = 'red',markersize = 5)
     pathToParent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    fig.savefig(pathToParent+'\ExampleData'+'\\Fig\\'+name+'.png')
+    fig.savefig(pathToParent+'\\'+name+'.png')
 
 #########################################################################
 
@@ -1011,4 +1011,4 @@ def plot2(x,y,x2,y2,name):
     ax.plot(x,y,'bo',label = 'raw data',markersize = 3)
     ax.plot(x2,y2,'bo',label = 'raw data',markersize = 3, color = 'red')
     pathToParent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    fig.savefig(pathToParent+'\ExampleData'+'\\Fig\\'+name+'.png')
+    fig.savefig(pathToParent+'\\'+name+'.png')
