@@ -48,4 +48,4 @@ Therefore, in the case of this program an extract factor of 1 (corresponding to 
 This ensures that the program will have a reasonable number of points to fit with provided that the data is taken around resonance, while still being low enough
 that the accuracy of the fitting will not be compromised to a considerable extent.
 
-The user must also keep in mind that the INV and CPZM methods will require more data near resonance due their use of Qi for the 3dB bandwidth calculation.
+The user must also keep in mind that the INV and CPZM methods will require more data near resonance due to their use of Qi for the 3dB bandwidth calculation.
