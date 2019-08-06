@@ -4,7 +4,7 @@ This test shows the accuracy of the fit as a function of Qi/Qc for various imped
 
 ## Data:
 
-![alt text](https://raw.githubusercontent.com/mullinska/measurement/master/BCRTresfit/circuit_simulation_results/impedance_Qc/QiQc_for_impedance_mismatch.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Resonator-Testbed/measurement/master/BCRTresfit/circuit_simulation_results/impedance_Qc/QiQc_for_impedance_mismatch.png)
 
 One can see from these graphs that the impedance does not seem to have a large effect on percent error on its own. However, in combination with Qi/Qc ratios around 
 2 orders of magnitude above/below 1, the error can become considerable and thus Qc appears to be of greater concern when attempting to find the sources that 
