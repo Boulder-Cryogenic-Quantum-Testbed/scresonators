@@ -14,19 +14,19 @@ from matplotlib.gridspec import GridSpec
 from scipy.interpolate import interp1d
 pathToParent = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #set a variable that equals the relative path of parent directory
 sys.path.append(pathToParent)#path to Fit_Cavity
-from Fit_Cavity import *
+from fit_resonator import *
 np.set_printoptions(precision=4,suppress=True)# display numbers with 4 sig. figures (digits)
 
                          ## Code Starts Here ##
 
-dir = "path to folder with your data here" #path to directory with data, make sure to use // instead of just /
+dir = "path to folder with your data here" #path to directory with data, make sure to use /
 filename = 'example.csv'
-filepath = dir+'\\'+filename
+filepath = dir+'/'+filename
 
 #############################################
 ## create Method
 
-fit_type = 'DCM REFLECTION'
+fit_type = 'DCM'
 MC_iteration = 10
 MC_rounds = 1e3
 MC_fix = ['w1']
@@ -43,8 +43,11 @@ except:
 ##############################################################
 
 normalize = 10
-path_to_background = dir+'\\'+'example_background.csv'
-params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,path_to_background) # Fit Resonator A with method, get fit result=params, fig1 is figure, chi is chi^2, init=initial_guess
 
-fig1.savefig(dir+'\\'+filename+'_'+fit_type+'_fit.png')
+### Fit Resonator function without background removal ###
+params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,dir)
+
+### Fit Resonator function with background removal ###
+#path_to_background = dir+'/'+'example_background.csv'
+#params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,dir,path_to_background)
 ###############################################
