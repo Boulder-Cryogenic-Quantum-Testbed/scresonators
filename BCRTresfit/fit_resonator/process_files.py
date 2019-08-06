@@ -14,8 +14,8 @@ from datetime import datetime
 from matplotlib.gridspec import GridSpec
 import re
 import matplotlib.pylab as pylab
-from .fitS21 import Fit_Resonator,Cavity_DCM,Cavity_inverse
-from .Resonator import resonator,Fit_Method
+from .fit_S_data import Fit_Resonator,Cavity_DCM,Cavity_inverse
+from .resonator import resonator,Fit_Method
 import ast
 params = {'legend.fontsize': 18,
           'figure.figsize': (10, 8),
@@ -53,7 +53,7 @@ def List_resonators(dic,delay):
         else:
             bias = None
         data = np.genfromtxt(filepath)
-        xdata = data.T[0]/10**9   
+        xdata = data.T[0]/10**9
         y1data = data.T[1]
         y2data = data.T[2]
         ## check if VNA takes data, sometimes it doesnot
@@ -93,7 +93,7 @@ def MultiFit(dic,list_resonators,method,fit = 'coarse'):
         plt.close()
         i = i+1
     Params_array = np.array(Params_array)
-    chi_array = np.array(chi_array) 
+    chi_array = np.array(chi_array)
     bad_fit, = np.where(chi_array > 2*np.average(chi_array))
     print(bad_fit)
     for k in bad_fit:
@@ -170,7 +170,7 @@ def Result_dataframe(dic,list_resonators,Method = None):
         DCM_chi = [s.DCMparams.chi for s in list_resonators]
         df1['DCM_chi'] = pd.Series(DCM_chi)
         DCM_phi = [s.DCMparams.phi for s in list_resonators]
-        df1['DCM_phi'] = pd.Series(DCM_phi)        
+        df1['DCM_phi'] = pd.Series(DCM_phi)
         DCM_num_photon = [s.DCMparams.num_photon for s in list_resonators]
         df1['DCM_num_photon'] = pd.Series(DCM_num_photon)
         DCM_all = [s.DCMparams.all for s in list_resonators]
@@ -216,14 +216,14 @@ def temp_log(filepath):
     R_700mK = data.T[3]
     R_50mK = data.T[4]
     R_10mK = data.T[5]
-    
+
     temp_3K = data.T[10]
     temp_700mK = data.T[11]
     temp_50mK = data.T[12]
     temp_10mK = data.T[13]
     temp_RT = np.array(data.T[14],dtype = float)
     temp_RT[temp_RT < 0] = 0
-    
+
     df_temp = pd.DataFrame()
     df_temp['Date/Time'] = pd.Series(date_time)
     df_temp['temp_3K'] = pd.Series(temp_3K)
@@ -235,13 +235,13 @@ def temp_log(filepath):
     df_temp['R_700mK'] = pd.Series(R_700mK)
     df_temp['R_50mK'] = pd.Series(R_50mK)
     df_temp['R_10mK'] = pd.Series(R_10mK)
-    
+
     # Save DataFrame
     df_temp.to_pickle(dic_temp+'/'+fr.split('.dat')[0]+'.pkl')
-    
-    return df_temp                   
+
+    return df_temp
 #
-#####################################################################                    
+#####################################################################
 #                ## Add Temperauture to Original DataFrame   ##
 #df_temp = pd.read_pickle(dic_temp+'\\'+fr)
 def add_Res_temp(df_temp,resonator):
@@ -253,8 +253,8 @@ def add_Res_temp(df_temp,resonator):
 ########################################################
 def add_list_Res_temp(filepath,list_resonators):
     df_temp = temp_log(filepath)
-    
-    for k in range(len(list_resonators)):                     # add temperature to list of resonators 
+
+    for k in range(len(list_resonators)):                     # add temperature to list of resonators
         add_Res_temp(df_temp,list_resonators[k])
     return None
 ########################################################
@@ -287,7 +287,7 @@ def Plot_sweep_S21(x,y,z,figurename,plotrange = [0,0],xlabel = 'Power (dbm)',dif
 #        x = x.as_matrix()
     y = y
     z = np.abs(np.array(z))
-    
+
     ## adjust measurement with different sweep points
     if different_length == True:
         new_z = []
@@ -296,7 +296,7 @@ def Plot_sweep_S21(x,y,z,figurename,plotrange = [0,0],xlabel = 'Power (dbm)',dif
             new_total_pts = len(yy)
             if new_total_pts > max_total_pts:
                 max_total_pts = new_total_pts
-        
+
         for i in range(len(y)):
             y1 = y[i]
             new_y1 = np.linspace(y1.min(),y1.max(),max_total_pts)
@@ -312,7 +312,7 @@ def Plot_sweep_S21(x,y,z,figurename,plotrange = [0,0],xlabel = 'Power (dbm)',dif
 
     plt.close(figurename)
     fig = plt.figure(figurename,figsize = [12,8])
-    
+
     xbins = len(x)
     ybins = len(y)
     xi, yi = np.mgrid[x.min():x.max():xbins*1j, y.min():y.max():ybins*1j]
@@ -334,11 +334,11 @@ def convert_diff_method(method1,method2,params):
         if method1 =='DCM':
             Qe_INV = params[2]
             Qi_INV = Qi/(1+Qe_INV/2/np.sin(params[4]))
-            
+
             return [1/params[0],Qi_INV,Qe_INV,params[3],-params[4],-params[5]]
         elif method1 == 'INV':
             Qe_DCM = params[2]
-            Qi_DCM = params[1]*(params[2]/2/np.sin(params[4])+1)   
+            Qi_DCM = params[1]*(params[2]/2/np.sin(params[4])+1)
             Q_DCM = ( np.cos(params[4])/params[2]+1/params[1])**-1
             return [1/params[0],Q_DCM,Qe_DCM,params[3],-params[4],-params[5]]
 
@@ -351,10 +351,10 @@ def convert_diff_method(method1,method2,params):
             return [1/params[0],Qi_INV,Qe_INV,params[3],-params[4],-params[5]]
         elif method1 == 'INV' and method2 == 'DCM':
             Qe_DCM = params[2]
-            Qi_DCM = params[1]*(params[2]/2/np.sin(params[4])+1)   
+            Qi_DCM = params[1]*(params[2]/2/np.sin(params[4])+1)
             Q_DCM = ( np.cos(params[4])/params[2]+1/params[1])**-1
             return [1/params[0],Q_DCM,Qe_DCM,params[3],-params[4],-params[5]]
-    
+
 def read_method(dic):
     df = pd.read_excel(dic)
     i = 0
@@ -366,7 +366,7 @@ def read_method(dic):
             delay = df[k][0]
             if pd.notna(df[k][1]):
                 Method1.extract_factor = df[k][1]
-            if pd.notna(df[k][2]):   
+            if pd.notna(df[k][2]):
                 Method1.MC_iteration = df[k][2]
             if pd.notna(df[k][3]):
                 Method1.MC_rounds = df[k][3]
@@ -384,14 +384,14 @@ def read_method(dic):
                 Method1.vary =  df[k][9]
             if pd.notna(df[k][10]):
                 Method1.manual_init = ast.literal_eval(df[k][10])
-                
+
         if k == 'INV':
             i = i+1
             Method2 = Fit_Method('INV')
             delay = df[k][0]
             if pd.notna(df[k][1]):
                 Method2.extract_factor = df[k][1]
-            if pd.notna(df[k][2]):   
+            if pd.notna(df[k][2]):
                 Method2.MC_iteration = df[k][2]
             if pd.notna(df[k][3]):
                 Method2.MC_rounds = df[k][3]
@@ -478,13 +478,13 @@ def Plot_iDCM_INV(dic,list_resonators,method,base = "INV"):
             INV_y_fit = 1/Cavity_inverse(x_fit,*INV_params)
 
         fig = plt.figure(figsize=(15, 10))
-        gs = GridSpec(3,3)   
+        gs = GridSpec(3,3)
         ax1 = plt.subplot(gs[0,0]) ## real part
         ax2 = plt.subplot(gs[0,1]) ## imag part
         ax3 = plt.subplot(gs[0,2]) ## magnitude
         ax4 = plt.subplot(gs[1,2])
-        ax = plt.subplot(gs[1:3,0:2]) ## IQ plot 
-        
+        ax = plt.subplot(gs[1:3,0:2]) ## IQ plot
+
         ax1.plot(x,np.real(y),'-',color = 'skyblue',label = 'raw')
         ax1.plot(x_fit2,np.real(DCM_y_fit2),'o',color = 'lightgreen')
         ax1.plot(x_fit2,np.real(INV_y_fit2),'o',color = 'lightcoral')
@@ -499,7 +499,7 @@ def Plot_iDCM_INV(dic,list_resonators,method,base = "INV"):
             ax1.set_title("real part $S_{21}$")
             plt.ylabel('Re[$S_{21}$]')
             plt.xlabel('frequency (GHz)')
-            
+
         ax2.plot(x,np.imag(y),'b-',label = 'raw')
         ax2.plot(x_fit2,np.imag(DCM_y_fit2),'ro')
         ax2.plot(x_fit2,np.imag(INV_y_fit2),'go')
@@ -514,7 +514,7 @@ def Plot_iDCM_INV(dic,list_resonators,method,base = "INV"):
             ax2.set_title("Imag part $S_{21}$")
             plt.ylabel('Im[$S_{21}$]')
             plt.xlabel('frequency (GHz)')
-            
+
         ax3.plot(x,np.abs(y),'b-',label = 'raw')
         ax3.plot(x_fit2,np.abs(DCM_y_fit2),'ro')
         ax3.plot(x_fit2,np.abs(INV_y_fit2),'go')
@@ -561,7 +561,7 @@ def Plot_iDCM_INV(dic,list_resonators,method,base = "INV"):
     # get the individual lines inside legend and set line width
         for line in leg.get_lines():
             line.set_linewidth(10)
-           
+
         Qe = DCM_params[2]*np.exp(1j*DCM_params[4])
         Qi = (DCM_params[1]**-1-abs(np.real(Qe**-1)))**-1
         Q_INV = (INV_params[2]**-1 + INV_params[1]**-1)**-1

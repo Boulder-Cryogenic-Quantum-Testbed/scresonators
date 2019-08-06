@@ -7,7 +7,7 @@ Created on Thu Dec  6 10:53:51 2018
 
 import numpy as np
 import matplotlib.pyplot as plt
-from .fitS21 import Cavity_DCM,Cavity_DCM_REFLECTION,Cavity_inverse,Cavity_CPZM,fit_raw_compare,Fit_Resonator,convert_params #look for fitS21 in subdir., get functions
+from .fit_S_data import Cavity_DCM,Cavity_DCM_REFLECTION,Cavity_inverse,Cavity_CPZM,fit_raw_compare,Fit_Resonator,convert_params #look for fitS21 in subdir., get functions
 class resonator(object): # object is defined in init below
 
     """
