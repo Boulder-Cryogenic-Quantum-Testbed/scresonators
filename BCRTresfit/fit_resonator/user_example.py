@@ -7,17 +7,21 @@ Created on Mon May 14 19:32:43 2018
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd #speadsheet commands
+import sys #update paths
+import os #import os in order to find relative path
 
 from matplotlib.gridspec import GridSpec
 from scipy.interpolate import interp1d
+pathToParent = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #set a variable that equals the relative path of parent directory
+sys.path.append(pathToParent)#path to Fit_Cavity
 from fit_resonator import *
 np.set_printoptions(precision=4,suppress=True)# display numbers with 4 sig. figures (digits)
 
                          ## Code Starts Here ##
 
-dir = "path to folder with your data here" #path to directory with data, make sure to use \\ instead of just /
+dir = "path to folder with your data here" #path to directory with data, make sure to use /
 filename = 'example.csv'
-filepath = dir+'\\'+filename
+filepath = dir+'/'+filename
 
 #############################################
 ## create Method
@@ -40,12 +44,10 @@ except:
 
 normalize = 10
 
-# Fit Resonator function without background removal
-params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize)
+### Fit Resonator function without background removal ###
+params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,dir)
 
-# Fit Resonator function with background removal
+### Fit Resonator function with background removal ###
 #path_to_background = dir+'\\'+'example_background.csv'
 #params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,path_to_background)
-
-fig1.savefig(dir+'\\'+filename+'_'+fit_type+'_fit.png')
 ###############################################
