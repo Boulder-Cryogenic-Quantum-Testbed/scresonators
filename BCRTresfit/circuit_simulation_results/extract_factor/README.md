@@ -30,7 +30,6 @@ built into them.
 
 ![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Resonator-Testbed/measurement/master/BCRTresfit/circuit_simulation_results/extract_factor/INV_extract_Qi%3D11135.png)
 
-
 While the difference in percent error between 1 bandwidth used and 100 bandwidths used is considerable in the case of the small Qi, the difference between using 1
 bandwidth and using 4 does not appear to be very large. This indicates that as long as a reasonable number of bandwidths are used, the data should have a low percent
 error for the order of Qi=100.
