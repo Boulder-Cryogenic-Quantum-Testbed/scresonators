@@ -20,15 +20,15 @@ built into them.
 
 #### Qi=118:
 
-![alt text](https://raw.githubusercontent.com/mullinska/measurement/master/BCRTresfit/circuit_simulation_results/extract_factor/DCM_extract_Qi=118.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Resonator-Testbed/measurement/master/BCRTresfit/circuit_simulation_results/extract_factor/DCM_extract_Qi%3D118.png)
 
-![alt text](https://raw.githubusercontent.com/mullinska/measurement/master/BCRTresfit/circuit_simulation_results/extract_factor/INV_extract_Qi=118.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Resonator-Testbed/measurement/master/BCRTresfit/circuit_simulation_results/extract_factor/INV_extract_Qi%3D118.png)
 
 #### Qi=11135:
 
-![alt text](https://raw.githubusercontent.com/mullinska/measurement/master/BCRTresfit/circuit_simulation_results/extract_factor/DCM_extract_Qi=11135.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Resonator-Testbed/measurement/master/BCRTresfit/circuit_simulation_results/extract_factor/DCM_extract_Qi%3D11135.png)
 
-![alt text](https://raw.githubusercontent.com/mullinska/measurement/master/BCRTresfit/circuit_simulation_results/extract_factor/INV_extract_Qi=11135.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Resonator-Testbed/measurement/master/BCRTresfit/circuit_simulation_results/extract_factor/INV_extract_Qi%3D11135.png)
 
 
 While the difference in percent error between 1 bandwidth used and 100 bandwidths used is considerable in the case of the small Qi, the difference between using 1
