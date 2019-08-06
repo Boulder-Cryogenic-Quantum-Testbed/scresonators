@@ -48,6 +48,6 @@ normalize = 10
 params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,dir)
 
 ### Fit Resonator function with background removal ###
-#path_to_background = dir+'\\'+'example_background.csv'
-#params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,path_to_background)
+#path_to_background = dir+'/'+'example_background.csv'
+#params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,dir,path_to_background)
 ###############################################

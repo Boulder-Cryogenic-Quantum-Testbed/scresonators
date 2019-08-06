@@ -23,7 +23,7 @@ Additionally, the code is able to fit reflection type geometry resonators with a
 ![alt text](https://raw.githubusercontent.com/mullinska/measurement/master/BCRTresfit/Fit_Equations.PNG)
 
 ## INPUT:
-The code takes in a .csv file (accepts .txt as well), containing 3 columns separated by commas where each line represents one point of S21 data
+The code takes in a .csv file (accepts .txt as well), containing 3 columns separated by commas where each line represents one point of data
    >Note that there cannot be a header in this file, the code only accepts the data with no header
 
 1. The first column is monotonically increasing frequency in GHz
@@ -40,6 +40,9 @@ If user does not include points near off resonance in addition to points near re
    >In simple terms: The fitting needs a full circle (in complex plane) to work optimally
 
 ## OUTPUT:
+
+All output will be put in a new folder titled with a timestamp in the folder with the user's data.
+
 1. If the user has a background removal file, the code will output graphs displaying the main data and the background for both the magnitude and phase
 1. The code will output four figures showing the steps it is taking to normalize the data titled Normalize_1 through Normalize_4
 1. If the user opted to have the code guess initial parameters, the code will output three figures showing the steps taken to find resonance and phi guesses
@@ -100,7 +103,7 @@ Must install pip module before installing pips for python 2. Once pip is install
    >Note that code accepts both .txt and .csv file formats
    
 ###### The user will then have to set the "filepath" variable to be equal to their directory plus the filename:
-`filepath = dir+'\\'+filename`
+`filepath = dir+'/'+filename`
 
 #### Section 2: Setting Fit Variables
 
@@ -141,11 +144,11 @@ MC_step_const: Range for the random parameter values chosen in MC fit. This scal
 
 The user calls the Fit_Resonator function with:
 
-`params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize)`
+`params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,dir)`
 
 If the user wants to have the code remove their background, they need to include the path to their background removal file as well with:
 
-`params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,path_to_background)`
+`params1,fig1,chi1,init1 = Fit_Resonator(filename,filepath,Method,normalize,dir,path_to_background)`
 
 normalize: The number of points from the start/end of S21 data the user wants to use in the linear fit of S21 data for magnitude and phase for normalization, set with:
 
@@ -153,13 +156,8 @@ normalize: The number of points from the start/end of S21 data the user wants to
 
 User sets the path to their background removal file with:
 
-`path_to_background = dir+'\\'+background_file_name`
+`path_to_background = dir+'/'+background_file_name`
    >Here it is assumed that dir is the same directory for both the user's main data file and the background and can thus be used for both
-
-The figure that contains the results is then saved with the following code:
-
-`fig1.savefig(dic+'\\'+filename+'_'+fit_type+'_fit.png')`
-   >This will save the figure to the same folder as the user's data.
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Fit Function Code
