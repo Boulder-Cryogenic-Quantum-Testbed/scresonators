@@ -20,7 +20,7 @@ Additionally, the code is able to fit reflection type geometry resonators with a
 1. PHI: J. Gao, "The Physics of Superconducting Microwave Resonators" Cal-tech Ph.D. thesis, May 2008
 
 ## Fitting Functions:
-![alt text](https://raw.githubusercontent.com/mullinska/measurement/master/BCRTresfit/Fit_Equations.PNG)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Resonator-Testbed/measurement/master/BCRTresfit/Fit_Equations.PNG)
 
 ## INPUT:
 The code takes in a .csv file (accepts .txt as well), containing 3 columns separated by commas where each line represents one point of data
