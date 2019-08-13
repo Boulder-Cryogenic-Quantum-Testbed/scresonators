@@ -1,6 +1,7 @@
 ## Normalize Test:
 
-This test shows the accuracy of the fits as a function of the number of 3dB bandwidths used to normalize data.
+This test shows the accuracy of the fits as a function of the number of 3dB bandwidths used to normalize data. The normalization used here is a linear fit of both
+magnitude and phase of the points furthest from resonance. The linear fit is subtracted such that the endpoints of user data are at (1,0) in complex plane.
 
 ## Data:
 
@@ -8,8 +9,7 @@ This test shows the accuracy of the fits as a function of the number of 3dB band
 
 Here, the percent error in Qi versus number of 3dB bandwidths used to normalize data at a Qi on the order of 10^4 shows that percent error
 becomes effectively negligible past 4 3dB bandwidths used. This is indicated by the rapid change in percent error between 3 and 4 bandwidths used. For this specific 
-Qi, the reason for the rapid change is that the fitting parameters are getting stuck in a local minimum for DCM. This causes the Monte Carlo fit function to get 
-better results and leads to a high percent error due to the nature of Monte Carlo fits.
+Qi, the reason for the rapid change is that the fitting parameters are no longer following a circle type shape due to normalization.
 
 ![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Resonator-Testbed/measurement/master/BCRTresfit/circuit_simulation_results/normalize/R%3D1e8.png)
 
