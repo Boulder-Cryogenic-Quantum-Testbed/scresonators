@@ -2,6 +2,8 @@
 
 A simple script to detect if the user's data file is of the correct format.
 
+To use, simply change the path variables dir to directory with file, and filename to the name of the file to be checked.
+
 This code will check for:
 
 * Header (not currently part of standard format)
