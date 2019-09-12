@@ -16,4 +16,4 @@ calculation of percent error for these results considering the scale of percent 
 
 It is clear from the results that the Phi Rotation Method has a large percent error when exposed to an impedance mismatch environment, above even 30 percent
 for the 11135 Qi resonator. This matches with results we would expect as the DCM is the corrected version of the Phi Rotation Method to account for impedance 
-mismatches.
+mismatches. It is thus recommended that the user not use the Phi Rotation Method, and instead use the Diameter Correction Method.

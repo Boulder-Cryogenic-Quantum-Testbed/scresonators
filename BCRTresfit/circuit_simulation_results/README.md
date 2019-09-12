@@ -16,8 +16,6 @@ Knowing Qi_SIM allows for the calculation of percent error once Qi is found from
 
 ## Tests:
 
-* extract_factor: Test to see how big of a difference using a certain number of 3dB bandwidths to fit data makes for accuracy.
-* impedance_Qc: Test to see what kind of a difference changing coupling capacitance and impedance mismatch makes for accuracy.
+* extract_factor: Test to see how big of a difference using a certain number of 3dB bandwidths to fit data makes for accuracy. Tested across varying Qi, Qc and impedance mismatch values.
 * normalize: Test to see how percent error changes when using different numbers of 3dB bandwidths to normalize data.
 * phi_test: Find out how big of a difference in accuracy there is between Phi Rotation Method and DCM.
-* QiQc: Test how changing coupling capacitance changes accuracy of fit for different values of Qi
