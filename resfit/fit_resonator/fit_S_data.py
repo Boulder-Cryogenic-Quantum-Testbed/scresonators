@@ -23,7 +23,7 @@ import os
 
 from scipy.interpolate import interp1d
 
-from fit_resonator import resonator as res
+from resfit.fit_resonator import Resonator as res #TOOD(mutus) change this reference
 
 params = {'legend.fontsize': 10,
           'figure.figsize': (10, 8),

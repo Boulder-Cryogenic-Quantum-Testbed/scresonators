@@ -15,7 +15,7 @@ from matplotlib.gridspec import GridSpec
 import re
 import matplotlib.pylab as pylab
 from .fit_S_data import Fit_Resonator,Cavity_DCM,Cavity_inverse
-from .resonator import resonator,Fit_Method
+from .resonator import Resonator,Fit_Method
 import ast
 params = {'legend.fontsize': 18,
           'figure.figsize': (10, 8),
