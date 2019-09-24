@@ -1,10 +1,9 @@
 import numpy as np
 
 #set file location
-dir = "C:\\Users\\Keegan\\Desktop\\assortment-of-resfits\\assortment-of-resfits\\fit_DCM_vs_INV\\format"
-filename = "letters.txt"
-filename = "-50.csv"
-filepath = dir+"\\"+filename
+dir = "Your path to file here" #path to directory with data, make sure to use /
+filename = "Your file name here"
+filepath = dir+"/"+filename
 
 #read in file
 file = open(filepath, 'r')

@@ -20,7 +20,7 @@ Additionally, the code is able to fit reflection type geometry resonators with a
 1. PHI: J. Gao, "The Physics of Superconducting Microwave Resonators" Cal-tech Ph.D. thesis, May 2008
 
 ## Fitting Functions:
-![alt text](https://raw.githubusercontent.com/mullinska/measurement/master/BCRTresfit/Fit_Equations.PNG)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/Fit_Equations.PNG)
 
 ## INPUT:
 The code takes in a .csv file (accepts .txt as well), containing 3 columns separated by commas where each line represents one point of data
@@ -48,12 +48,11 @@ All output will be put in a new folder titled with a timestamp in the folder wit
 1. If the user opted to have the code guess initial parameters, the code will output three figures showing the steps taken to find resonance and phi guesses
 1. The code outputs a figure displaying a variety of information regarding how the fit was completed. This includes a plot of both the raw and final fit of data
 in the complex plane, plots of the linear fits that normalize the data for both magnitude and phase, plots of the normalized magnitude and phase with their final
-fits, manually input guess parameters, and the final parameters found from the fit.
+fits, manually input guess parameters, and the final parameters found from the fit with their 95% confidence intervals.
 1. The code will also print a .csv file displaying the information that the fit has gathered with each term on a new line:
-    * DCM/DCM REFLECTION: Q, 1/Re[1/Qc], Qc, Qi, f_c, phi
-    * PHI: Q, 1/Re[1/Qc], Qc, Qi, f_c, phi
-    * INV: Qc*, Qi, f_c, phi
-    * CPZM: Qc, Qi, Qa, f_c
+    * DCM/DCM REFLECTION/PHI: Q, Qi, Qc, 1/Re[1/Qc], phi, f_c
+    * INV: Qi, Qc*, phi, f_c
+    * CPZM: Qi, Qc, Qa, f_c
 
 -----------------------------------------------------------------------------------
 
@@ -67,6 +66,7 @@ fits, manually input guess parameters, and the final parameters found from the f
 1. After cropping, the code will minimize the guess parameters based on data points using a least squares fit then compare parameters to a Monte Carlo fit
    >This step will be repeated until the Monte Carlo fit does not give better results than the minimization.
    >Monte Carlo fit is meant to check if fitting parameters are trapped in a local minimum.
+   >If Monte Carlo fit got better results, the parameters obtained from Monte Carlo fit will be minimized.
 
 1. At this point the final parameter values have been found and fitting is complete. Final fitting is plotted and fit parameters are written to a .csv file
 
@@ -166,7 +166,9 @@ User sets the path to their background removal file with:
 
 ## Fit_Resonator Function
 
-* Load data from user file and remove background if applicable
+* Load data from user file
+* Create folder for output files
+* Remove background if applicable
 * Initialize Resonator class with user data
 
 * Normalize data
@@ -177,7 +179,7 @@ User sets the path to their background removal file with:
     * Normalize magnitude in dB by subtracting a linear fit of magnitude using the first 10 and last 10 points of data (also changed with variable normalize)
     * Output plot "Normalize_4" to show data after subtraction of linear fit of magnitude (at this point, normalization is complete)
 * Find initial guess parameters and put them into init variable
-* kappa: Defined to be f_0/Q (DCM,DCM REFLECTION,PHI) or f_0/Qi(INV), the bandwidth of frequencies at which the circle is at 90 degrees on either side of resonance
+* kappa: Defined to be f_0/Q (DCM,DCM REFLECTION,PHI,CPZM) or f_0/Qi(INV), the bandwidth of frequencies at which the circle is at 90 degrees on either side of resonance
 * Set xdata and ydata to contain the raw data for the correct frequency and transmission datapoints within the bandwidth determined by kappa and extract_factor
    >Note that all data points not within the bandwidth will not be used for the fit.
    >extract_factor currently set to 1 to correlate with a single 3dB bandwidth to fit data with
@@ -186,13 +188,12 @@ User sets the path to their background removal file with:
     >params[0] = Q for DCM,DCM REFLECTION,PHI and params[0] = Qi for INV,CPZM
     
     >params[3] =Qa for CPZM and params[3] = phi for everything else
+* Call to min_fit() function to minimize parameters. Outputs minimized parameters according to the fit function chosen and their 95% confidence intervals
 * Set up variables for the while loop of the minimize and Monte Carlo fit functions. Loop runs at most 5 times by default (defined by user) and at least once
-* Fit the parameters with minimizer class according to its method: DCM, DCM REFLECTION, INV, PHI or CPZM using least squares fitting method
-* Store values from least squares fit into variable fit_params
 * Call Monte Carlo fit to find if the parameters are trapped in a local minimum using xdata, ydata, fit_params and the method
 * If Monte Carlo fit does not have better accuracy than the minimize function, terminate the while loop and update the parameters into variable "output_params"
     * Else, continue minimize function and Monte Carlo fit for another iteration
-* Save minimum error value from Monte Carlo fits (correlates to run being used for fit) to report in plot as error S21
+* If Monte Carlo got better fit, minimize those parameters with call to min_fit(), function outputs minimized parameters and 95% confidence interval error.
 * Check that bandwidth of extracted data is not equal to zero
 * Plot the fit and save values found to output file, both with title according to the method used
    >Plot has the following information:
@@ -200,9 +201,8 @@ User sets the path to their background removal file with:
    1. Graph of magnitude of S21 after normalization (blue) and final fit (green) below #1
    1. Graph of phase of S21 before normalization (blue) with linear fit shown (orange) below #2
    1. Graph of phase of S21 after normalization (blue) and final fit (green) below #3
-   1. Final fitting parameters below #4
+   1. Final fitting parameters with their 95% confidence intervals below #4
    1. Graph of S21 in complex plane shown in bottom left
-   >Note that error S21 in the plot and output file is calculated as the square root of the sum of the distance between fit and user data squared, divided by the number of terms
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -269,7 +269,7 @@ CPZM{
 * Set Q to be resonance frequency divided by kappa. This is the definition of Q for DCM, but it can approximate Q for CPZM
 * Set Qc to be Q divided by the diameter (variable Q_Qc) because the diameter is Q/Qc for DCM which can approximate Qc for CPZM
 * Fit variables Q and Qc based on ideal resonator behavior: curve One_Cavity_peak_abs
-* Set Qa to be the inverse of the imaginary part of e^(i*phi)/Qc
+* Set Qa to be the negative inverse of the imaginary part of e^(i*phi)/Qc
 * Set Qc to be the inverse of the real part of e^(i*phi)/Qc
    >New Qc is 1/Re[1/Q_c] as described in DCM, using raw Qc from diameter is phi rotation method which is not correct
 * Set Qic = Qi/Qc
@@ -298,12 +298,12 @@ while (counts<100,000){
 * Increase counts by 1 each iteration
 * Generate an array 'random' of 4 random numbers where each has the value of the initial parameters times the step constant (found in method class)
 * If parameter set to be fixed (in user input file), set it's value in array 'random' to be 0
-* Divide random value for phi by 10 (slot [3] in random array)
+* For all fit functions with phi, divide random value for phi by 10 (slot [3] in random array)
 * Set all items in array random as e to the power of their old values
     >Note that the random values are raised as an exponent of e such that the distribution will still remain positive
     By multiplying by the new exponentiated random values by the old parameters, the distribution still remains somewhat linear while ensuring the correct sign
 * Multiply the parameters by these random values to get variable new_parameter
-* Modulus new phi term by 2pi such that it is between 0 and 2pi in range
+* For all fit functions with phi, modulus new phi term by 2pi such that it is between 0 and 2pi in range
 * Make new set of S21 data called ydata_MC based on these new random parameters
 * Check error the same way as before and put it in new_error variable
 * If new_error < error: set parameters to be new parameters as they are better that before

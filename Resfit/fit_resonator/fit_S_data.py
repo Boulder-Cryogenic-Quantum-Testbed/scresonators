@@ -167,7 +167,6 @@ def Find_initial_guess(x,y1,y2,Method,output_path):
         #determine the angle to the center of the fitting circle from the origin
         if Method.method == 'INV':
             phi = np.angle(z_c)  ###########4
-            phi = -phi
         else:
             phi = np.angle(-z_c)  ###########4
 
@@ -273,7 +272,7 @@ def Find_initial_guess(x,y1,y2,Method,output_path):
             popt, pcov = curve_fit(One_Cavity_peak_abs, x,np.abs(ydata),p0 = [Q,Qc,f_c],bounds = (0,[np.inf]*3))
             Q = popt[0]
             Qc = popt[1]
-            Qa = 1/np.imag(Qc**-1*np.exp(-1j*phi)) #correct order?
+            Qa = -1/np.imag(Qc**-1*np.exp(-1j*phi)) #correct order?
             Qc = 1/np.real(Qc**-1*np.exp(-1j*phi))
             Qi = (1/Q-1/Qc)**-1
             Qic = Qi/Qc
@@ -415,7 +414,7 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
     #"""
     #plot resonance
     if func == Cavity_inverse:
-        resonance = (1 + params[0]/params[1]*np.exp(-1j*params[3])/(1 + 1j*2*params[0]*(params[2]-params[2])/params[2]))
+        resonance = (1 + params[0]/params[1]*np.exp(1j*params[3])/(1 + 1j*2*params[0]*(params[2]-params[2])/params[2]))
     elif func == Cavity_DCM:
         resonance = 1-params[0]/params[1]*np.exp(1j*params[3])
     elif func == Cavity_DCM_REFLECTION:

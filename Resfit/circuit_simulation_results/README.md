@@ -5,7 +5,7 @@ By reading through this data, the user should be able to see the best data takin
 
 ## Model:
 
-![alt text](https://raw.githubusercontent.com/mullinska/measurement/master/BCRTresfit/circuit_simulation_results/circuit.PNG)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/circuit.PNG)
 
 The model used here is a simple lumped element resonator RCL circuit capacitively coupled to a transmission line with data generated in AWR.
 Asymmetry is added by increasing inductance on one side of the transmission line and Qc is changed by varying the value of the coupling capacitor.
@@ -16,8 +16,6 @@ Knowing Qi_SIM allows for the calculation of percent error once Qi is found from
 
 ## Tests:
 
-* extract_factor: Test to see how big of a difference using a certain number of 3dB bandwidths to fit data makes for accuracy.
-* impedance_Qc: Test to see what kind of a difference changing coupling capacitance and impedance mismatch makes for accuracy.
+* extract_factor: Test to see how big of a difference using a certain number of 3dB bandwidths to fit data makes for accuracy. Tested across varying Qi, Qc and impedance mismatch values.
 * normalize: Test to see how percent error changes when using different numbers of 3dB bandwidths to normalize data.
 * phi_test: Find out how big of a difference in accuracy there is between Phi Rotation Method and DCM.
-* QiQc: Test how changing coupling capacitance changes accuracy of fit for different values of Qi
