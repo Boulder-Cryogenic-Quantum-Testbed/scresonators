@@ -2,3 +2,8 @@ numpy==1.16.*
 pandas==0.24.*
 pylabrad==0.97.*
 pytest==4.2.*
+matplotlib
+lmfit
+sympy
+scipy
+inflect
