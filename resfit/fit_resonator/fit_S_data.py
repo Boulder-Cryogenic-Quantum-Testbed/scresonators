@@ -23,7 +23,7 @@ import os
 
 from scipy.interpolate import interp1d
 
-from resfit.fit_resonator import Resonator as res #TOOD(mutus) change this reference
+from resfit.fit_resonator.resonator import Resonator
 
 params = {'legend.fontsize': 10,
           'figure.figsize': (10, 8),
@@ -520,36 +520,6 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
     plt.tight_layout()
     return fig
 
-#######################################################################
-## Fit Function
-#########################################
-
-def Cavity_DCM(x, Q, Qc, w1,phi):
-    #DCM fit function
-    return np.array(1-Q/Qc*np.exp(1j*phi)/(1 + 1j*(x-w1)/w1*2*Q))
-
-def Cavity_DCM_REFLECTION(x, Q, Qc, w1,phi):
-    #DCM REFLECTION fit function
-    return np.array(1-2*Q/Qc*np.exp(1j*phi)/(1 + 1j*(x-w1)/w1*2*Q))
-
-def Cavity_inverse(x, Qi,Qc, w1,phi):
-    #Inverse fit function
-    return np.array(\
-        (1 + Qi/Qc*np.exp(1j*phi)/(1 + 1j*2*Qi*(x-w1)/w1)))
-
-def Cavity_CPZM(x, Qi,Qic,w1,Qia):
-    #CPZM fit function
-    return np.array(\
-        (1 + 2*1j*Qi*(x-w1)/w1)/(1 + Qic +1j*Qia + 1j*2*Qi*(x-w1)/w1))
-
-def One_Cavity_peak_abs(x, Q, Qc, w1):
-    #Ideal resonator fit function
-    return np.abs(Q/Qc/(1 + 1j*(x-w1)/w1*2*Q))
-
-def One_Cavity_peak_abs_REFLECTION(x, Q, Qc, w1):
-    #Ideal resonator fit function
-    return np.abs(2*Q/Qc/(1 + 1j*(x-w1)/w1*2*Q))
-
 #############################################################################
 def fit_raw_compare(x,y,params,method):
     if method == 'DCM':
@@ -753,14 +723,14 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         print("Background file unable to be loaded, running code without user background removal")
 
     try:
-        Resonator = res.resonator(xdata, ydata, name = filename)
+        resonator = Resonator.resonator(xdata, ydata, name = filename)
     except:
         print("Problem loading resonator. Please make sure the resonator class has correct frequency values and S21 values")
         quit()
 
     ##### Data Preprocessing. Get rid of cable delay and normalize phase/magnitude of S21  ######
-    x_initial = Resonator.freq
-    y_initial = Resonator.S21
+    x_initial = resonator.freq
+    y_initial = resonator.S21
 
     plot(np.real(y_initial),np.imag(y_initial),"Normalize_1",output_path)
 
@@ -786,20 +756,20 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
     y_raw = np.multiply(magnitude,np.exp(1j*angle))
     plot(np.real(y_raw),np.imag(y_raw),"Normalize_4",output_path)
 
-    Resonator.S21 = y_raw
+    resonator.S21 = y_raw
 
 
 ## Init function variables
     manual_init = Method.manual_init
     find_circle = Method.find_circle
     vary = Method.vary
-    filename = Resonator.name
-    xdata = Resonator.freq
-    ydata = Resonator.S21
+    filename = resonator.name
+    xdata = resonator.freq
+    ydata = resonator.S21
     y1data = np.real(ydata)
     y2data = np.imag(ydata)
-    x_raw = Resonator.freq
-    y_raw = Resonator.S21
+    x_raw = resonator.freq
+    y_raw = resonator.S21
 
 ##### Step one. Find initial guess if not specified and extract part of data close to resonance  #####
 

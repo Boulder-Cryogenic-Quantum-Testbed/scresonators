@@ -3,6 +3,8 @@ import datetime
 import numpy as np
 from matplotlib import pyplot as plt
 
+from resfit.fit_resonator.fit_functions import Cavity_DCM, Cavity_DCM_REFLECTION, Cavity_inverse,Cavity_CPZM
+
 
 class Resonator: # object is defined in init below
     """
@@ -53,23 +55,23 @@ class Resonator: # object is defined in init below
             self.fc = params[3]
             if method == 'DCM':
                 self.method.append("DCM")
-                self.DCMparams = DCMparams_class(params, chi)
+                self.DCMparams = DCMparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'PHI':
                 self.method.append("PHI")
-                self.DCMparams= DCMparams_class(params, chi)
+                self.DCMparams= DCMparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             if method == 'DCM REFLECTION':
                 self.method.append("DCM REFLECTION")
-                self.DCMparams= DCMparams_class(params, chi)
+                self.DCMparams= DCMparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'INV':
                 self.method.append("INV")
-                self.INVparams = INVparams_class(params, chi)
+                self.INVparams = INVparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.INVparams.all,'INV')
             elif method == 'CPZM':
                 self.method.append("CPZM")
-                self.CPZMparams = CPZMparams_class(params, chi)
+                self.CPZMparams = CPZMparams(params, chi)
             else:
                 print('Please input DCM, DCM REFLECTION, PHI, INV or CPZM')
         else:
@@ -78,23 +80,23 @@ class Resonator: # object is defined in init below
 
                 if method == 'DCM':
                     self.method.append("DCM")
-                    self.DCMparams = DCMparams_class(params, chi)
+                    self.DCMparams = DCMparams(params, chi)
 
                 elif method == 'PHI':
                     self.method.append("PHI")
-                    self.DCMparams = DCMparams_class(params, chi)
+                    self.DCMparams = DCMparams(params, chi)
 
                 elif method == 'DCM REFLECTION':
                     self.method.append("DCM REFLECTION")
-                    self.DCMparams = DCMparams_class(params, chi)
+                    self.DCMparams = DCMparams(params, chi)
 
                 elif method == 'INV':
                     self.method.append("INV")
-                    self.INVparams = INVparams_class(params, chi)
+                    self.INVparams = INVparams(params, chi)
 
                 elif method == 'CPZM':
                     self.method.append("CPZM")
-                    self.CPZMparams = CPZMparams_class(params, chi)
+                    self.CPZMparams = CPZMparams(params, chi)
             else:
                 print("repeated load parameter")
 
@@ -113,15 +115,15 @@ class Resonator: # object is defined in init below
             print(self.name + ' changed params')
             self.fc = params[3]
             if method == 'DCM REFLECTION':
-                self.DCMparams= DCMparams_class(params, chi)
+                self.DCMparams= DCMparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'INV':
 
-                self.INVparams = INVparams_class(params, chi)
+                self.INVparams = INVparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.INVparams.all,'INV')
             elif method == 'CPZM':
                 self.method.append("CPZM")
-                self.CPZMparams = CPZMparams_class(params, chi)
+                self.CPZMparams = CPZMparams(params, chi)
         else:
             print('no')
 
@@ -147,7 +149,7 @@ class Resonator: # object is defined in init below
 
     def fit(self,**kwargs):
         #define method
-        method_default = Fit_Method("INV")
+        method_default = FitMethod("INV")
         for key, value in kwargs.items():
             if key == 'MC_iteration':
                 method_default.MC_iteration = value
@@ -207,7 +209,8 @@ class Resonator: # object is defined in init below
         return DCM_list,INV_list,method_default
 
 
-class DCMparams_class(object): # DCM fitting results
+class DCMparams(object): # DCM fitting results
+    #TODO(mutus) change these to attr.dataclasses
     def __init__(self,params,chi):
         self.Qc = params[2]
         self.Q = params[1]
@@ -222,7 +225,8 @@ class DCMparams_class(object): # DCM fitting results
         self.theta = params[5]
         self.all = params
 
-class INVparams_class(object): # INV fitting results
+class INVparams(object): # INV fitting results
+    #TODO(mutus) change these to attr.dataclasses
     def __init__(self,params,chi):
         self.Qc = params[2]
         self.Qi = params[1]
@@ -236,7 +240,8 @@ class INVparams_class(object): # INV fitting results
         self.all = params
 
 
-class CPZMparams_class(object):
+class CPZMparams(object):
+    #TODO(mutus) change these to attr.dataclasses
     def __init__(self,params,chi):
         self.Qc = params[2]
         self.Qi = params[1]
@@ -244,7 +249,7 @@ class CPZMparams_class(object):
         self.chi = chi
         self.fc = params[3]
 
-class Fit_Method(object):
+class FitMethod(object):
     """
     method: str
             "DCM" or 'INV' or 'CPZM'
@@ -283,10 +288,17 @@ class Fit_Method(object):
     vary: None or list of 6 booleans
           vary parameter in least square fit (which parameters change = true)
 """
-    def __init__(self, method,MC_iteration = 5, MC_rounds=100,\
-                 MC_weight = 'no',MC_weightvalue = 2,\
-                 MC_fix = ['Amp','w1','theta'],MC_step_const= 0.6,\
-                 find_circle = True,manual_init=None,vary = None):
+    def __init__(self,
+                 method: str,
+                 MC_iteration: int = 5,
+                 MC_rounds: int = 100,
+                 MC_weight: str = 'no',
+                 MC_weightvalue: int = 2,
+                 MC_fix: list = ['Amp','w1','theta'],
+                 MC_step_const: float = 0.6,
+                 find_circle: bool = True,
+                 manual_init: any =None,
+                 vary: bool = None):
         assert method in ['DCM','DCM REFLECTION','PHI','INV','CPZM'],"Wrong Method, please input:PHI, DCM, INV or CPZM"
         assert (manual_init == None) or (type(manual_init)==list and len(manual_init)==4),'Wrong manual_init, None or len = 6'
         self.method = method
