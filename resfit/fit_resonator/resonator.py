@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 from matplotlib import pyplot as plt
 
-from resfit.fit_resonator.fit_functions import Cavity_DCM, Cavity_DCM_REFLECTION, Cavity_inverse,Cavity_CPZM
+from resfit.fit_resonator import fit_functions
 
 
 class Resonator: # object is defined in init below
@@ -303,15 +303,15 @@ class FitMethod(object):
         assert (manual_init == None) or (type(manual_init)==list and len(manual_init)==4),'Wrong manual_init, None or len = 6'
         self.method = method
         if method == 'DCM':
-            self.func = Cavity_DCM
+            self.func = fit_functions.Cavity_DCM
         elif method == 'DCM REFLECTION':
-            self.func = Cavity_DCM_REFLECTION
+            self.func = fit_functions.Cavity_DCM_REFLECTION
         elif method == 'PHI':
-            self.func = Cavity_DCM
+            self.func = fit_functions.Cavity_DCM
         elif method == 'INV':
-            self.func = Cavity_inverse
+            self.func = fit_functions.Cavity_inverse
         elif method == 'CPZM':
-            self.func = Cavity_CPZM
+            self.func = fit_functions.Cavity_CPZM
         self.MC_rounds = MC_rounds
         self.MC_iteration = MC_iteration
         self.MC_weight = MC_weight
@@ -322,7 +322,7 @@ class FitMethod(object):
         self.manual_init = manual_init
         self.vary =  vary if vary is not None else [True]*6
 
-    def change_method(self,method):
+    def change_method(self, method):
         assert method in ['DCM','DCM REFLECTION','INV','CPZM'],"Wrong Method, DCM,INV "
         if self.method == method:
             print("Fit method does not change")
@@ -330,12 +330,12 @@ class FitMethod(object):
             self.method = method
 
             if method == 'DCM':
-                self.func = Cavity_DCM
+                self.func = fit_functions.Cavity_DCM
             if method == 'PHI':
-                self.func = Cavity_DCM
+                self.func = fit_functions.Cavity_DCM
             elif method == 'DCM REFLECTION':
-                self.func = Cavity_DCM_REFLECTION
+                self.func = fit_functions.Cavity_DCM_REFLECTION
             elif method == 'INV':
-                self.func = Cavity_inverse
+                self.func = fit_functions.Cavity_inverse
             elif method == 'CPZM':
-                self.func = Cavity_CPZM
+                self.func = fit_functions.Cavity_CPZM

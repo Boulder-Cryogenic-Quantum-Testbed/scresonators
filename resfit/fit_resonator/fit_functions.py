@@ -1,5 +1,7 @@
 """Analytic fit functions"""
 
+#TODO(mutus) create an enum for all the fit models.
+
 import numpy as np
 
 def Cavity_DCM(x, Q, Qc, w1,phi):
