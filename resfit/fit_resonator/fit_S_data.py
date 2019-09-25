@@ -20,6 +20,7 @@ from scipy import stats
 import time
 import sys
 import os
+import attr
 
 from scipy.interpolate import interp1d
 
@@ -677,9 +678,58 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
     return parameter,stop_MC, error
 ####################################################################
 
+@attr.dataclass(frozen=True)
+class VNASweep:
+    """A container to hold data from a vna frequency sweep."""
+    freqs: np.ndarray
+    amps: np.ndarray
+    phases: np.ndarray
+    def linear_amps(self)->np.ndarray:
+        """Converts dB to linear units."""
+        return 10**(self.amps/20)
+
+@attr.dataclass(frozen=True)
+class NormalizedData:
+    """Container for normalized data"""
+    freqs: np.ndarray
+    complex_s21: np.ndarray
+
+def normalize_data(data: VNASweep,
+                   background: VNASweep = None)->NormalizedData:
+    """Normalize and exponentiate data.
+
+    Also performs background subtraction if applicable.
+
+    Args:
+        freq: Frequencies of scan. Units of GHz.
+        amplitude: Amplitude data from vna, units of dB
+        phase: Phase data from vna, in radians.
+        background (optional): 3 column array, frequencies, amplitudes and
+          phase.
+
+    Returns:
+        Normalized data complex S21.
+    """
+
+    xdata = data.freqs  ## frequency in GHz
+    linear_amps = data.linear_amps()  ## converts decibals to linear
+    phases = data.phases  ## phase in radians
+    ydata = np.multiply(linear_amps, np.exp(1j * phases))
+
+    if background:
+        y1bg = background.linear_amps()  ## converts decibals to linear
+        y2bg = background.phases  ## phase in radians
+
+        amps_subtracted = np.divide(linear_amps, y1bg)
+        phases_subtracted = np.subtract(phases, y2bg)
+        ydata = np.multiply(amps_subtracted, np.exp(1j * phases_subtracted))
+
+    normed_data = NormalizedData(freqs=xdata, complex_s21=ydata)
+    return normed_data
+
+
 def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
 
-    #####read in data from file#####
     try:
         data = np.genfromtxt(filepath, delimiter = ",")
     except:
