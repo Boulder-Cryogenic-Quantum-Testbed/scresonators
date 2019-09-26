@@ -297,7 +297,7 @@ class FitMethod(object):
                  MC_fix: list = ['Amp','w1','theta'],
                  MC_step_const: float = 0.6,
                  find_circle: bool = True,
-                 manual_init: fit_functions.model_params=None,
+                 manual_init: fit_functions.ModelParams=None,
                  vary: bool = None):
         self.method = method
         if method.name == 'DCM':
