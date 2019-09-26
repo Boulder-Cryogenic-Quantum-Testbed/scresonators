@@ -679,13 +679,13 @@ class VNASweep:
         return 10**(self.amps/20)
 
 @attr.dataclass(frozen=True)
-class NormalizedData:
+class ComplexData:
     """Container for normalized data"""
     freqs: np.ndarray
     complex_s21: np.ndarray
 
 def normalize_data(data: VNASweep,
-                   background: VNASweep = None)->NormalizedData:
+                   background: VNASweep = None)->ComplexData:
     """Normalize and exponentiate data.
 
     Also performs background subtraction if applicable.
@@ -715,9 +715,46 @@ def normalize_data(data: VNASweep,
         complex_data = np.multiply(amps_subtracted,
                                    np.exp(1j * phases_subtracted))
 
-    normed_data = NormalizedData(freqs=xdata, complex_s21=complex_data)
-    return normed_data
+    complex_data = ComplexData(freqs=xdata, complex_s21=complex_data)
+    return complex_data
 
+def preprocess(cplx_data: ComplexData, normalize: int)->ComplexData:
+    """Preprocess data by removing cable delay and normalizing S21.
+
+    Args:
+        cplx_data: Complex data, frequency vs. A*exp(j*phi)
+        normalize: Number of at beginning and end of trace for normalization.
+
+    Returns:
+        Data with cable delay removed and normalized amplitudes.
+    """
+
+    x_initial = cplx_data.freqs
+    y_initial = cplx_data.complex_s21
+
+    if normalize * 2 > len(y_initial):
+        raise ValueError(
+            'Not enough points to normalize, please lower value of normalize variable or take more points near resonance')
+    
+    # normalize phase of S21 using linear fit
+    slope, intercept, r_value, p_value, std_err = stats.linregress(
+        np.append(x_initial[0:10], x_initial[-10:]),
+        np.append(np.angle(y_initial[0:normalize]),
+                  np.angle(y_initial[-normalize:])))
+    angle = np.subtract(np.angle(y_initial), slope * x_initial)  # remove cable delay
+    angle = np.subtract(angle, intercept)  # rotate off resonant point to (1,0i) in complex plane
+
+    # normalize magnitude of S21 using linear fit
+    y_db = np.log10(np.abs(y_initial)) * 20
+    slope2, intercept2, r_value2, p_value2, std_err2 = stats.linregress(
+        np.append(x_initial[0:normalize], x_initial[-normalize:]),
+        np.append(y_db[0:normalize], y_db[-normalize:]))
+    magnitude = np.subtract(y_db, slope2 * x_initial + intercept2)
+    magnitude = 10 ** (magnitude / 20)
+
+    y_raw = np.multiply(magnitude, np.exp(1j * angle))
+    preped_data = ComplexData(x_initial, y_raw)
+    return preped_data
 
 def Fit_Resonator(filename,data_array,Method,normalize,background = None):
 
@@ -738,43 +775,11 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
     # output_path = dir + '/' + output + '/'
     # os.mkdir(output_path)
     print("Loaded the data!")
-    try:
-        xdata = normed_data.freqs
-        ydata = normed_data.complex_s21
-        resonator = Resonator(xdata, ydata, name = filename)
-    except:
-        print("Problem loading resonator. Please make sure the resonator class has correct frequency values and S21 values")
-        quit()
 
-    ##### Data Preprocessing. Get rid of cable delay and normalize phase/magnitude of S21  ######
-    x_initial = resonator.freq
-    y_initial = resonator.S21
-
-    # plot(np.real(y_initial),np.imag(y_initial),"Normalize_1",output_path)
-
-    if normalize*2 > len(y_initial):
-        print("Not enough points to normalize, please lower value of normalize variable or take more points near resonance")
-        quit()
-    #normalize phase of S21 using linear fit
-    slope, intercept, r_value, p_value, std_err = stats.linregress(np.append(x_initial[0:10],x_initial[-10:]),np.append(np.angle(y_initial[0:normalize]),np.angle(y_initial[-normalize:])))
-    angle = np.subtract(np.angle(y_initial),slope*x_initial) #remove cable delay
-    y_test = np.multiply(np.abs(y_initial),np.exp(1j*angle))
-    # plot(np.real(y_test),np.imag(y_test),"Normalize_2",output_path)
-
-    angle = np.subtract(angle,intercept) #rotate off resonant point to (1,0i) in complex plane
-    y_test = np.multiply(np.abs(y_initial),np.exp(1j*angle))
-    # plot(np.real(y_test),np.imag(y_test),"Normalize_3",output_path)
-
-    #normalize magnitude of S21 using linear fit
-    y_db = np.log10(np.abs(y_initial))*20
-    slope2, intercept2, r_value2, p_value2, std_err2 = stats.linregress(np.append(x_initial[0:normalize],x_initial[-normalize:]),np.append(y_db[0:normalize],y_db[-normalize:]))
-    magnitude = np.subtract(y_db,slope2*x_initial+intercept2)
-    magnitude = 10**(magnitude/20)
-
-    y_raw = np.multiply(magnitude,np.exp(1j*angle))
-    # plot(np.real(y_raw),np.imag(y_raw),"Normalize_4",output_path)
-
-    resonator.S21 = y_raw
+    prepped_data = preprocess(normed_data, normalize=normalize)
+    resonator = Resonator(prepped_data.freqs,
+                          prepped_data.complex_s21,
+                          name=filename)
 
 
 ## Init function variables
