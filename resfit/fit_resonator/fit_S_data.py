@@ -711,20 +711,21 @@ def normalize_data(data: VNASweep,
         Normalized data complex S21.
     """
 
-    xdata = data.freqs  ## frequency in GHz
-    linear_amps = data.linear_amps()  ## converts decibals to linear
-    phases = data.phases  ## phase in radians
-    ydata = np.multiply(linear_amps, np.exp(1j * phases))
+    xdata = data.freqs
+    linear_amps = data.linear_amps()
+    phases = data.phases
+    complex_data = np.multiply(linear_amps, np.exp(1j * phases))
 
     if background:
-        y1bg = background.linear_amps()  ## converts decibals to linear
-        y2bg = background.phases  ## phase in radians
+        amps_background = background.linear_amps()
+        phases_background = background.phases
 
-        amps_subtracted = np.divide(linear_amps, y1bg)
-        phases_subtracted = np.subtract(phases, y2bg)
-        ydata = np.multiply(amps_subtracted, np.exp(1j * phases_subtracted))
+        amps_subtracted = np.divide(linear_amps, amps_background)
+        phases_subtracted = np.subtract(phases, phases_background)
+        complex_data = np.multiply(amps_subtracted,
+                                   np.exp(1j * phases_subtracted))
 
-    normed_data = NormalizedData(freqs=xdata, complex_s21=ydata)
+    normed_data = NormalizedData(freqs=xdata, complex_s21=complex_data)
     return normed_data
 
 
@@ -736,10 +737,11 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         print("File "+filename+" not found.")
         quit()
     try:
-        xdata = data.T[0]           ## frequency in GHz
-        y1data = 10**(data.T[1]/20) ## converts decibals to linear
-        y2data = data.T[2]              ## phase in radians
-        ydata = np.multiply(y1data,np.exp(1j*y2data))
+        data = VNASweep(freqs=data.T[0],
+                        amps=data.T[1],
+                        phases=data.T[2])
+
+        ydata = normalize_data(data, background=background)
     except:
         print("Data not able to be read")
         quit()
@@ -750,30 +752,8 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
     output_path = dir + '/' + output + '/'
     os.mkdir(output_path)
 
-    #remove user background file if present
     try:
-        if background != None:
-            databg = np.genfromtxt(background, delimiter = ",")
-            xbg = databg.T[0]           ## frequency in GHz
-            y1bg = 10**(databg.T[1]/20) ## converts decibals to linear
-            y2bg = databg.T[2]          ## phase in radians
-            ybg = np.multiply(y1bg,np.exp(1j*y2bg))
-
-            fmag = interp1d(xbg, y1bg, kind='cubic')
-            fang = interp1d(xbg, y2bg, kind='cubic')
-
-            plot2(xdata,y1data,xbg,y1bg,"VS_mag",output_path)
-            plot2(xdata,y2data,xbg,y2bg,"VS_ang",output_path)
-
-            y1data = np.divide(y1data,y1bg)
-            y2data = np.subtract(y2data,y2bg)
-
-            ydata = np.multiply(y1data,np.exp(1j*y2data))
-    except:
-        print("Background file unable to be loaded, running code without user background removal")
-
-    try:
-        resonator = Resonator.resonator(xdata, ydata, name = filename)
+        resonator = Resonator(xdata, ydata, name = filename)
     except:
         print("Problem loading resonator. Please make sure the resonator class has correct frequency values and S21 values")
         quit()
