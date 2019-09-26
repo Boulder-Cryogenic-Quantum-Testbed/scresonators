@@ -1,8 +1,23 @@
 """Analytic fit functions"""
-
-#TODO(mutus) create an enum for all the fit models.
+import attr
+import enum
 
 import numpy as np
+
+@attr.dataclass
+class ModelParams:
+    """All your model parameters defined with this."""
+    Qi: float
+    Qc: float
+    f_res: float
+    phi: float
+
+class FittingMethod(enum.Enum):
+    DCM = 1
+    DCM_REFLECTION = 2
+    PHI = 3
+    INV = 4
+    CPZM = 5
 
 def Cavity_DCM(x, Q, Qc, w1,phi):
     #DCM fit function

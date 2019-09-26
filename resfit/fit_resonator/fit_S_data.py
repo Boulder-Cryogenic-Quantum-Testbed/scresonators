@@ -668,6 +668,7 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
     return parameter,stop_MC, error
 ####################################################################
 
+
 @attr.dataclass(frozen=True)
 class VNASweep:
     """A container to hold data from a vna frequency sweep."""
@@ -735,7 +736,7 @@ def preprocess(cplx_data: ComplexData, normalize: int)->ComplexData:
     if normalize * 2 > len(y_initial):
         raise ValueError(
             'Not enough points to normalize, please lower value of normalize variable or take more points near resonance')
-    
+
     # normalize phase of S21 using linear fit
     slope, intercept, r_value, p_value, std_err = stats.linregress(
         np.append(x_initial[0:10], x_initial[-10:]),
@@ -782,7 +783,7 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
                           name=filename)
 
 
-## Init function variables
+    ## Init function variables
     manual_init = Method.manual_init
     find_circle = Method.find_circle
     vary = Method.vary
@@ -794,13 +795,12 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
     x_raw = resonator.freq
     y_raw = resonator.S21
 
-##### Step one. Find initial guess if not specified and extract part of data close to resonance  #####
+    ##### Step one. Find initial guess if not specified and extract part of data close to resonance  #####
 
     if len(x_raw) < 20:
-        print(">Not enough data points to run code. Please have at least 20 data points.")
-        quit()
+        raise ValueError(">Not enough data points to run code. Please have at least 20 data points.")
 
-    init= [0]*4 #place to store initial guess parameters
+    init = [0]*4 #place to store initial guess parameters
     if manual_init != None: #when user manually initializes a guess initialize the following variables
         try:
             if len(manual_init)==4:
