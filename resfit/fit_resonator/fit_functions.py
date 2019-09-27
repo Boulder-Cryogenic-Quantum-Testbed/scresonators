@@ -11,6 +11,8 @@ class ModelParams:
     Qc: float
     f_res: float
     phi: float
+    Q: float = None
+    Qa: float = None
 
 class FittingMethod(enum.Enum):
     DCM = 1

@@ -21,6 +21,7 @@ import time
 import sys
 import os
 import attr
+from typing import Tuple
 
 from scipy.interpolate import interp1d
 
@@ -43,16 +44,6 @@ p = inflect.engine() # search ordinal
 #####################################################################
 ## Data related
 #####################################################################
-def extract_data(x,y,x1,x2):
-    #return 2 arrays, one for x and one for y where the x array returned is the x data that falls between x1 and x2 and the y array is the y data that matches each index for the x array
-    x_temp = []
-    y_temp = []
-    for i in range(len(x)):
-        if (x[i] >x1 and x[i]<x2):
-            x_temp.append(x[i])
-            y_temp.append(y[i])
-    return np.asarray(x_temp),np.asarray(y_temp)
-#########################################################################
 def convert_params(from_method,params):
     if from_method =='DCM':
         Qc = params[2]/np.cos(params[4])
@@ -599,8 +590,8 @@ def min_one_Cavity_CPZM(parameter, x, data=None):
 
 
 #####################################################################
-def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
-
+def monte_carlo_fit(xdata=None, ydata=None, parameter=None, Method=None):
+    print("Start MCFit")
     try:
         ydata_1stfit = Method.func(xdata, *parameter) #set of S21 data based on initial guess parameters
 
@@ -614,15 +605,15 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
         weighted_ydata_1stfit = np.multiply(weight_array,ydata_1stfit) #array with values (ydata^(-1))*ydata_1stfit if MC_weight='yes' and exact same array as ydata_1stfit otherwise
         error = np.linalg.norm(weighted_ydata - weighted_ydata_1stfit)/len(xdata) # first error #finds magnitude of (weighted_ydata-weighted_ydata_1stfit) and divides by length (average magnitude)
         error_0 = error
+        print("Initial Error: ", error_0)
     except:
-        print(">Failed to initialize MonteCarloFit(), please check parameters")
-        quit()
+        raise Exception(">Failed to initialize MonteCarloFit(), please check parameters")
     ## Fix condition and Monte Carlo Method with random number Generator
 
     counts = 0
     try:
         while counts < Method.MC_rounds: #MC_rounds 100,000 by default
-            counts = counts +1
+            counts = counts + 1
             #generate an array of 4 random numbers between -0.5 and 0.5 in the format [r,r,r,r] where r is each of the random numbers times the step constant
             random = Method.MC_step_const*(np.random.random_sample(len(parameter))-0.5)
            ## Fix parameter on demand
@@ -645,18 +636,19 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
             #if Method.method == 'CPZM':
             #    new_parameter[3] = new_parameter[3]/np.exp(0.1)
             #else:
-            new_parameter[3] = np.mod(new_parameter[3],2*np.pi) # phi from 0 to 2*pi
+            new_parameter[3] = np.mod(new_parameter[3], 2*np.pi) # phi from 0 to 2*pi
 
             ydata_MC = Method.func(xdata, *new_parameter) #new set of data with new parameters
             #check new error with new set of parameters
-            weighted_ydata_MC = np.multiply(weight_array,ydata_MC)
+            weighted_ydata_MC = np.multiply(weight_array, ydata_MC)
             new_error = np.linalg.norm(weighted_ydata_MC - weighted_ydata)/len(xdata)
             if new_error < error:
                 parameter = new_parameter
                 error = new_error
+                print("New Error: ", new_error, counts)
     except:
-        print(">Error in while loop of MonteCarloFit")
-        quit()
+        raise Exception(">Error in while loop of MonteCarloFit")
+
    ## If finally gets better fit then plot ##
     if error < error_0:
         stop_MC = False
@@ -665,7 +657,7 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
             print('>User input parameters getting stuck in local minimum, please input more accurate parameters')
     else:
         stop_MC = True
-    return parameter,stop_MC, error
+    return parameter, stop_MC, error
 ####################################################################
 
 
@@ -757,6 +749,40 @@ def preprocess(cplx_data: ComplexData, normalize: int)->ComplexData:
     preped_data = ComplexData(x_initial, y_raw)
     return preped_data
 
+def extract_near_res(x_raw: np.ndarray,
+                     y_raw: np.ndarray,
+                     f_res: float,
+                     kappa: float,
+                     extract_factor: int=1)->Tuple[np.ndarray, np.ndarray]:
+    """Extracts portions of spectrum of kappa within resonance.
+
+    Args:
+        x_raw: X-values of spectrum to extract from.
+        y_raw: Y-values of spectrum to extract from.
+        f_res: Resonant frequency about which to extract data.
+        kappa: Width about f_res to extract.
+        extract_factor: Multiplier for kappa.
+
+    Returns:
+        Extracted spectrum kappa about f_res.
+    """
+    xstart = f_res - extract_factor/2*kappa #starting resonance to add to fit
+    xend = f_res + extract_factor/2*kappa #final resonance to add to fit
+    x_temp = []
+    y_temp = []
+    # xdata is new set of data to be fit, within extract_factor times the bandwidth, ydata is S21 data to match indices with xdata
+    for i, freq in enumerate(x_raw):
+        if (freq > xstart and freq< xend):
+            x_temp.append(freq)
+            y_temp.append(y_raw[i])
+
+    if len(y_temp) < 5:
+        print("Less than 5 Data points to fit data, not enough points near resonance, attempting to fit anyway")
+    if len(x_temp) < 1:
+        raise Exception(">Failed to extract data from designated bandwidth")
+
+    return np.asarray(x_temp), np.asarray(y_temp)
+
 def Fit_Resonator(filename,data_array,Method,normalize,background = None):
 
 
@@ -800,51 +826,35 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
     if len(x_raw) < 20:
         raise ValueError(">Not enough data points to run code. Please have at least 20 data points.")
 
-    init = [0]*4 #place to store initial guess parameters
-    if manual_init != None: #when user manually initializes a guess initialize the following variables
+    if manual_init: #when user manually initializes a guess initialize the following variables
         try:
-            if len(manual_init)==4:
+            init = manual_init
+            if Method.method.name in ['DCM', "DCM_REFLECTION" ,'PHI']:
+                # If method is DCM or PHI, set parameter Q to 1/(1/Qi + 1/Qc) aka. convert from Qi
+                init.Q = 1/(1/init.Qi + 1/init.Qc)
+            elif Method.method.name == 'CPZM':
+                # @mullinski please comment on this.
+                init.Qa = init.Qi/init.f_res
+                init.Qc = init.Qi/init.Qc
+                init.f_res = init.Qi/init.phi
 
-                if Method.method == 'DCM' or Method.method == "DCM REFLECTION" or Method.method == 'PHI': #If method is DCM or PHI, set parameter 1 equal to Q which is 1/(1/Qi + 1/Qc) aka. convert from Qi
-                    manual_init[0] = 1/(1/manual_init[0] + 1/manual_init[1])
-                elif Method.method == 'CPZM':
-                    manual_init[1] = manual_init[0]/manual_init[1]
-                    manual_init[3] = manual_init[0]/manual_init[3]
-
-                init = manual_init
-                freq = init[2]
-                kappa = init[2]/(init[0]) #bandwidth for frequency values
-                x_c,y_c,r = 0,0,0 #set initial guess circle variables to zero so circle does not appear in plots
-                print("Manual initial guess")
-            else:
-                print(manual_init)
-                print(">Manual input wrong format, please follow the correct format of 4 parameters in an array")
-                quit()
+            freq = init.f_res
+            kappa = init.f_res/(init.Qi) #bandwidth for frequency values
+            x_c, y_c, r = 0,0,0 #set initial guess circle variables to zero so circle does not appear in plots
+            print("Manual initial guess")
         except:
-            print(">Problem loading manually initialized parameters, please make sure parameters are all numbers")
-            quit()
-    else: #generate initial guess parameters from data when user does not manually initialze guess
-        init,x_c,y_c,r = Find_initial_guess(xdata,y1data,y2data,Method) #gets initial guess for parameters
+            raise Exception(">Problem loading manually initialized parameters, please make sure parameters are all numbers")
+
+    else: # TODO(mutus) Take care of case with no initial guess.
+        #generate initial guess parameters from data when user does not manually initialze guess
+        init, x_c, y_c, r = Find_initial_guess(xdata, y1data, y2data, Method) #gets initial guess for parameters
         freq = init[2] #resonance frequency
         kappa = init[2]/init[0] #f_0/Qi is kappa
         if Method.method == 'CPZM':
             kappa = init[2]*init[1]/init[0]
 
-    ## Extract data near resonate frequency to fit
-    try:
-        extract_factor = 1
-        xstart = freq - extract_factor/2*kappa #starting resonance to add to fit
-        xend = freq + extract_factor/2*kappa #final resonance to add to fit
-        xdata,ydata = extract_data(x_raw,y_raw,xstart,xend) #xdata is new set of data to be fit, within extract_factor times the bandwidth, ydata is S21 data to match indices with xdata
-        if len(ydata) < 5:
-            print("Less than 5 Data points to fit data, not enough points near resonance, attempting to fit anyway")
-    except:
-        print(">Failed to extract data from designated bandwidth")
-        if manual_init != None:
-            print(">Please choose a different set of manual init parameters")
-        else:
-            print(">Please manually init parameters")
-        quit()
+    ## Extract data near resonant frequency to fit
+    xdata, ydata = extract_near_res(x_raw, y_raw, freq, kappa)
 
     if Method.method == 'INV':
         ydata = ydata**-1 ## Inverse S21
@@ -856,16 +866,16 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
     #define parameters from initial guess for John Martinis and MonteCarloFit
     try:
         params = lmfit.Parameters() #initialize parameter class, min is lower bound, max is upper bound, vary = boolean to determine if parameter varies during fit
-        if Method.method == 'DCM' or Method.method == 'DCM REFLECTION' or Method.method == 'PHI':
-            params.add('Q', value=init[0],vary = vary[0],min = init[0]*0.5, max = init[0]*1.5)
-        elif Method.method == 'INV' or Method.method == 'CPZM':
-            params.add('Qi', value=init[0],vary = vary[0],min = init[0]*0.8, max = init[0]*1.2)
-        params.add('Qc', value=init[1],vary = vary[1],min = init[1]*0.8, max = init[1]*1.2)
-        params.add('w1', value=init[2],vary = vary[2],min = init[2]*0.9, max = init[2]*1.1)
+        if Method.method.name in ['DCM', 'DCM_REFLECTION', 'PHI']:
+            params.add('Q', value=init.Q, vary = vary[0], min = init.Q*0.5, max = init.Q*1.5)
+        elif Method.method.name in ['INV', 'CPZM']:
+            params.add('Qi', value=init.Qi, vary = vary[0], min = init.Qi*0.8, max = init.Qi*1.2)
+        params.add('Qc', value=init.Qc, vary = vary[1], min = init.Qc*0.8, max = init.Qc*1.2)
+        params.add('w1', value=init.f_res, vary = vary[2], min = init.f_res*0.9, max = init.f_res*1.1)
         if Method.method == 'CPZM':
-            params.add('Qa', value=init[3], vary = vary[3] , min = init[3]*0.9,max = init[3]*1.1)
+            params.add('Qa', value=init.Qa, vary = vary[3] , min=init.Qa*0.9, max=init.Qa*1.1)
         else:
-            params.add('phi', value=init[3], vary = vary[3] , min = init[3]*0.9,max = init[3]*1.1)
+            params.add('phi', value=init.phi, vary = vary[3] , min = init.phi*0.9, max=init.phi*1.1)
         print("Parameters: ", params)
     except:
         raise ValueError(">Failed to define parameters, please make sure parameters are of correct format")
@@ -876,17 +886,19 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
     stop_MC = False
     continue_condition = (MC_counts < Method.MC_iteration) and (stop_MC == False) #MC_iteration equals 5 by default
     output_params = []
+    print("About to do some runs on data len: ", len(xdata), len(ydata))
 
     while continue_condition: #will run exactly 5 times unless error encountered
         ## Fit data to least squares fit for respective fit type
         try:
-            if Method.method == 'DCM' or Method.method == 'PHI':
+            if Method.method.name in ['DCM' ,'PHI']:
+                print("I am the DCM or PHI: ", Method.method.name)
                 minner = Minimizer(min_one_Cavity_dip, params, fcn_args=(xdata, ydata))
-            elif Method.method == 'DCM REFLECTION':
+            elif Method.method.name == 'DCM REFLECTION':
                 minner = Minimizer(min_one_Cavity_DCM_REFLECTION, params, fcn_args=(xdata, ydata))
-            elif Method.method == 'INV':
+            elif Method.method.name == 'INV':
                 minner = Minimizer(min_one_Cavity_inverse, params, fcn_args=(xdata, ydata))
-            elif Method.method == 'CPZM':
+            elif Method.method.name == 'CPZM':
                 minner = Minimizer(min_one_Cavity_CPZM, params, fcn_args=(xdata, ydata))
 
             result = minner.minimize(method = 'least_squares')
@@ -899,8 +911,8 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
 
     #####==== Try Monte Carlo Fit Inverse S21 ====####
 
-        MC_param,stop_MC, error_MC = \
-        MonteCarloFit(xdata,ydata,fit_params,Method) #run a Monte Carlo fit on just minimized data to test if parameters trapped in local minimum
+        MC_param, stop_MC, error_MC = \
+        monte_carlo_fit(xdata, ydata, fit_params, Method) #run a Monte Carlo fit on just minimized data to test if parameters trapped in local minimum
         error.append(error_MC)
         if error[MC_counts] < error_MC:
             stop_MC = True
@@ -916,7 +928,6 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
     error = min(error)
 
     #Check that bandwidth is not equal to zero
-    print("XDATA: ", xdata)
     if len(xdata) == 0:
         if manual_init != None:
             print(">Length of extracted data equals zero thus bandwidth is incorrect, most likely due to initial parameters being too far off")

@@ -51,3 +51,21 @@ def test_preprocess():
     np.testing.assert_array_almost_equal(np.ones(100),
                                          np.abs(prepro.complex_s21))
 
+def test_extract_near_res():
+    amps = np.linspace(5., 5., 100)
+    freqs = np.arange(4, 5, 0.01)
+    f_res = 4.55
+    kappa = 0.3
+    ex_x, ex_y = fsd.extract_near_res(freqs, amps, f_res, kappa)
+    near_x = np.array([4.41, 4.42, 4.43, 4.44, 4.45, 4.46, 4.47, 4.48, 4.49, 4.5 , 4.51,
+        4.52, 4.53, 4.54, 4.55, 4.56, 4.57, 4.58, 4.59, 4.6 , 4.61, 4.62,
+        4.63, 4.64, 4.65, 4.66, 4.67, 4.68, 4.69, 4.7 ])
+    near_y = np.array([5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5.,
+        5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5., 5.])
+    np.testing.assert_array_almost_equal(ex_x, near_x)
+    np.testing.assert_array_almost_equal(ex_y, near_y)
+    with pytest.raises(Exception):
+        f_res = 3.55
+        fsd.extract_near_res(freqs, amps, f_res, kappa)
+
+
