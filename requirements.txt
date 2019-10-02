@@ -1,3 +1,4 @@
+dataclasses
 inflect==2.1.*
 lmfit==0.9.*
 matplotlib>=3.0.*
