@@ -277,7 +277,7 @@ def Find_initial_guess(x,y1,y2,Method,output_path):
             Qi = (1/Q-1/Qc)**-1
             Qic = Qi/Qc
             Qia = Qi/Qa
-            init_guess = [Qi,Qic,f_c,Qia]
+            init_guess = [Qi,Qic,f_c,Qia,kappa]
         except:
             print(">Failed to find initial guess for method CPZM. Please manually initialize a guess")
             quit()
@@ -294,7 +294,7 @@ def find_nearest(array,value):
 
 ###########################################################
    ## PLOT REAL and IMAG figure
-def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Method,func,error,figurename,x_c,y_c,radius,output_path,extract_factor = None,title = "Fit",manual_params = None):
+def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Method,func,error,figurename,x_c,y_c,radius,output_path,conf_array,extract_factor = None,title = "Fit",manual_params = None):
     plt.close(figurename) #close plot if still open
     #generate an even distribution of 5000 frequency points between the min and max of x for graphing purposes
     if extract_factor == None:
@@ -445,22 +445,52 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
         if params != []:
             if func == Cavity_inverse:
                 if params[0] < 0:
-                    print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
-                textstr = r'$Q_c^*$ = '+'%s' % float('{0:.5g}'.format(params[1]))+ \
-                '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(params[0]))+\
-                '\n' + r'$f_c$ = '+'%s' % float('{0:.5g}'.format(params[2]))+' GHz'+\
-                '\n' + r'$\phi$ = '+'%s' % float('{0:.5g}'.format(params[3]))+' radians'+\
-                '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
-                plt.gcf().text(0.7, 0.1, textstr, fontsize=18)
+                    print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. For reflection type geometry, please use DCM REFLECTION.")
+                if conf_array[0] > 10**-10 and conf_array[0] != float('inf'):
+                    Qi = params[0]-params[0]%(10**int(np.log10(conf_array[0])-1))
+                else:
+                    Qi = params[0]
+                if conf_array[1] > 10**-10 and conf_array[1] != float('inf'):
+                    Qc = params[1]-params[1]%(10**int(np.log10(conf_array[1])-1))
+                else:
+                    Qc = params[1]
+                if conf_array[2] > 10**-10 and conf_array[2] != float('inf'):
+                    phi = params[3]-params[3]%(10**int(np.log10(conf_array[2])-1))
+                else:
+                    phi = params[3]
+                if conf_array[3] > 10**-10 and conf_array[3] != float('inf'):
+                    f_c = params[2]-params[2]%(10**int(np.log10(conf_array[3])-1))
+                else:
+                    f_c = params[2]
+                textstr = r'$Q_i$ = '+'%s' % float('{0:.10g}'.format(Qi))+ r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[0]))+\
+                '\n' + r'$Q_c^*$ = '+'%s' % float('{0:.10g}'.format(Qc))+ r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[1]))+\
+                '\n' + r'$\phi$ = '+'%s' % float('{0:.10g}'.format(phi))+ r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[2]))+' radians'+\
+                '\n' + r'$f_c$ = '+'%s' % float('{0:.10g}'.format(f_c))+ r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[3]))+' GHz'
+                plt.gcf().text(0.7, 0.11, textstr, fontsize=18)
             elif func == Cavity_CPZM:
                 if params[0] < 0:
-                    print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
-                textstr = r'$Q_c$ = '+'%s' % float('{0:.5g}'.format(params[0]*params[1]**-1)) + \
-                '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(params[0]))+\
-                '\n' + r'$Q_a$ = '+'%s' % float('{0:.5g}'.format(params[0]*params[3]**-1))+\
-                '\n' + r'$f_c$ = '+'%s' % float('{0:.5g}'.format(params[2]))+' GHz'+\
-                '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
-                plt.gcf().text(0.7, 0.1, textstr, fontsize=18)
+                    print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. For reflection type geometry, please use DCM REFLECTION.")
+                if conf_array[0] > 10**-10 and conf_array[0] != float('inf'):
+                    Qi = params[0]-params[0]%(10**int(np.log10(conf_array[0])-1))
+                else:
+                    Qi = params[0]
+                if conf_array[1] > 10**-10 and conf_array[1] != float('inf'):
+                    Qc = (params[0]*params[1]**-1)-(params[0]*params[1]**-1)%(10**int(np.log10(conf_array[1])-1))
+                else:
+                    Qc = (params[0]*params[1]**-1)
+                if conf_array[2] > 10**-10 and conf_array[2] != float('inf'):
+                    Qa = (params[0]*params[3]**-1)-(params[0]*params[3]**-1)%(10**int(np.log10(conf_array[2])-1))
+                else:
+                    Qa = (params[0]*params[3]**-1)
+                if conf_array[3] > 10**-10 and conf_array[3] != float('inf'):
+                    f_c = params[2]-params[2]%(10**int(np.log10(conf_array[3])-1))
+                else:
+                    f_c = params[2]
+                textstr = r'$Q_i$ = '+'%s' % float('{0:.10g}'.format(Qi))+ r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[0]))+\
+                '\n' + r'$Q_c$ = '+'%s' % float('{0:.10g}'.format(Qc))+ r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[1]))+\
+                '\n' + r'$Q_a$ = '+'%s' % float('{0:.10g}'.format(Qa))+ r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[2]))+\
+                '\n' + r'$f_c$ = '+'%s' % float('{0:.10g}'.format(f_c))+ r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[3]))+' GHz'
+                plt.gcf().text(0.7, 0.11, textstr, fontsize=18)
             else:
                 Qc = params[1]/np.exp(1j*params[3])
                 if Method.method == 'PHI':
@@ -468,50 +498,100 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
                 else:
                     Qi = (params[0]**-1-np.real(Qc**-1))**-1
 
-                if Qi < 0:
+                if Qi < 0 and Method.method != 'DCM REFLECTION':
                     print("Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
                 if 1/np.real(1/Qc) < 0:
-                    print("Warning: Real[1/Qc] is less than 0. Calculating Qi anyway")
-                    textstr = 'Q = '+ '%s' % float('{0:.5g}'.format(params[0])) + \
-                    '\n' + r'$Q_c$ = '+'%s' % float('{0:.5g}'.format(params[1])) + \
-                    '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(Qi))+\
-                    '\n' + r'$f_c$ = '+'%s' % float('{0:.5g}'.format(params[2]))+' GHz'+\
-                    '\n' + r'$\phi$ = '+'{0:.5f}'.format(params[3])+' radians'+\
-                    '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
-                    Qc_str = r'1/Re[1/$Q_c$] = ' +'{0:,.5g}'.format(1/np.real(1/Qc))
-                    plt.gcf().text(0.7, 0.25, Qc_str, fontsize=18, color = 'red')
-                    plt.gcf().text(0.7, 0.07, textstr, fontsize=18)
+                    print("Warning: 1/Real[1/Qc] is less than 0. Calculating Qi anyway")
+                    if conf_array[0] > 10**-10 and conf_array[0] != float('inf'):
+                        Q = params[0]-params[0]%(10**int(np.log10(conf_array[0])-1))
+                    else:
+                        Q = params[0]
+                    if conf_array[1] > 10**-10 and conf_array[1] != float('inf'):
+                        Qi = Qi-Qi%(10**int(np.log10(conf_array[1])-1))
+                    if conf_array[2] > 10**-10 and conf_array[2] != float('inf'):
+                        Qc = params[1]-params[1]%(10**int(np.log10(conf_array[2])-1))
+                    else:
+                        Qc = params[1]
+                    if conf_array[3] > 10**-10 and conf_array[3] != float('inf'):
+                        Qc_Re = (1/np.real(1/(params[1]/np.exp(1j*params[3]))))-(1/np.real(1/(params[1]/np.exp(1j*params[3]))))%(10**int(np.log10(conf_array[3])-1))
+                    else:
+                        Qc_Re = (1/np.real(1/(params[1]/np.exp(1j*params[3]))))
+                    if conf_array[4] > 10**-10 and conf_array[4] != float('inf'):
+                        phi = params[3]-params[3]%(10**int(np.log10(conf_array[4])-1))
+                    else:
+                        phi = params[3]
+                    if conf_array[5] > 10**-10 and conf_array[5] != float('inf'):
+                        f_c = params[2]-params[2]%(10**int(np.log10(conf_array[5])-1))
+                    else:
+                        f_c = params[2]
+                    textstr = 'Q = '+ '%s' % float('{0:.10g}'.format(Q)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[0])) + \
+                    '\n' + r'$Q_i$ = '+ '%s' % float('{0:.10g}'.format(Qi)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[1]))+\
+                    '\n' + r'$Q_c$ = '+ '%s' % float('{0:.10g}'.format(Qc)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[2])) + \
+                    '\n' + r'$\phi$ = '+'%s' % float('{0:.10g}'.format(phi)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[4]))+' radians'+\
+                    '\n' + r'$f_c$ = '+'%s' % float('{0:.10g}'.format(f_c)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[5]))+' GHz'
+                    plt.gcf().text(0.7, 0.09, textstr, fontsize=18)
+                    Qc_str = r'1/Re[1/$Q_c$] = ' +'%s' % float('{0:.10g}'.format(Qc_Re)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[3]))
+                    plt.gcf().text(0.7, 0.245, Qc_str, fontsize=18, color = 'red')
+
                 else:
-                    textstr = 'Q = '+ '%s' % float('{0:.5g}'.format(params[0])) + \
-                    '\n' + r'1/Re[1/$Q_c$] = ' +'%s' % float('{0:.5g}'.format(1/np.real(1/Qc))) + \
-                    '\n' + r'$Q_c$ = '+'%s' % float('{0:.5g}'.format(params[1])) + \
-                    '\n' + r'$Q_i$ = '+'%s' % float('{0:.5g}'.format(Qi))+\
-                    '\n' + r'$f_c$ = '+'%s' % float('{0:.6g}'.format(params[2]))+' GHz'+\
-                    '\n' + r'$\phi$ = '+'{0:.5f}'.format(params[3])+' radians'+\
-                    '\n' + r'Error S21 = '+'{0:.10f}'.format(error)
-                    plt.gcf().text(0.7, 0.1, textstr, fontsize=18)
+                    if conf_array[0] > 10**-10 and conf_array[0] != float('inf'):
+                        Q = params[0]-params[0]%(10**int(np.log10(conf_array[0])-1))
+                    else:
+                        Q = params[0]
+                    if conf_array[1] > 10**-10 and conf_array[1] != float('inf'):
+                        Qi = Qi-Qi%(10**int(np.log10(conf_array[1])-1))
+                    if conf_array[2] > 10**-10 and conf_array[2] != float('inf'):
+                        Qc = params[1]-params[1]%(10**int(np.log10(conf_array[2])-1))
+                    else:
+                        Qc = params[1]
+                    if conf_array[3] > 10**-10 and conf_array[3] != float('inf'):
+                        Qc_Re = (1/np.real(1/(params[1]/np.exp(1j*params[3]))))-(1/np.real(1/(params[1]/np.exp(1j*params[3]))))%(10**int(np.log10(conf_array[3])-1))
+                    else:
+                        Qc_Re = (1/np.real(1/(params[1]/np.exp(1j*params[3]))))
+                    if conf_array[4] > 10**-10 and conf_array[4] != float('inf'):
+                        phi = params[3]-params[3]%(10**int(np.log10(conf_array[4])-1))
+                    else:
+                        phi = params[3]
+                    if conf_array[5] > 10**-10 and conf_array[5] != float('inf'):
+                        f_c = params[2]-params[2]%(10**int(np.log10(conf_array[5])-1))
+                    else:
+                        f_c = params[2]
+                    textstr = 'Q = '+ '%s' % float('{0:.10g}'.format(Q)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[0])) + \
+                    '\n' + r'$Q_i$ = '+ '%s' % float('{0:.10g}'.format(Qi)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[1]))+\
+                    '\n' + r'$Q_c$ = '+ '%s' % float('{0:.10g}'.format(Qc)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[2])) + \
+                    '\n' + r'1/Re[1/$Q_c$] = ' +'%s' % float('{0:.10g}'.format(Qc_Re)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[3])) + \
+                    '\n' + r'$\phi$ = '+'%s' % float('{0:.10g}'.format(phi)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[4]))+' radians'+\
+                    '\n' + r'$f_c$ = '+'%s' % float('{0:.10g}'.format(f_c)) + r"$\pm$" + '%s' % float('{0:.1g}'.format(conf_array[5]))+' GHz'
+                    plt.gcf().text(0.7, 0.09, textstr, fontsize=18)
 
             #write to output csv file
-            file = open(output_path + title + "_output.csv","w")
+            title_without_period = ''
+            for i in title: #remove period from title
+                if i != '.':
+                    title_without_period = title_without_period + i
+            file = open(output_path + title_without_period + "_output.csv","w")
             if func == Cavity_inverse:
-                textstr = r'Q_c = '+'{0:01f}'.format(params[1]) + \
-                '\n' + r'Q_i = '+'{0:01f}'.format(params[0])+\
-                '\n' + r'f_c = '+'{0:01f}'.format(params[2])+' GHz'+\
-                '\n' + r'phi = '+'{0:01f}'.format(params[3])+' radians'
+                textstr = r'Qi = '+'%s' % float('{0:.10g}'.format(Qi))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[0]))+\
+                '\n' + r'Qc* = '+'%s' % float('{0:.10g}'.format(Qc))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[1]))+\
+                '\n' + r'phi = '+'%s' % float('{0:.10g}'.format(phi))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[2]))+' radians'+\
+                '\n' + r'fc = '+'%s' % float('{0:.10g}'.format(f_c))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[3]))+' GHz'
             elif func == Cavity_CPZM:
-                textstr = r'Q_c = '+'{0:01f}'.format(params[0]*params[1]**-1) + \
-                '\n' + r'Q_i = '+'{0:01f}'.format(params[0])+\
+                textstr = r'Q_i = '+'{0:01f}'.format(params[0]) + \
+                '\n' + r'Q_c = '+'{0:01f}'.format(params[0]*params[1]**-1)+\
                 '\n' + r'Q_a = '+'{0:01f}'.format(params[0]*params[3]**-1)+\
                 '\n' + r'f_c = '+'{0:01f}'.format(params[2])+' GHz'
+
+                textstr = r'Qi = '+'%s' % float('{0:.10g}'.format(Qi))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[0]))+\
+                '\n' + r'Qc = '+'%s' % float('{0:.10g}'.format(Qc))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[1]))+\
+                '\n' + r'Qa = '+'%s' % float('{0:.10g}'.format(Qa))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[2]))+\
+                '\n' + r'fc = '+'%s' % float('{0:.10g}'.format(f_c))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[3]))+' GHz'
             else:
-                Qc = params[1]/np.exp(1j*params[3])
-                Qi = (params[0]**-1-abs(np.real(Qc**-1)))**-1
-                textstr = 'Q = '+ '{0:01f}'.format(params[0]) + \
-                '\n' + r'1/Re[1/Q_c] = ' +'{0:01f}'.format(1/np.real(1/Qc)) + \
-                '\n' + r'Q_c = '+'{0:01f}'.format(params[1]) + \
-                '\n' + r'Q_i = '+'{0:01f}'.format(Qi)+\
-                '\n' + r'f_c = '+'{0:01f}'.format(params[2])+' GHz'+\
-                '\n' + r'phi = '+'{0:01f}'.format(params[3])+' radians'
+                textstr = 'Q = '+ '%s' % float('{0:.10g}'.format(Q)) + r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[0])) + \
+                '\n' + r'Qi = '+ '%s' % float('{0:.10g}'.format(Qi)) + r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[1]))+\
+                '\n' + r'Qc = '+ '%s' % float('{0:.10g}'.format(Qc)) + r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[2])) + \
+                '\n' + r'1/Re[1/Qc] = ' +'%s' % float('{0:.10g}'.format(Qc_Re)) + r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[3])) + \
+                '\n' + r'phi = '+'%s' % float('{0:.10g}'.format(phi)) + r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[4]))+' radians'+\
+                '\n' + r'fc = '+'%s' % float('{0:.10g}'.format(f_c)) + r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[5]))+' GHz'
         file.write(textstr)
     except:
         print(">Error when trying to write parameters on plot")
@@ -678,13 +758,12 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
             if 'Qa' in Method.MC_fix:
                 random[3] = 0
             ## Generate new parameter to test
-            random[3] = random[3]*0.1
+            if Method.method != 'CPZM':
+                random[3] = random[3]*0.1
             random = np.exp(random) #not really that even of a distribution
             new_parameter = np.multiply(parameter,random)
-            #if Method.method == 'CPZM':
-            #    new_parameter[3] = new_parameter[3]/np.exp(0.1)
-            #else:
-            new_parameter[3] = np.mod(new_parameter[3],2*np.pi) # phi from 0 to 2*pi
+            if Method.method != 'CPZM':
+                new_parameter[3] = np.mod(new_parameter[3],2*np.pi) # phi from 0 to 2*pi
 
             ydata_MC = Method.func(xdata, *new_parameter) #new set of data with new parameters
             #check new error with new set of parameters
@@ -705,6 +784,94 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
     else:
         stop_MC = True
     return parameter,stop_MC, error
+
+####################################################################
+
+## Fit data to least squares fit for respective fit type
+def min_fit(params,xdata,ydata,Method):
+    try:
+        if Method.method == 'DCM' or Method.method == 'PHI':
+            minner = Minimizer(min_one_Cavity_dip, params, fcn_args=(xdata, ydata))
+        elif Method.method == 'DCM REFLECTION':
+            minner = Minimizer(min_one_Cavity_DCM_REFLECTION, params, fcn_args=(xdata, ydata))
+        elif Method.method == 'INV':
+            minner = Minimizer(min_one_Cavity_inverse, params, fcn_args=(xdata, ydata))
+        elif Method.method == 'CPZM':
+            minner = Minimizer(min_one_Cavity_CPZM, params, fcn_args=(xdata, ydata))
+
+        result = minner.minimize(method = 'least_squares')
+
+        fit_params = result.params
+        parameter = fit_params.valuesdict()
+        fit_params = [value for _,value in parameter.items()] #extracts the actual value for each parameter and puts it in the fit_params list
+
+        if Method.method == 'DCM' or Method.method == 'PHI' or Method.method == 'DCM REFLECTION':
+            ci = lmfit.conf_interval(minner, result, p_names=['Q','Qc','phi','w1'], sigmas=[2])
+            #confidence interval for Q
+            Q_conf = max(np.abs(ci['Q'][1][1]-ci['Q'][0][1]),np.abs(ci['Q'][1][1]-ci['Q'][2][1]))
+            #confidence interval for Qi
+            if Method.method == 'PHI':
+                Qi = ((ci['Q'][1][1])**-1 - np.abs(ci['Qc'][1][1]**-1 * np.exp(1j*fit_params[3])))**-1
+                Qi_neg = Qi-((ci['Q'][0][1])**-1 - np.abs(ci['Qc'][2][1]**-1 * np.exp(1j*fit_params[3])))**-1
+                Qi_pos = Qi-((ci['Q'][2][1])**-1 - np.abs(ci['Qc'][0][1]**-1 * np.exp(1j*fit_params[3])))**-1
+            else:
+                Qi = ((ci['Q'][1][1])**-1 - np.real(ci['Qc'][1][1]**-1 * np.exp(1j*fit_params[3])))**-1
+                Qi_neg = Qi-((ci['Q'][0][1])**-1 - np.real(ci['Qc'][2][1]**-1 * np.exp(1j*fit_params[3])))**-1
+                Qi_pos = Qi-((ci['Q'][2][1])**-1 - np.real(ci['Qc'][0][1]**-1 * np.exp(1j*fit_params[3])))**-1
+            Qi_conf = max(np.abs(Qi_neg),np.abs(Qi_pos))
+            #confidence interval for Qc
+            Qc_conf = max(np.abs(ci['Qc'][1][1]-ci['Qc'][0][1]),np.abs(ci['Qc'][1][1]-ci['Qc'][2][1]))
+            #confidence interval for 1/Re[1/Qc]
+            Qc_Re = 1/np.real(np.exp(1j*fit_params[3])/ci['Qc'][1][1])
+            Qc_Re_neg = 1/np.real(np.exp(1j*fit_params[3])/ci['Qc'][0][1])
+            Qc_Re_pos = 1/np.real(np.exp(1j*fit_params[3])/ci['Qc'][2][1])
+            Qc_Re_conf = max(np.abs(Qc_Re-Qc_Re_neg),np.abs(Qc_Re-Qc_Re_pos))
+            #confidence interval for phi
+            phi_neg = ci['phi'][0][1]
+            phi_pos = ci['phi'][2][1]
+            phi_conf = max(np.abs(ci['phi'][1][1]-ci['phi'][0][1]),np.abs(ci['phi'][1][1]-ci['phi'][2][1]))
+            #confidence interval for resonance frequency
+            w1_neg = ci['w1'][0][1]
+            w1_pos = ci['w1'][2][1]
+            w1_conf = max(np.abs(ci['w1'][1][1]-ci['w1'][0][1]),np.abs(ci['w1'][1][1]-ci['w1'][2][1]))
+            #Array of confidence intervals
+            conf_array = [Q_conf,Qi_conf,Qc_conf,Qc_Re_conf,phi_conf,w1_conf]
+        elif Method.method == 'INV':
+            ci = lmfit.conf_interval(minner, result, p_names=['Qi','Qc','phi','w1'], sigmas=[2])
+            #confidence interval for Qi
+            Qi_conf = max(np.abs(ci['Qi'][1][1]-ci['Qi'][0][1]),np.abs(ci['Qi'][1][1]-ci['Qi'][2][1]))
+            #confidence interval for Qc
+            Qc_conf = max(np.abs(ci['Qc'][1][1]-ci['Qc'][0][1]),np.abs(ci['Qc'][1][1]-ci['Qc'][2][1]))
+            #confidence interval for phi
+            phi_conf = max(np.abs(ci['phi'][1][1]-ci['phi'][0][1]),np.abs(ci['phi'][1][1]-ci['phi'][2][1]))
+            #confidence interval for resonance frequency
+            w1_conf = max(np.abs(ci['w1'][1][1]-ci['w1'][0][1]),np.abs(ci['w1'][1][1]-ci['w1'][2][1]))
+            #Array of confidence intervals
+            conf_array = [Qi_conf,Qc_conf,phi_conf,w1_conf]
+        else:
+            ci = lmfit.conf_interval(minner, result, p_names=['Qi','Qc','Qa','w1'], sigmas=[2])
+            #confidence interval for Qi
+            Qi_conf = max(np.abs(ci['Qi'][1][1]-ci['Qi'][0][1]),np.abs(ci['Qi'][1][1]-ci['Qi'][2][1]))
+            #confidence interval for Qc
+            Qc = ci['Qi'][1][1]/ci['Qc'][1][1]
+            Qc_neg = ci['Qi'][0][1]/ci['Qc'][0][1]
+            Qc_pos = ci['Qi'][2][1]/ci['Qc'][2][1]
+            Qc_conf = max(np.abs(Qc-Qc_neg),np.abs(Qc-Qc_neg))
+            #confidence interval for Qa
+            Qa = ci['Qi'][1][1]/ci['Qa'][1][1]
+            Qa_neg = ci['Qi'][2][1]/ci['Qa'][2][1]
+            Qa_pos = ci['Qi'][0][1]/ci['Qa'][0][1]
+            Qa_conf = max(np.abs(Qa-Qa_neg),np.abs(Qa-Qa_neg))
+            #confidence interval for resonance frequency
+            w1_conf = max(np.abs(ci['w1'][1][1]-ci['w1'][0][1]),np.abs(ci['w1'][1][1]-ci['w1'][2][1]))
+            #Array of confidence intervals
+            conf_array = [Qi_conf,Qc_conf,Qa_conf,w1_conf]
+
+        return fit_params, conf_array
+    except:
+        print(">Failed to minimize function for least squares fit")
+        quit()
+
 ####################################################################
 
 def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
@@ -718,7 +885,7 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
     try:
         xdata = data.T[0]           ## frequency in GHz
         y1data = 10**(data.T[1]/20) ## converts decibals to linear
-        y2data = data.T[2]              ## phase in radians
+        y2data = data.T[2]           ## phase in radians
         ydata = np.multiply(y1data,np.exp(1j*y2data))
     except:
         print("Data not able to be read")
@@ -726,7 +893,15 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
 
     #make a folder to put all output in
     result = time.localtime(time.time())
-    output = str(result.tm_mon) + '-' + str(result.tm_mday) + '-' + str(result.tm_year) + '_' + str(result.tm_hour) + '.' + str(result.tm_min) + '.' + str(result.tm_sec)
+    output = str(result.tm_year)
+    if len(str(result.tm_mon)) < 2:
+        output = output + '0' + str(result.tm_mon)
+    else:
+        output = output + str(result.tm_mon)
+    if len(str(result.tm_mday)):
+        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
+    else:
+        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
     output_path = dir + '/' + output + '/'
     os.mkdir(output_path)
 
@@ -812,15 +987,19 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         try:
             if len(manual_init)==4:
 
+                kappa = init[2]/(init[0]) #bandwidth for frequency values
+
                 if Method.method == 'DCM' or Method.method == "DCM REFLECTION" or Method.method == 'PHI': #If method is DCM or PHI, set parameter 1 equal to Q which is 1/(1/Qi + 1/Qc) aka. convert from Qi
                     manual_init[0] = 1/(1/manual_init[0] + 1/manual_init[1])
                 elif Method.method == 'CPZM':
+                    Q = 1/(1/manual_init[0] + 1/manual_init[1])
+                    kappa = manual_init[2]/Q
                     manual_init[1] = manual_init[0]/manual_init[1]
                     manual_init[3] = manual_init[0]/manual_init[3]
 
                 init = manual_init
                 freq = init[2]
-                kappa = init[2]/(init[0]) #bandwidth for frequency values
+
                 x_c,y_c,r = 0,0,0 #set initial guess circle variables to zero so circle does not appear in plots
                 print("Manual initial guess")
             else:
@@ -835,7 +1014,8 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         freq = init[2] #resonance frequency
         kappa = init[2]/init[0] #f_0/Qi is kappa
         if Method.method == 'CPZM':
-            kappa = init[2]*init[1]/init[0]
+            kappa = init[4]
+            init = init[0:4]
 
     ## Extract data near resonate frequency to fit
     try:
@@ -877,6 +1057,9 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         print(">Failed to define parameters, please make sure parameters are of correct format")
         quit()
 
+    ## Fit data to least squares fit for respective fit type
+    fit_params,conf_array = min_fit(params,xdata,ydata,Method)
+
     #setup for while loop
     MC_counts = 0
     error = [10]
@@ -884,27 +1067,7 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
     continue_condition = (MC_counts < Method.MC_iteration) and (stop_MC == False) #MC_iteration equals 5 by default
     output_params = []
 
-    while continue_condition: #will run exactly 5 times unless error encountered
-        ## Fit data to least squares fit for respective fit type
-        try:
-            if Method.method == 'DCM' or Method.method == 'PHI':
-                minner = Minimizer(min_one_Cavity_dip, params, fcn_args=(xdata, ydata))
-            elif Method.method == 'DCM REFLECTION':
-                minner = Minimizer(min_one_Cavity_DCM_REFLECTION, params, fcn_args=(xdata, ydata))
-            elif Method.method == 'INV':
-                minner = Minimizer(min_one_Cavity_inverse, params, fcn_args=(xdata, ydata))
-            elif Method.method == 'CPZM':
-                minner = Minimizer(min_one_Cavity_CPZM, params, fcn_args=(xdata, ydata))
-
-            result = minner.minimize(method = 'least_squares')
-            fit_params = result.params
-            parameter = fit_params.valuesdict()
-
-            fit_params = [value for _,value in parameter.items()] #extracts the actual value for each parameter and puts it in the fit_params list
-        except:
-            print(">Failed to minimize function for least squares fit")
-            quit()
-
+    while continue_condition: #will run 5 times unless stop_MC is true
     #####==== Try Monte Carlo Fit Inverse S21 ====####
 
         MC_param,stop_MC, error_MC = \
@@ -922,6 +1085,21 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
             output_params = output_params[MC_counts-1]
 
     error = min(error)
+
+    #if monte carlo fit got better results than initial minimization, run a minimization on the monte carlo parameters
+    if output_params[0] != fit_params[0]:
+        params2 = lmfit.Parameters() #initialize parameter class, min is lower bound, max is upper bound, vary = boolean to determine if parameter varies during fit
+        if Method.method == 'DCM' or Method.method == 'DCM REFLECTION' or Method.method == 'PHI':
+            params2.add('Q', value=output_params[0],vary = vary[0],min = output_params[0]*0.5, max = output_params[0]*1.5)
+        elif Method.method == 'INV' or Method.method == 'CPZM':
+            params2.add('Qi', value=output_params[0],vary = vary[0],min = output_params[0]*0.8, max = output_params[0]*1.2)
+        params2.add('Qc', value=output_params[1],vary = vary[1],min = output_params[1]*0.8, max = output_params[1]*1.2)
+        params2.add('w1', value=output_params[2],vary = vary[2],min = output_params[2]*0.9, max = output_params[2]*1.1)
+        if Method.method == 'CPZM':
+            params2.add('Qa', value=output_params[3], vary = vary[3] , min = output_params[3]*0.9,max = output_params[3]*1.1)
+        else:
+            params2.add('phi', value=output_params[3], vary = vary[3] , min = output_params[3]*0.9,max = output_params[3]*1.1)
+        output_params,conf_array = min_fit(params2,xdata,ydata,Method)
 
     #Check that bandwidth is not equal to zero
     if len(xdata) == 0:
@@ -947,7 +1125,8 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         try:
             title = 'DCM fit for ' + filename
             figurename =" DCM with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
+            title = title, manual_params = Method.manual_init)
         except:
             print(">Failed to plot DCM fit for data")
             quit()
@@ -955,7 +1134,8 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         try:
             title = 'PHI fit for ' + filename
             figurename ="PHI with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
+            title = title, manual_params = Method.manual_init)
         except:
             print(">Failed to plot PHI fit for data")
             quit()
@@ -963,7 +1143,8 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         try:
             title = 'DCM REFLECTION fit for ' + filename
             figurename =" DCM REFLECTION with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM_REFLECTION,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM_REFLECTION,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
+            title = title, manual_params = Method.manual_init)
         except:
             print(">Failed to plot DCM fit for data")
             quit()
@@ -971,7 +1152,8 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         try:
             title = 'INV fit for ' + filename
             figurename = " Inverse with MC Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,1/y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_inverse,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+            fig = PlotFit(x_raw,1/y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_inverse,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
+            title = title, manual_params = Method.manual_init)
         except:
             print(">Failed to plot INV fit for data")
             quit()
@@ -979,11 +1161,16 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
         try:
             title = 'CPZM fit for ' + filename
             figurename = " CPZM with MC Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_CPZM,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_CPZM,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
+            title = title, manual_params = Method.manual_init)
         except:
             print(">Failed to plot CPZM fit for data")
             quit()
-    fig.savefig(output_path+filename+'_'+Method.method+'_fit.png')
+    filename_without_period = ''
+    for i in filename:
+        if i != '.':
+            filename_without_period = filename_without_period + i
+    fig.savefig(output_path+filename_without_period+'_'+Method.method+'_fit.png')
     return output_params,fig,error,init
 
 #########################################################################
