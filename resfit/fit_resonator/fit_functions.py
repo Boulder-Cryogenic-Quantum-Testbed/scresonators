@@ -1,6 +1,5 @@
 """Analytic fit functions"""
 import attr
-from functools import partial
 import enum
 
 import numpy as np
