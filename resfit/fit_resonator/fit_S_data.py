@@ -4,10 +4,10 @@ Created on Fri May 11 19:37:41 2018
 
 @author: hung93
 """
+import attr
 import numpy as np
 import lmfit
 import matplotlib.pyplot as plt
-import dataclasses
 import pandas as pd
 from matplotlib.gridspec import GridSpec
 import sympy as sym
@@ -21,7 +21,6 @@ from scipy import stats
 import time
 import sys
 import os
-import attr
 from typing import Tuple
 
 from scipy.interpolate import interp1d
@@ -826,13 +825,13 @@ def min_fit(params,xdata,ydata,Method):
         quit()
 
 
-@attr.dataclass(frozen=True)
+@attr.s
 class VNASweep:
     """A container to hold data from a vna frequency sweep."""
-    freqs: np.ndarray
-    amps: np.ndarray
-    phases: np.ndarray
-    linear_amps: np.ndarray=None
+    freqs = attr.ib(type=np.ndarray)
+    amps = attr.ib(type=np.ndarray)
+    phases = attr.ib(type=np.ndarray)
+    linear_amps = attr.ib(type=np.ndarray)
 
     @classmethod
     def from_csv(cls, csv):
@@ -851,11 +850,11 @@ class VNASweep:
         return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
 
 
-@attr.dataclass(frozen=True)
+@attr.s
 class ComplexData:
     """Container for normalized data"""
-    freqs: np.ndarray
-    complex_s21: np.ndarray
+    freqs = attr.ib(type=np.ndarray)
+    complex_s21 = attr.ib(type=np.ndarray)
 
 def normalize_data(data: VNASweep,
                    background: VNASweep = None)->ComplexData:
