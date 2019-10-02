@@ -2,19 +2,18 @@
 import attr
 import enum
 
-import dataclasses
 import numpy as np
 
-@attr.dataclass
+@attr.s
 class ModelParams:
     """All your model parameters defined with this."""
-    Qi: float
-    Qc: float
-    f_res: float
-    phi: float
-    Q: float
-    Qa: float
-    kappa: float
+    Qi = attr.ib(type=float)
+    Qc = attr.ib(type=float)
+    f_res = attr.ib(type=float)
+    phi = attr.ib(type=float)
+    Q = attr.ib(type=float)
+    Qa = attr.ib(type=float)
+    kappa = attr.ib(type=float)
 
     @classmethod
     def from_params(cls, Qi,  Qc, f_res, phi, Q=None):
