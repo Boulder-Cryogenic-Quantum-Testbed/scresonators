@@ -11,7 +11,7 @@ Welcome to the measurement repostository of the Boulder Cryogenic Quantum Testbe
 Here's an example using some of the data hosted on this repository. Hosted
 datasets from groups around the world can be found [here](/cryores/test_data).
 
-```
+```python
 import resfit.fit_resonator.fit_functions as ff
 import resfit.fit_resonator.fit_S_data as fsd
 
