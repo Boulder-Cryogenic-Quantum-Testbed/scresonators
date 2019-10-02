@@ -667,9 +667,17 @@ class VNASweep:
     freqs: np.ndarray
     amps: np.ndarray
     phases: np.ndarray
-    def linear_amps(self)->np.ndarray:
-        """Converts dB to linear units."""
-        return 10**(self.amps/20)
+    linear_amps: np.ndarray
+
+    @classmethod
+    def from_csv(cls, csv):
+        """Load data from csv file."""
+        data = np.loadtxt(csv, delimiter=',')
+        freqs = data.T[0]
+        amps = data.T[1]
+        phases = data.T[2]
+        linear_amps = 10**(amps/20)
+        return (cls(freqs=freqs,amps=amps,phases=phases,linear_amps=linear_amps))
 
 @attr.dataclass(frozen=True)
 class ComplexData:
@@ -695,12 +703,12 @@ def normalize_data(data: VNASweep,
     """
 
     xdata = data.freqs
-    linear_amps = data.linear_amps()
+    linear_amps = data.linear_amps
     phases = data.phases
     complex_data = np.multiply(linear_amps, np.exp(1j * phases))
 
     if background:
-        amps_background = background.linear_amps()
+        amps_background = background.linear_amps
         phases_background = background.phases
 
         amps_subtracted = np.divide(linear_amps, amps_background)
@@ -753,7 +761,7 @@ def extract_near_res(x_raw: np.ndarray,
                      y_raw: np.ndarray,
                      f_res: float,
                      kappa: float,
-                     extract_factor: int=1)->Tuple[np.ndarray, np.ndarray]:
+                     extract_factor: int=1)->ComplexData:
     """Extracts portions of spectrum of kappa within resonance.
 
     Args:
@@ -781,7 +789,7 @@ def extract_near_res(x_raw: np.ndarray,
     if len(x_temp) < 1:
         raise Exception(">Failed to extract data from designated bandwidth")
 
-    return np.asarray(x_temp), np.asarray(y_temp)
+    return ComplexData(np.asarray(x_temp), np.asarray(y_temp))
 
 def Fit_Resonator(filename,data_array,Method,normalize,background = None):
 

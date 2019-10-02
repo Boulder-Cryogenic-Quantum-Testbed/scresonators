@@ -12,7 +12,7 @@ def test_normalize():
     normed = fsd.normalize_data(data)
     linear = 3.1623*np.ones(len(freqs))
     cplx_s21 = 1.7086+2.661j*np.ones(len(freqs))
-    np.testing.assert_array_almost_equal(data.linear_amps(), linear, decimal=4)
+    np.testing.assert_array_almost_equal(data.linear_amps, linear, decimal=4)
     np.testing.assert_array_almost_equal(normed.complex_s21,
                                          cplx_s21,
                                          decimal=3)
