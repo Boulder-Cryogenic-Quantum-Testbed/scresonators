@@ -7,6 +7,7 @@ Created on Fri May 11 19:37:41 2018
 import numpy as np
 import lmfit
 import matplotlib.pyplot as plt
+import dataclasses
 import pandas as pd
 from matplotlib.gridspec import GridSpec
 import sympy as sym
@@ -20,10 +21,13 @@ from scipy import stats
 import time
 import sys
 import os
+import attr
+from typing import Tuple
 
 from scipy.interpolate import interp1d
 
-from fit_resonator import resonator as res
+from resfit.fit_resonator.resonator import Resonator
+import resfit.fit_resonator.fit_functions as ff
 
 params = {'legend.fontsize': 10,
           'figure.figsize': (10, 8),
@@ -41,16 +45,6 @@ p = inflect.engine() # search ordinal
 #####################################################################
 ## Data related
 #####################################################################
-def extract_data(x,y,x1,x2):
-    #return 2 arrays, one for x and one for y where the x array returned is the x data that falls between x1 and x2 and the y array is the y data that matches each index for the x array
-    x_temp = []
-    y_temp = []
-    for i in range(len(x)):
-        if (x[i] >x1 and x[i]<x2):
-            x_temp.append(x[i])
-            y_temp.append(y[i])
-    return np.asarray(x_temp),np.asarray(y_temp)
-#########################################################################
 def convert_params(from_method,params):
     if from_method =='DCM':
         Qc = params[2]/np.cos(params[4])
@@ -131,7 +125,7 @@ def Find_Circle(x,y):
 
 #########################################################################
 
-def Find_initial_guess(x,y1,y2,Method,output_path):
+def Find_initial_guess(x,y1,y2,Method):#,output_path):
     try:
         y = y1 +1j*y2 #recombine transmission S21 from real and complex parts
         if Method.method == 'INV': #inverse transmission such that y = S21^(-1)
@@ -139,29 +133,26 @@ def Find_initial_guess(x,y1,y2,Method,output_path):
         y1 = np.real(y) #redefine y1 and y2 to account for possibility they were inversed above
         y2 = np.imag(y)
     except:
-        print(">Problem initializing data in Find_initial_guess(), please make sure data is of correct format")
-        quit()
+        raise ValueError(">Problem initializing data in Find_initial_guess(), please make sure data is of correct format")
 
     try:
         x_c,y_c,r = Find_Circle(y1,y2) #find circle that matches the data
         z_c = x_c+1j*y_c #define complex number to house circle center location data
     except:
-        print(">Problem in function Find_Circle, please make sure data is of correct format")
-        quit()
+        raise ValueError(">Problem in function Find_Circle, please make sure data is of correct format")
 
-    try:
-        plot(np.real(y),np.imag(y),"circle",output_path,np.real(z_c),np.imag(z_c),r)
-    except:
-        print(">Error when trying to plot raw data and circle fit in Find_initial_guess")
-        quit()
+    # try:
+    #     # plot(np.real(y),np.imag(y),"circle",output_path,np.real(z_c),np.imag(z_c),r)
+    # except:
+    #     print(">Error when trying to plot raw data and circle fit in Find_initial_guess")
+    #     quit()
 
     try:
         ## move gap of circle to (0,0)
         ydata = y-1 #Theoretically should center point P at (0,0)
         z_c = z_c -1 #Shift guide circle to match data shift
     except:
-        print(">Error when trying to shift data into canonical position minus 1")
-        quit()
+        raise ValueError(">Error when trying to shift data into canonical position minus 1")
 
     try:
         #determine the angle to the center of the fitting circle from the origin
@@ -173,23 +164,20 @@ def Find_initial_guess(x,y1,y2,Method,output_path):
         freq_idx = np.argmax(np.abs(ydata))
         f_c = x[freq_idx] ###############3
 
-        plot(np.real(ydata),np.imag(ydata),"resonance",output_path,np.real(z_c),np.imag(z_c),r,np.real(ydata[freq_idx]),np.imag(ydata[freq_idx]))#plot data with guide circle
+        # plot(np.real(ydata),np.imag(ydata),"resonance",output_path,np.real(z_c),np.imag(z_c),r,np.real(ydata[freq_idx]),np.imag(ydata[freq_idx]))#plot data with guide circle
         # rotate resonant freq to minimum
         ydata = ydata*np.exp(-1j*phi) #should rotate the circle such that resonance is on the real axis
 
         z_c = z_c*np.exp(-1j*phi)
-        plot(np.real(ydata),np.imag(ydata),"phi",output_path,np.real(z_c),np.imag(z_c),r,np.real(ydata[freq_idx]),np.imag(ydata[freq_idx]))#plot shifted data with guide circle
+        # plot(np.real(ydata),np.imag(ydata),"phi",output_path,np.real(z_c),np.imag(z_c),r,np.real(ydata[freq_idx]),np.imag(ydata[freq_idx]))#plot shifted data with guide circle
     except:
-        print(">Error when trying to shift data according to phi in Find_initial_guess")
-        quit()
+        raise ValueError(">Error when trying to shift data according to phi in Find_initial_guess")
 
     try:
         if f_c < 0:
-            print(">Resonance frequency is negative. Please only input positive frequencies.")
-            quit()
+            raise ValueError(">Resonance frequency is negative. Please only input positive frequencies.")
     except:
-        print(">Cannot find resonance frequency in Find_initial_guess")
-        quit()
+        raise ValueError(">Cannot find resonance frequency in Find_initial_guess")
 
     if Method.method == 'DCM' or Method.method == 'PHI':
         try:
@@ -209,10 +197,9 @@ def Find_initial_guess(x,y1,y2,Method,output_path):
             init_guess = [Q,Qc,f_c,phi]
         except:
             if Method.method == 'DCM':
-                print(">Failed to find initial guess for method DCM. Please manually initialize a guess")
+                raise ValueError(">Failed to find initial guess for method DCM. Please manually initialize a guess")
             else:
-                print(">Failed to find initial guess for method PHI. Please manually initialize a guess")
-            quit()
+                raise ValueError(">Failed to find initial guess for method PHI. Please manually initialize a guess")
 
     elif Method.method == 'DCM REFLECTION':
         try:
@@ -231,8 +218,7 @@ def Find_initial_guess(x,y1,y2,Method,output_path):
             Qc = popt[1]
             init_guess = [Q,Qc,f_c,phi]
         except:
-            print(">Failed to find initial guess for method DCM REFLECTION. Please manually initialize a guess")
-            quit()
+            raise ValueError(">Failed to find initial guess for method DCM REFLECTION. Please manually initialize a guess")
 
     elif Method.method == 'INV':
 
@@ -252,8 +238,7 @@ def Find_initial_guess(x,y1,y2,Method,output_path):
             Qc = popt[1]
             init_guess = [Qi,Qc,f_c,phi]
         except:
-            print(">Failed to find initial guess for method INV. Please manually initialize a guess")
-            quit()
+            raise ValueError(">Failed to find initial guess for method INV. Please manually initialize a guess")
 
     elif Method.method == 'CPZM':
         #print(">Method CPZM not yet functional, please try another method")
@@ -279,11 +264,9 @@ def Find_initial_guess(x,y1,y2,Method,output_path):
             Qia = Qi/Qa
             init_guess = [Qi,Qic,f_c,Qia,kappa]
         except:
-            print(">Failed to find initial guess for method CPZM. Please manually initialize a guess")
-            quit()
+            raise ValueError(">Failed to find initial guess for method CPZM. Please manually initialize a guess")
     else:
-        print(">Method is not defined. Please choose a method: DCM, DCM REFLECTION, PHI, INV or CPZM")
-        quit()
+        raise ValueError(">Method is not defined. Please choose a method: DCM, DCM REFLECTION, PHI, INV or CPZM")
     return init_guess,x_c,y_c,r
 
 ########################################################################
@@ -600,42 +583,12 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
     plt.tight_layout()
     return fig
 
-#######################################################################
-## Fit Function
-#########################################
-
-def Cavity_DCM(x, Q, Qc, w1,phi):
-    #DCM fit function
-    return np.array(1-Q/Qc*np.exp(1j*phi)/(1 + 1j*(x-w1)/w1*2*Q))
-
-def Cavity_DCM_REFLECTION(x, Q, Qc, w1,phi):
-    #DCM REFLECTION fit function
-    return np.array(1-2*Q/Qc*np.exp(1j*phi)/(1 + 1j*(x-w1)/w1*2*Q))
-
-def Cavity_inverse(x, Qi,Qc, w1,phi):
-    #Inverse fit function
-    return np.array(\
-        (1 + Qi/Qc*np.exp(1j*phi)/(1 + 1j*2*Qi*(x-w1)/w1)))
-
-def Cavity_CPZM(x, Qi,Qic,w1,Qia):
-    #CPZM fit function
-    return np.array(\
-        (1 + 2*1j*Qi*(x-w1)/w1)/(1 + Qic +1j*Qia + 1j*2*Qi*(x-w1)/w1))
-
-def One_Cavity_peak_abs(x, Q, Qc, w1):
-    #Ideal resonator fit function
-    return np.abs(Q/Qc/(1 + 1j*(x-w1)/w1*2*Q))
-
-def One_Cavity_peak_abs_REFLECTION(x, Q, Qc, w1):
-    #Ideal resonator fit function
-    return np.abs(2*Q/Qc/(1 + 1j*(x-w1)/w1*2*Q))
-
 #############################################################################
 def fit_raw_compare(x,y,params,method):
     if method == 'DCM':
-        func = Cavity_DCM
+        func = ff.Cavity_DCM
     if method == 'INV':
-        func = Cavity_inverse
+        func = ff.Cavity_inverse
     yfit = func(x,*params)
     ym = np.abs(y-yfit)/np.abs(y)
     return ym
@@ -648,7 +601,7 @@ def min_one_Cavity_dip(parameter, x, data=None):
     w1 = parameter['w1']
     phi = parameter['phi']
 
-    model = Cavity_DCM(x, Q, Qc, w1,phi)
+    model = ff.Cavity_DCM(x, Q, Qc, w1,phi)
     real_model = model.real
     imag_model = model.imag
     real_data = data.real
@@ -668,7 +621,7 @@ def min_one_Cavity_DCM_REFLECTION(parameter, x, data=None):
     w1 = parameter['w1']
     phi = parameter['phi']
 
-    model = Cavity_DCM_REFLECTION(x, Q, Qc, w1,phi)
+    model = ff.Cavity_DCM_REFLECTION(x, Q, Qc, w1,phi)
     real_model = model.real
     imag_model = model.imag
     real_data = data.real
@@ -687,7 +640,7 @@ def min_one_Cavity_inverse(parameter, x, data=None):
     w1 = parameter['w1']
     phi = parameter['phi']
 
-    model = Cavity_inverse(x, Qi, Qc, w1,phi)
+    model = ff.Cavity_inverse(x, Qi, Qc, w1,phi)
     real_model = model.real
     imag_model = model.imag
     real_data = data.real
@@ -706,7 +659,7 @@ def min_one_Cavity_CPZM(parameter, x, data=None):
     w1 = parameter['w1']
     Qa = parameter['Qa']
 
-    model = Cavity_CPZM(x, Qi, Qc, w1,Qa)
+    model = ff.Cavity_CPZM(x, Qi, Qc, w1,Qa)
     real_model = model.real
     imag_model = model.imag
     real_data = data.real
@@ -718,8 +671,8 @@ def min_one_Cavity_CPZM(parameter, x, data=None):
 
 
 #####################################################################
-def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
-
+def monte_carlo_fit(xdata=None, ydata=None, parameter=None, Method=None):
+    print("Start MCFit")
     try:
         ydata_1stfit = Method.func(xdata, *parameter) #set of S21 data based on initial guess parameters
 
@@ -733,15 +686,15 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
         weighted_ydata_1stfit = np.multiply(weight_array,ydata_1stfit) #array with values (ydata^(-1))*ydata_1stfit if MC_weight='yes' and exact same array as ydata_1stfit otherwise
         error = np.linalg.norm(weighted_ydata - weighted_ydata_1stfit)/len(xdata) # first error #finds magnitude of (weighted_ydata-weighted_ydata_1stfit) and divides by length (average magnitude)
         error_0 = error
+        print("Initial Error: ", error_0)
     except:
-        print(">Failed to initialize MonteCarloFit(), please check parameters")
-        quit()
+        raise Exception(">Failed to initialize MonteCarloFit(), please check parameters")
     ## Fix condition and Monte Carlo Method with random number Generator
 
     counts = 0
     try:
         while counts < Method.MC_rounds: #MC_rounds 100,000 by default
-            counts = counts +1
+            counts = counts + 1
             #generate an array of 4 random numbers between -0.5 and 0.5 in the format [r,r,r,r] where r is each of the random numbers times the step constant
             random = Method.MC_step_const*(np.random.random_sample(len(parameter))-0.5)
            ## Fix parameter on demand
@@ -758,23 +711,25 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
             if 'Qa' in Method.MC_fix:
                 random[3] = 0
             ## Generate new parameter to test
-            if Method.method != 'CPZM':
-                random[3] = random[3]*0.1
+            random[3] = random[3]*0.1
             random = np.exp(random) #not really that even of a distribution
             new_parameter = np.multiply(parameter,random)
-            if Method.method != 'CPZM':
-                new_parameter[3] = np.mod(new_parameter[3],2*np.pi) # phi from 0 to 2*pi
+            #if Method.method == 'CPZM':
+            #    new_parameter[3] = new_parameter[3]/np.exp(0.1)
+            #else:
+            new_parameter[3] = np.mod(new_parameter[3], 2*np.pi) # phi from 0 to 2*pi
 
             ydata_MC = Method.func(xdata, *new_parameter) #new set of data with new parameters
             #check new error with new set of parameters
-            weighted_ydata_MC = np.multiply(weight_array,ydata_MC)
+            weighted_ydata_MC = np.multiply(weight_array, ydata_MC)
             new_error = np.linalg.norm(weighted_ydata_MC - weighted_ydata)/len(xdata)
             if new_error < error:
                 parameter = new_parameter
                 error = new_error
+                print("New Error: ", new_error, counts)
     except:
-        print(">Error in while loop of MonteCarloFit")
-        quit()
+        raise Exception(">Error in while loop of MonteCarloFit")
+
    ## If finally gets better fit then plot ##
     if error < error_0:
         stop_MC = False
@@ -783,9 +738,7 @@ def MonteCarloFit(xdata= None,ydata=None,parameter=None,Method = None):
             print('>User input parameters getting stuck in local minimum, please input more accurate parameters')
     else:
         stop_MC = True
-    return parameter,stop_MC, error
-
-####################################################################
+    return parameter, stop_MC, error
 
 ## Fit data to least squares fit for respective fit type
 def min_fit(params,xdata,ydata,Method):
@@ -872,166 +825,205 @@ def min_fit(params,xdata,ydata,Method):
         print(">Failed to minimize function for least squares fit")
         quit()
 
-####################################################################
 
-def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
+@attr.dataclass(frozen=True)
+class VNASweep:
+    """A container to hold data from a vna frequency sweep."""
+    freqs: np.ndarray
+    amps: np.ndarray
+    phases: np.ndarray
+    linear_amps: np.ndarray=None
 
-    #####read in data from file#####
-    try:
-        data = np.genfromtxt(filepath, delimiter = ",")
-    except:
-        print("File "+filename+" not found.")
-        quit()
-    try:
-        xdata = data.T[0]           ## frequency in GHz
-        y1data = 10**(data.T[1]/20) ## converts decibals to linear
-        y2data = data.T[2]           ## phase in radians
-        ydata = np.multiply(y1data,np.exp(1j*y2data))
-    except:
-        print("Data not able to be read")
-        quit()
+    @classmethod
+    def from_csv(cls, csv):
+        """Load data from csv file."""
+        data = np.loadtxt(csv, delimiter=',')
+        freqs = data.T[0]
+        amps = data.T[1]
+        phases = data.T[2]
+        linear_amps = 10**(amps/20)
+        return cls(freqs=freqs,amps=amps,phases=phases,linear_amps=linear_amps)
 
-    #make a folder to put all output in
-    result = time.localtime(time.time())
-    output = str(result.tm_year)
-    if len(str(result.tm_mon)) < 2:
-        output = output + '0' + str(result.tm_mon)
-    else:
-        output = output + str(result.tm_mon)
-    if len(str(result.tm_mday)):
-        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
-    else:
-        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
-    output_path = dir + '/' + output + '/'
-    os.mkdir(output_path)
-
-    #remove user background file if present
-    try:
-        if background != None:
-            databg = np.genfromtxt(background, delimiter = ",")
-            xbg = databg.T[0]           ## frequency in GHz
-            y1bg = 10**(databg.T[1]/20) ## converts decibals to linear
-            y2bg = databg.T[2]          ## phase in radians
-            ybg = np.multiply(y1bg,np.exp(1j*y2bg))
-
-            fmag = interp1d(xbg, y1bg, kind='cubic')
-            fang = interp1d(xbg, y2bg, kind='cubic')
-
-            plot2(xdata,y1data,xbg,y1bg,"VS_mag",output_path)
-            plot2(xdata,y2data,xbg,y2bg,"VS_ang",output_path)
-
-            y1data = np.divide(y1data,y1bg)
-            y2data = np.subtract(y2data,y2bg)
-
-            ydata = np.multiply(y1data,np.exp(1j*y2data))
-    except:
-        print("Background file unable to be loaded, running code without user background removal")
-
-    try:
-        Resonator = res.resonator(xdata, ydata, name = filename)
-    except:
-        print("Problem loading resonator. Please make sure the resonator class has correct frequency values and S21 values")
-        quit()
-
-    ##### Data Preprocessing. Get rid of cable delay and normalize phase/magnitude of S21  ######
-    x_initial = Resonator.freq
-    y_initial = Resonator.S21
-
-    plot(np.real(y_initial),np.imag(y_initial),"Normalize_1",output_path)
-
-    if normalize*2 > len(y_initial):
-        print("Not enough points to normalize, please lower value of normalize variable or take more points near resonance")
-        quit()
-    #normalize phase of S21 using linear fit
-    slope, intercept, r_value, p_value, std_err = stats.linregress(np.append(x_initial[0:10],x_initial[-10:]),np.append(np.angle(y_initial[0:normalize]),np.angle(y_initial[-normalize:])))
-    angle = np.subtract(np.angle(y_initial),slope*x_initial) #remove cable delay
-    y_test = np.multiply(np.abs(y_initial),np.exp(1j*angle))
-    plot(np.real(y_test),np.imag(y_test),"Normalize_2",output_path)
-
-    angle = np.subtract(angle,intercept) #rotate off resonant point to (1,0i) in complex plane
-    y_test = np.multiply(np.abs(y_initial),np.exp(1j*angle))
-    plot(np.real(y_test),np.imag(y_test),"Normalize_3",output_path)
-
-    #normalize magnitude of S21 using linear fit
-    y_db = np.log10(np.abs(y_initial))*20
-    slope2, intercept2, r_value2, p_value2, std_err2 = stats.linregress(np.append(x_initial[0:normalize],x_initial[-normalize:]),np.append(y_db[0:normalize],y_db[-normalize:]))
-    magnitude = np.subtract(y_db,slope2*x_initial+intercept2)
-    magnitude = 10**(magnitude/20)
-
-    y_raw = np.multiply(magnitude,np.exp(1j*angle))
-    plot(np.real(y_raw),np.imag(y_raw),"Normalize_4",output_path)
-
-    Resonator.S21 = y_raw
+    @classmethod
+    def from_columns(cls, freqs, amps, phases):
+        """Load data from columns provided individually."""
+        linear_amps = 10 ** (amps / 20)
+        return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
 
 
-## Init function variables
+@attr.dataclass(frozen=True)
+class ComplexData:
+    """Container for normalized data"""
+    freqs: np.ndarray
+    complex_s21: np.ndarray
+
+def normalize_data(data: VNASweep,
+                   background: VNASweep = None)->ComplexData:
+    """Normalize and exponentiate data.
+
+    Also performs background subtraction if applicable.
+
+    Args:
+        freq: Frequencies of scan. Units of GHz.
+        amplitude: Amplitude data from vna, units of dB
+        phase: Phase data from vna, in radians.
+        background (optional): 3 column array, frequencies, amplitudes and
+          phase.
+
+    Returns:
+        Normalized data complex S21.
+    """
+
+    xdata = data.freqs
+    linear_amps = data.linear_amps
+    phases = data.phases
+    complex_data = np.multiply(linear_amps, np.exp(1j * phases))
+
+    if background:
+        amps_background = background.linear_amps
+        phases_background = background.phases
+
+        amps_subtracted = np.divide(linear_amps, amps_background)
+        phases_subtracted = np.subtract(phases, phases_background)
+        complex_data = np.multiply(amps_subtracted,
+                                   np.exp(1j * phases_subtracted))
+
+    complex_data = ComplexData(freqs=xdata, complex_s21=complex_data)
+    return complex_data
+
+def preprocess(cplx_data: ComplexData, normalize: int)->ComplexData:
+    """Preprocess data by removing cable delay and normalizing S21.
+
+    Args:
+        cplx_data: Complex data, frequency vs. A*exp(j*phi)
+        normalize: Number of at beginning and end of trace for normalization.
+
+    Returns:
+        Data with cable delay removed and normalized amplitudes.
+    """
+
+    x_initial = cplx_data.freqs
+    y_initial = cplx_data.complex_s21
+
+    if normalize * 2 > len(y_initial):
+        raise ValueError(
+            'Not enough points to normalize, please lower value of normalize variable or take more points near resonance')
+
+    # normalize phase of S21 using linear fit
+    slope, intercept, r_value, p_value, std_err = stats.linregress(
+        np.append(x_initial[0:10], x_initial[-10:]),
+        np.append(np.angle(y_initial[0:normalize]),
+                  np.angle(y_initial[-normalize:])))
+    angle = np.subtract(np.angle(y_initial), slope * x_initial)  # remove cable delay
+    angle = np.subtract(angle, intercept)  # rotate off resonant point to (1,0i) in complex plane
+
+    # normalize magnitude of S21 using linear fit
+    y_db = np.log10(np.abs(y_initial)) * 20
+    slope2, intercept2, r_value2, p_value2, std_err2 = stats.linregress(
+        np.append(x_initial[0:normalize], x_initial[-normalize:]),
+        np.append(y_db[0:normalize], y_db[-normalize:]))
+    magnitude = np.subtract(y_db, slope2 * x_initial + intercept2)
+    magnitude = 10 ** (magnitude / 20)
+
+    y_raw = np.multiply(magnitude, np.exp(1j * angle))
+    preped_data = ComplexData(x_initial, y_raw)
+    return preped_data
+
+def extract_near_res(x_raw: np.ndarray,
+                     y_raw: np.ndarray,
+                     f_res: float,
+                     kappa: float,
+                     extract_factor: int=1)->ComplexData:
+    """Extracts portions of spectrum of kappa within resonance.
+
+    Args:
+        x_raw: X-values of spectrum to extract from.
+        y_raw: Y-values of spectrum to extract from.
+        f_res: Resonant frequency about which to extract data.
+        kappa: Width about f_res to extract.
+        extract_factor: Multiplier for kappa.
+
+    Returns:
+        Extracted spectrum kappa about f_res.
+    """
+    xstart = f_res - extract_factor/2*kappa #starting resonance to add to fit
+    xend = f_res + extract_factor/2*kappa #final resonance to add to fit
+    x_temp = []
+    y_temp = []
+    # xdata is new set of data to be fit, within extract_factor times the bandwidth, ydata is S21 data to match indices with xdata
+    for i, freq in enumerate(x_raw):
+        if (freq > xstart and freq< xend):
+            x_temp.append(freq)
+            y_temp.append(y_raw[i])
+
+    if len(y_temp) < 5:
+        print("Less than 5 Data points to fit data, not enough points near resonance, attempting to fit anyway")
+    if len(x_temp) < 1:
+        raise Exception(">Failed to extract data from designated bandwidth")
+
+    return np.asarray(x_temp), np.asarray(y_temp)
+
+def Fit_Resonator(filename,data_array,Method,normalize,background = None):
+    data = VNASweep.from_columns(freqs=data_array.T[0],
+                                 amps=data_array.T[1],
+                                 phases=data_array.T[2])
+
+    normed_data = normalize_data(data, background=background)
+
+    print("Loaded the data!")
+
+    prepped_data = preprocess(normed_data, normalize=normalize)
+    resonator = Resonator(prepped_data.freqs,
+                          prepped_data.complex_s21,
+                          name=filename)
+
+
+    ## Init function variables
     manual_init = Method.manual_init
     find_circle = Method.find_circle
     vary = Method.vary
-    filename = Resonator.name
-    xdata = Resonator.freq
-    ydata = Resonator.S21
+    filename = resonator.name
+    xdata = resonator.freq
+    ydata = resonator.S21
     y1data = np.real(ydata)
     y2data = np.imag(ydata)
-    x_raw = Resonator.freq
-    y_raw = Resonator.S21
+    x_raw = resonator.freq
+    y_raw = resonator.S21
 
-##### Step one. Find initial guess if not specified and extract part of data close to resonance  #####
+    ##### Step one. Find initial guess if not specified and extract part of data close to resonance  #####
 
     if len(x_raw) < 20:
-        print(">Not enough data points to run code. Please have at least 20 data points.")
-        quit()
+        raise ValueError(">Not enough data points to run code. Please have at least 20 data points.")
 
-    init= [0]*4 #place to store initial guess parameters
-    if manual_init != None: #when user manually initializes a guess initialize the following variables
+    if manual_init: #when user manually initializes a guess initialize the following variables
         try:
-            if len(manual_init)==4:
+            init = manual_init
+            if Method.method.name in ['DCM', "DCM_REFLECTION" ,'PHI']:
+                # If method is DCM or PHI, set parameter Q to 1/(1/Qi + 1/Qc) aka. convert from Qi
+                init.Q = 1/(1/init.Qi + 1/init.Qc)
+            elif Method.method.name == 'CPZM':
+                # @mullinski please comment on this.
+                init.Qa = init.Qi/init.f_res
+                init.Qc = init.Qi/init.Qc
+                init.f_res = init.Qi/init.phi
 
-                kappa = init[2]/(init[0]) #bandwidth for frequency values
-
-                if Method.method == 'DCM' or Method.method == "DCM REFLECTION" or Method.method == 'PHI': #If method is DCM or PHI, set parameter 1 equal to Q which is 1/(1/Qi + 1/Qc) aka. convert from Qi
-                    manual_init[0] = 1/(1/manual_init[0] + 1/manual_init[1])
-                elif Method.method == 'CPZM':
-                    Q = 1/(1/manual_init[0] + 1/manual_init[1])
-                    kappa = manual_init[2]/Q
-                    manual_init[1] = manual_init[0]/manual_init[1]
-                    manual_init[3] = manual_init[0]/manual_init[3]
-
-                init = manual_init
-                freq = init[2]
-
-                x_c,y_c,r = 0,0,0 #set initial guess circle variables to zero so circle does not appear in plots
-                print("Manual initial guess")
-            else:
-                print(manual_init)
-                print(">Manual input wrong format, please follow the correct format of 4 parameters in an array")
-                quit()
+            freq = init.f_res
+            kappa = init.f_res/(init.Qi) #bandwidth for frequency values
+            x_c, y_c, r = 0,0,0 #set initial guess circle variables to zero so circle does not appear in plots
+            print("Manual initial guess")
         except:
-            print(">Problem loading manually initialized parameters, please make sure parameters are all numbers")
-            quit()
-    else: #generate initial guess parameters from data when user does not manually initialze guess
-        init,x_c,y_c,r = Find_initial_guess(xdata,y1data,y2data,Method,output_path) #gets initial guess for parameters
+            raise Exception(">Problem loading manually initialized parameters, please make sure parameters are all numbers")
+
+    else: # TODO(mutus) Take care of case with no initial guess.
+        #generate initial guess parameters from data when user does not manually initialze guess
+        init, x_c, y_c, r = Find_initial_guess(xdata, y1data, y2data, Method) #gets initial guess for parameters
         freq = init[2] #resonance frequency
         kappa = init[2]/init[0] #f_0/Qi is kappa
         if Method.method == 'CPZM':
-            kappa = init[4]
-            init = init[0:4]
+            kappa = init[2]*init[1]/init[0]
 
-    ## Extract data near resonate frequency to fit
-    try:
-        extract_factor = 1
-        xstart = freq - extract_factor/2*kappa #starting resonance to add to fit
-        xend = freq + extract_factor/2*kappa #final resonance to add to fit
-        xdata,ydata = extract_data(x_raw,y_raw,xstart,xend) #xdata is new set of data to be fit, within extract_factor times the bandwidth, ydata is S21 data to match indices with xdata
-        if len(ydata) < 5:
-            print("Less than 5 Data points to fit data, not enough points near resonance, attempting to fit anyway")
-    except:
-        print(">Failed to extract data from designated bandwidth")
-        if manual_init != None:
-            print(">Please choose a different set of manual init parameters")
-        else:
-            print(">Please manually init parameters")
-        quit()
+    ## Extract data near resonant frequency to fit
+    xdata, ydata = extract_near_res(x_raw, y_raw, freq, kappa)
 
     if Method.method == 'INV':
         ydata = ydata**-1 ## Inverse S21
@@ -1043,22 +1035,19 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
     #define parameters from initial guess for John Martinis and MonteCarloFit
     try:
         params = lmfit.Parameters() #initialize parameter class, min is lower bound, max is upper bound, vary = boolean to determine if parameter varies during fit
-        if Method.method == 'DCM' or Method.method == 'DCM REFLECTION' or Method.method == 'PHI':
-            params.add('Q', value=init[0],vary = vary[0],min = init[0]*0.5, max = init[0]*1.5)
-        elif Method.method == 'INV' or Method.method == 'CPZM':
-            params.add('Qi', value=init[0],vary = vary[0],min = init[0]*0.8, max = init[0]*1.2)
-        params.add('Qc', value=init[1],vary = vary[1],min = init[1]*0.8, max = init[1]*1.2)
-        params.add('w1', value=init[2],vary = vary[2],min = init[2]*0.9, max = init[2]*1.1)
+        if Method.method.name in ['DCM', 'DCM_REFLECTION', 'PHI']:
+            params.add('Q', value=init.Q, vary = vary[0], min = init.Q*0.5, max = init.Q*1.5)
+        elif Method.method.name in ['INV', 'CPZM']:
+            params.add('Qi', value=init.Qi, vary = vary[0], min = init.Qi*0.8, max = init.Qi*1.2)
+        params.add('Qc', value=init.Qc, vary = vary[1], min = init.Qc*0.8, max = init.Qc*1.2)
+        params.add('w1', value=init.f_res, vary = vary[2], min = init.f_res*0.9, max = init.f_res*1.1)
         if Method.method == 'CPZM':
-            params.add('Qa', value=init[3], vary = vary[3] , min = init[3]*0.9,max = init[3]*1.1)
+            params.add('Qa', value=init.Qa, vary = vary[3] , min=init.Qa*0.9, max=init.Qa*1.1)
         else:
-            params.add('phi', value=init[3], vary = vary[3] , min = init[3]*0.9,max = init[3]*1.1)
+            params.add('phi', value=init.phi, vary = vary[3] , min = init.phi*0.9, max=init.phi*1.1)
+        print("Parameters: ", params)
     except:
-        print(">Failed to define parameters, please make sure parameters are of correct format")
-        quit()
-
-    ## Fit data to least squares fit for respective fit type
-    fit_params,conf_array = min_fit(params,xdata,ydata,Method)
+        raise ValueError(">Failed to define parameters, please make sure parameters are of correct format")
 
     #setup for while loop
     MC_counts = 0
@@ -1066,12 +1055,33 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
     stop_MC = False
     continue_condition = (MC_counts < Method.MC_iteration) and (stop_MC == False) #MC_iteration equals 5 by default
     output_params = []
+    print("About to do some runs on data len: ", len(xdata), len(ydata))
 
-    while continue_condition: #will run 5 times unless stop_MC is true
+    while continue_condition: #will run exactly 5 times unless error encountered
+        ## Fit data to least squares fit for respective fit type
+        try:
+            if Method.method.name in ['DCM' ,'PHI']:
+                print("I am the DCM or PHI: ", Method.method.name)
+                minner = Minimizer(min_one_Cavity_dip, params, fcn_args=(xdata, ydata))
+            elif Method.method.name == 'DCM REFLECTION':
+                minner = Minimizer(min_one_Cavity_DCM_REFLECTION, params, fcn_args=(xdata, ydata))
+            elif Method.method.name == 'INV':
+                minner = Minimizer(min_one_Cavity_inverse, params, fcn_args=(xdata, ydata))
+            elif Method.method.name == 'CPZM':
+                minner = Minimizer(min_one_Cavity_CPZM, params, fcn_args=(xdata, ydata))
+
+            result = minner.minimize(method = 'least_squares')
+            fit_params = result.params
+            parameter = fit_params.valuesdict()
+
+            fit_params = [value for _,value in parameter.items()] #extracts the actual value for each parameter and puts it in the fit_params list
+        except:
+            raise ValueError(">Failed to minimize function for least squares fit")
+
     #####==== Try Monte Carlo Fit Inverse S21 ====####
 
-        MC_param,stop_MC, error_MC = \
-        MonteCarloFit(xdata,ydata,fit_params,Method) #run a Monte Carlo fit on just minimized data to test if parameters trapped in local minimum
+        MC_param, stop_MC, error_MC = \
+        monte_carlo_fit(xdata, ydata, fit_params, Method) #run a Monte Carlo fit on just minimized data to test if parameters trapped in local minimum
         error.append(error_MC)
         if error[MC_counts] < error_MC:
             stop_MC = True
@@ -1086,29 +1096,13 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
 
     error = min(error)
 
-    #if monte carlo fit got better results than initial minimization, run a minimization on the monte carlo parameters
-    if output_params[0] != fit_params[0]:
-        params2 = lmfit.Parameters() #initialize parameter class, min is lower bound, max is upper bound, vary = boolean to determine if parameter varies during fit
-        if Method.method == 'DCM' or Method.method == 'DCM REFLECTION' or Method.method == 'PHI':
-            params2.add('Q', value=output_params[0],vary = vary[0],min = output_params[0]*0.5, max = output_params[0]*1.5)
-        elif Method.method == 'INV' or Method.method == 'CPZM':
-            params2.add('Qi', value=output_params[0],vary = vary[0],min = output_params[0]*0.8, max = output_params[0]*1.2)
-        params2.add('Qc', value=output_params[1],vary = vary[1],min = output_params[1]*0.8, max = output_params[1]*1.2)
-        params2.add('w1', value=output_params[2],vary = vary[2],min = output_params[2]*0.9, max = output_params[2]*1.1)
-        if Method.method == 'CPZM':
-            params2.add('Qa', value=output_params[3], vary = vary[3] , min = output_params[3]*0.9,max = output_params[3]*1.1)
-        else:
-            params2.add('phi', value=output_params[3], vary = vary[3] , min = output_params[3]*0.9,max = output_params[3]*1.1)
-        output_params,conf_array = min_fit(params2,xdata,ydata,Method)
-
     #Check that bandwidth is not equal to zero
     if len(xdata) == 0:
         if manual_init != None:
             print(">Length of extracted data equals zero thus bandwidth is incorrect, most likely due to initial parameters being too far off")
             print(">Please enter a new set of manual initial guess data or run an auto guess")
         else:
-            print(">Length of extracted data equals zero thus bandwidth is incorrect, please manually input a guess for parameters")
-        quit()
+            raise ValueError(">Length of extracted data equals zero thus bandwidth is incorrect, please manually input a guess for parameters")
 
     #set the range to plot for 1 3dB bandwidth
     if Method.method == 'CPZM':
@@ -1121,59 +1115,49 @@ def Fit_Resonator(filename,filepath,Method,normalize,dir,background = None):
     extract_factor = [xstart,xend]
 
     #plot fit
-    if Method.method == 'DCM':
-        try:
-            title = 'DCM fit for ' + filename
-            figurename =" DCM with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
-            title = title, manual_params = Method.manual_init)
-        except:
-            print(">Failed to plot DCM fit for data")
-            quit()
-    if Method.method == 'PHI':
-        try:
-            title = 'PHI fit for ' + filename
-            figurename ="PHI with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
-            title = title, manual_params = Method.manual_init)
-        except:
-            print(">Failed to plot PHI fit for data")
-            quit()
-    if Method.method == 'DCM REFLECTION':
-        try:
-            title = 'DCM REFLECTION fit for ' + filename
-            figurename =" DCM REFLECTION with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM_REFLECTION,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
-            title = title, manual_params = Method.manual_init)
-        except:
-            print(">Failed to plot DCM fit for data")
-            quit()
-    elif Method.method == 'INV':
-        try:
-            title = 'INV fit for ' + filename
-            figurename = " Inverse with MC Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,1/y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_inverse,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
-            title = title, manual_params = Method.manual_init)
-        except:
-            print(">Failed to plot INV fit for data")
-            quit()
-    elif Method.method == 'CPZM':
-        try:
-            title = 'CPZM fit for ' + filename
-            figurename = " CPZM with MC Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_CPZM,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
-            title = title, manual_params = Method.manual_init)
-        except:
-            print(">Failed to plot CPZM fit for data")
-            quit()
-    filename_without_period = ''
-    for i in filename:
-        if i != '.':
-            filename_without_period = filename_without_period + i
-    fig.savefig(output_path+filename_without_period+'_'+Method.method+'_fit.png')
-    return output_params,fig,error,init
-
-#########################################################################
+    # if Method.method == 'DCM':
+    #     try:
+    #         title = 'DCM fit for ' + filename
+    #         figurename =" DCM with Monte Carlo Fit and Raw data\nPower: " + filename
+    #         fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+    #     except:
+    #         print(">Failed to plot DCM fit for data")
+    #         quit()
+    # if Method.method == 'PHI':
+    #     try:
+    #         title = 'PHI fit for ' + filename
+    #         figurename ="PHI with Monte Carlo Fit and Raw data\nPower: " + filename
+    #         fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+    #     except:
+    #         print(">Failed to plot PHI fit for data")
+    #         quit()
+    # if Method.method == 'DCM REFLECTION':
+    #     try:
+    #         title = 'DCM REFLECTION fit for ' + filename
+    #         figurename =" DCM REFLECTION with Monte Carlo Fit and Raw data\nPower: " + filename
+    #         fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_DCM_REFLECTION,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+    #     except:
+    #         print(">Failed to plot DCM fit for data")
+    #         quit()
+    # elif Method.method == 'INV':
+    #     try:
+    #         title = 'INV fit for ' + filename
+    #         figurename = " Inverse with MC Fit and Raw data\nPower: " + filename
+    #         fig = PlotFit(x_raw,1/y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_inverse,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+    #     except:
+    #         print(">Failed to plot INV fit for data")
+    #         quit()
+    # elif Method.method == 'CPZM':
+    #     try:
+    #         title = 'CPZM fit for ' + filename
+    #         figurename = " CPZM with MC Fit and Raw data\nPower: " + filename
+    #         fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,Cavity_CPZM,error,figurename,x_c,y_c,r,output_path,extract_factor,title = title, manual_params = Method.manual_init)
+    #     except:
+    #         print(">Failed to plot CPZM fit for data")
+    #         quit()
+    # fig.savefig(output_path+filename+'_'+Method.method+'_fit.png')
+    # return output_params,fig,error,init
+    return output_params,error,init
 
 def plot(x,y,name,output_path,x_c=None,y_c=None,r=None,p_x=None,p_y=None):
     #plot any given set of x and y data

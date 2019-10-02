@@ -15,7 +15,7 @@ from matplotlib.gridspec import GridSpec
 import re
 import matplotlib.pylab as pylab
 from .fit_S_data import Fit_Resonator,Cavity_DCM,Cavity_inverse
-from .resonator import resonator,Fit_Method
+from .resonator import Resonator,FitMethod
 import ast
 params = {'legend.fontsize': 18,
           'figure.figsize': (10, 8),
@@ -362,7 +362,7 @@ def read_method(dic):
         df = df.reset_index()
         if k == 'DCM':
             i = i+1
-            Method1 = Fit_Method('DCM')
+            Method1 = FitMethod('DCM')
             delay = df[k][0]
             if pd.notna(df[k][1]):
                 Method1.extract_factor = df[k][1]
@@ -387,7 +387,7 @@ def read_method(dic):
 
         if k == 'INV':
             i = i+1
-            Method2 = Fit_Method('INV')
+            Method2 = FitMethod('INV')
             delay = df[k][0]
             if pd.notna(df[k][1]):
                 Method2.extract_factor = df[k][1]
