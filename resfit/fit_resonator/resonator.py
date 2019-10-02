@@ -301,15 +301,15 @@ class FitMethod(object):
                  vary: bool = None):
         self.method = method
         if method.name == 'DCM':
-            self.func = fit_functions.Cavity_DCM
+            self.func = fit_functions.cavity_DCM
         elif method.name == 'DCM_REFLECTION':
-            self.func = fit_functions.Cavity_DCM_REFLECTION
+            self.func = fit_functions.cavity_DCM_REFLECTION
         elif method.name == 'PHI':
-            self.func = fit_functions.Cavity_DCM
+            self.func = fit_functions.cavity_DCM
         elif method.name == 'INV':
-            self.func = fit_functions.Cavity_inverse
+            self.func = fit_functions.cavity_inverse
         elif method.name == 'CPZM':
-            self.func = fit_functions.Cavity_CPZM
+            self.func = fit_functions.cavity_CPZM
         self.MC_rounds = MC_rounds
         self.MC_iteration = MC_iteration
         self.MC_weight = MC_weight
