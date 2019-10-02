@@ -8,7 +8,6 @@ import attr
 import numpy as np
 import lmfit
 import matplotlib.pyplot as plt
-import dataclasses
 import pandas as pd
 from matplotlib.gridspec import GridSpec
 import sympy as sym
