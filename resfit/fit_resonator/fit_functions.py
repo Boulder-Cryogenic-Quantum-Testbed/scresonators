@@ -2,6 +2,7 @@
 import attr
 import enum
 
+import dataclasses
 import numpy as np
 
 @attr.dataclass
