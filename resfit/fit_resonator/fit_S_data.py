@@ -710,13 +710,13 @@ def monte_carlo_fit(xdata=None, ydata=None, parameter=None, Method=None):
             if 'Qa' in Method.MC_fix:
                 random[3] = 0
             ## Generate new parameter to test
-            if Method.method != 'CPZM':
-                random[3] = random[3]*0.1
+            random[3] = random[3]*0.1
             random = np.exp(random) #not really that even of a distribution
             new_parameter = np.multiply(parameter,random)
-            if Method.method != 'CPZM':
-                new_parameter[3] = np.mod(new_parameter[3],2*np.pi) # phi from 0 to 2*pi
-
+            #if Method.method == 'CPZM':
+            #    new_parameter[3] = new_parameter[3]/np.exp(0.1)
+            #else:
+            new_parameter[3] = np.mod(new_parameter[3], 2*np.pi) # phi from 0 to 2*pi
 
             ydata_MC = Method.func(xdata, *new_parameter) #new set of data with new parameters
             #check new error with new set of parameters
@@ -831,7 +831,7 @@ class VNASweep:
     freqs: np.ndarray
     amps: np.ndarray
     phases: np.ndarray
-    linear_amps: np.ndarray
+    linear_amps: np.ndarray=None
 
     @classmethod
     def from_csv(cls, csv):
@@ -841,7 +841,14 @@ class VNASweep:
         amps = data.T[1]
         phases = data.T[2]
         linear_amps = 10**(amps/20)
-        return (cls(freqs=freqs,amps=amps,phases=phases,linear_amps=linear_amps))
+        return cls(freqs=freqs,amps=amps,phases=phases,linear_amps=linear_amps)
+
+    @classmethod
+    def from_columns(cls, freqs, amps, phases):
+        """Load data from columns provided individually."""
+        linear_amps = 10 ** (amps / 20)
+        return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
+
 
 @attr.dataclass(frozen=True)
 class ComplexData:
@@ -948,32 +955,20 @@ def extract_near_res(x_raw: np.ndarray,
             x_temp.append(freq)
             y_temp.append(y_raw[i])
 
-
     if len(y_temp) < 5:
         print("Less than 5 Data points to fit data, not enough points near resonance, attempting to fit anyway")
     if len(x_temp) < 1:
         raise Exception(">Failed to extract data from designated bandwidth")
 
-    return ComplexData(np.asarray(x_temp), np.asarray(y_temp))
+    return np.asarray(x_temp), np.asarray(y_temp)
 
 def Fit_Resonator(filename,data_array,Method,normalize,background = None):
+    data = VNASweep.from_columns(freqs=data_array.T[0],
+                                 amps=data_array.T[1],
+                                 phases=data_array.T[2])
 
+    normed_data = normalize_data(data, background=background)
 
-    try:
-        data = VNASweep(freqs=data_array.T[0],
-                        amps=data_array.T[1],
-                        phases=data_array.T[2])
-
-        normed_data = normalize_data(data, background=background)
-    except:
-        print("Data not able to be read")
-        quit()
-
-    #make a folder to put all output in
-    # result = time.localtime(time.time())
-    # output = str(result.tm_mon) + '-' + str(result.tm_mday) + '-' + str(result.tm_year) + '_' + str(result.tm_hour) + '.' + str(result.tm_min) + '.' + str(result.tm_sec)
-    # output_path = dir + '/' + output + '/'
-    # os.mkdir(output_path)
     print("Loaded the data!")
 
     prepped_data = preprocess(normed_data, normalize=normalize)
@@ -1024,8 +1019,7 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
         freq = init[2] #resonance frequency
         kappa = init[2]/init[0] #f_0/Qi is kappa
         if Method.method == 'CPZM':
-            kappa = init[4]
-            init = init[0:4]
+            kappa = init[2]*init[1]/init[0]
 
     ## Extract data near resonant frequency to fit
     xdata, ydata = extract_near_res(x_raw, y_raw, freq, kappa)
@@ -1053,9 +1047,6 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
         print("Parameters: ", params)
     except:
         raise ValueError(">Failed to define parameters, please make sure parameters are of correct format")
-
-    ## Fit data to least squares fit for respective fit type
-    fit_params,conf_array = min_fit(params,xdata,ydata,Method)
 
     #setup for while loop
     MC_counts = 0
@@ -1086,7 +1077,6 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
         except:
             raise ValueError(">Failed to minimize function for least squares fit")
 
-    while continue_condition: #will run 5 times unless stop_MC is true
     #####==== Try Monte Carlo Fit Inverse S21 ====####
 
         MC_param, stop_MC, error_MC = \
@@ -1104,21 +1094,6 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
             output_params = output_params[MC_counts-1]
 
     error = min(error)
-
-    #if monte carlo fit got better results than initial minimization, run a minimization on the monte carlo parameters
-    if output_params[0] != fit_params[0]:
-        params2 = lmfit.Parameters() #initialize parameter class, min is lower bound, max is upper bound, vary = boolean to determine if parameter varies during fit
-        if Method.method == 'DCM' or Method.method == 'DCM REFLECTION' or Method.method == 'PHI':
-            params2.add('Q', value=output_params[0],vary = vary[0],min = output_params[0]*0.5, max = output_params[0]*1.5)
-        elif Method.method == 'INV' or Method.method == 'CPZM':
-            params2.add('Qi', value=output_params[0],vary = vary[0],min = output_params[0]*0.8, max = output_params[0]*1.2)
-        params2.add('Qc', value=output_params[1],vary = vary[1],min = output_params[1]*0.8, max = output_params[1]*1.2)
-        params2.add('w1', value=output_params[2],vary = vary[2],min = output_params[2]*0.9, max = output_params[2]*1.1)
-        if Method.method == 'CPZM':
-            params2.add('Qa', value=output_params[3], vary = vary[3] , min = output_params[3]*0.9,max = output_params[3]*1.1)
-        else:
-            params2.add('phi', value=output_params[3], vary = vary[3] , min = output_params[3]*0.9,max = output_params[3]*1.1)
-        output_params,conf_array = min_fit(params2,xdata,ydata,Method)
 
     #Check that bandwidth is not equal to zero
     if len(xdata) == 0:
@@ -1182,9 +1157,6 @@ def Fit_Resonator(filename,data_array,Method,normalize,background = None):
     # fig.savefig(output_path+filename+'_'+Method.method+'_fit.png')
     # return output_params,fig,error,init
     return output_params,error,init
-
-
-#########################################################################
 
 def plot(x,y,name,output_path,x_c=None,y_c=None,r=None,p_x=None,p_y=None):
     #plot any given set of x and y data

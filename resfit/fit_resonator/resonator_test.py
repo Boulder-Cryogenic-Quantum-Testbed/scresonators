@@ -19,7 +19,7 @@ def test_fit_method():
     MC_iteration = 10
     MC_rounds = 1e3
     MC_fix = ['w1']
-    manual_init = ff.ModelParams(Qi=1E6, Qc=5E5, f_res=5.8, phi=0.1)
+    manual_init = ff.ModelParams.from_params(Qi=1E6, Qc=5E5, f_res=5.8, phi=0.1)
     fit_method = resonator.FitMethod(fit_type,
                MC_iteration,
                MC_rounds=MC_rounds,

@@ -6,9 +6,9 @@ def test_normalize():
     freqs = np.arange(4, 5, 0.01)
     amps = 10 * np.ones(len(freqs))
     phases = np.ones(len(freqs))
-    data = fsd.VNASweep(freqs=freqs,
-                        amps=amps,
-                        phases=phases)
+    data = fsd.VNASweep.from_columns(freqs=freqs,
+                                     amps=amps,
+                                     phases=phases)
     normed = fsd.normalize_data(data)
     linear = 3.1623*np.ones(len(freqs))
     cplx_s21 = 1.7086+2.661j*np.ones(len(freqs))
@@ -25,12 +25,12 @@ def test_normalized_with_background():
     bg_amps = 10 * np.ones(len(freqs))
     bg_phases = 1 * np.ones(len(freqs))
 
-    data = fsd.VNASweep(freqs=freqs,
-                        amps=amps,
-                        phases=phases)
-    background = fsd.VNASweep(freqs=freqs,
-                              amps=bg_amps,
-                              phases=bg_phases)
+    data = fsd.VNASweep.from_columns(freqs=freqs,
+                                     amps=amps,
+                                     phases=phases)
+    background = fsd.VNASweep.from_columns(freqs=freqs,
+                                           amps=bg_amps,
+                                           phases=bg_phases)
     normed = fsd.normalize_data(data, background=background)
     cplx_s21 = 1.7086+2.661j*np.ones(len(freqs))
     np.testing.assert_array_almost_equal(normed.complex_s21,
@@ -41,7 +41,7 @@ def test_preprocess():
     ph = np.linspace(-3., 3., 100)      # phase with linear slope
     amps = np.linspace(5., 5., 100)     # constant amplitude
     freqs = np.arange(4, 5, 0.01)
-    dat = fsd.VNASweep(freqs, amps, ph)
+    dat = fsd.VNASweep.from_columns(freqs, amps, ph)
     cplx = fsd.normalize_data(dat)
     prepro = fsd.preprocess(cplx, 10)
     # test phase angle is zero for all points.
