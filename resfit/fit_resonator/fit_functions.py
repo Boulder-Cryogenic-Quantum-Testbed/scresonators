@@ -36,8 +36,7 @@ def cavity_DCM_REFLECTION(x, Q, Qc, w1, phi):
 
 def cavity_inverse(x, Qi, Qc, w1, phi):
     #Inverse fit function
-    return np.array(\
-        (1 + Qi/Qc*np.exp(1j*phi)/(1 + 1j*2*Qi*(x-w1)/w1)))
+    return np.array((1 + Qi/Qc*np.exp(1j*phi)/(1 + 1j*2*Qi*(x-w1)/w1)))
 
 def cavity_CPZM(x, Qi, Qic, w1, Qia):
     #CPZM fit function

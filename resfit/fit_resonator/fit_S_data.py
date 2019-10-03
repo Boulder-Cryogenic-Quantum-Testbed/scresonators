@@ -236,6 +236,7 @@ def fit_resonator(data_array: np.ndarray,
                                  ff.cavity_CPZM)
             args = inspect.getfullargspec(ff.cavity_CPZM).args[1:]
 
+
     ret = optimize.differential_evolution(obj,
                                           ranges,
                                           maxiter=1000,
