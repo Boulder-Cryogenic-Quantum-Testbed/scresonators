@@ -12,6 +12,7 @@ Here's an example using some of the data hosted on this repository. Hosted
 datasets from groups around the world can be found [here](/cryores/test_data).
 
 ```python
+import numpy as np
 import resfit.fit_resonator.fit_functions as ff
 import resfit.fit_resonator.fit_S_data as fsd
 
@@ -28,7 +29,7 @@ method = ff.FittingMethod.DCM
 
 # Fit the data:
 fsd.fit_resonator(raw, guess, method, 10, None)
->>>{'Q': 273178.7431584903,s
+>>>{'Q': 273178.7431584903,
  'Qc': 242764.2007247585,
  'w1': 5.78529287158879,
  'phi': 0.06757726597956264}
