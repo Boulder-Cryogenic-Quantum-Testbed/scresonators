@@ -1,81 +1,77 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Dec  6 10:53:51 2018
-
-@author: hung93
-"""
-
+"""Adapted from @mullinski and @hung93"""
+import datetime
 import numpy as np
-import matplotlib.pyplot as plt
-from .fit_S_data import Cavity_DCM,Cavity_DCM_REFLECTION,Cavity_inverse,Cavity_CPZM,fit_raw_compare,Fit_Resonator,convert_params #look for fitS21 in subdir., get functions
-class resonator(object): # object is defined in init below
+from matplotlib import pyplot as plt
 
+from resfit.fit_resonator import fit_functions
+
+
+class Resonator: # object is defined in init below
     """
-    required input: freq (GHz), I, Q, power (dbm), electrical delay (ns)
-            ex: resonator(xdata,y1data,y2data,-50,80.15)
-    function: load_params, add_temp, power_calibrate
+    Object for representing a resonator fit.
 
-            *load_params: After fitting, load fitting result to resonator object
-                         input: method ("DCM" or "INV"), fitting result, chi square
-                ex: resonator.load_parameter('DCM',[1,5000,8000,4.56,0.01,1.5], 0.05)
-
-            *add_temp: add temperature (mK) to resonator
-                ex: resonator.add_temp(20)
-
-            *power_calibrate: calibrate input line, get input into device
-                              input [freq_dependence, power_dependence, attenuators]
-                ex: resonator.power_calibrate([0,0,0])
-
-    Load_params.method=DCM -> Diameter Correction Method of Khalil, Stoutimore, Wellstood, Osborn. , DOI: 10.1063/1.3692073
-    Load_params.method=INV -> use Inverse S21 method of Megrant, Neill, ... Martinis, Cleland, https://doi.org/10.1063/1.3693409
-
-
+    Args:
+      freq: list of frequencies (units of GHz).
+      S21: complex S21 for each frequency.
+      name (optional): name of scan.
+      date (optional): date of scan.
+      temp (optional): temperature of scan (in Kelvin).
+      bias (optional): bias present during scan (in volts?).
     """
-    def __init__(self, freq, S21, name = '', date = None,temp = None,bias = None):#frequency, S21, pwr, delay, name = '', date = None,temp = None,bias = None):
-        self.name = name #start definitions of class (as part of a full directory of definitions)
+    def __init__(self, 
+                 freq: np.ndarray, 
+                 S21: np.ndarray, 
+                 name: str = '', 
+                 date: datetime.datetime = None,
+                 temp: float = None,
+                 bias: float = None):
+        self.name = name 
         self.freq = np.asarray(freq)
-        #self.I = np.asarray(I)
-        #self.Q = np.asarray(Q)
         self.date = date if date is not None else None
         self.temp = temp if temp is not None else None
         self.bias = float(bias)*1000 if bias is not None else None
         self.center_freq = (freq.max()+freq.min())/2
         self.span = (freq.max()-freq.min())
 
-        #S21 = I + 1j*Q
-        #S21 = np.multiply(S21,np.exp(1j*delay*2*np.pi*freq))
         self.S21 = S21
         self.phase = np.angle(self.S21)
         self.method = None #code will put DCM or INV method after fitting
-#        self.uphase = np.unwrap(self.phase) #Unwrap the 2pi phase jumps
-#        self.mag = np.abs(self.S21) #Units are volts.
-#        self.logmag = 20*np.log10(self.mag) #Units are dB (20 because V->Pwr)
         self.DCMparams = None # later fit results
         self.INVparams = None # later fit results
-#        self.corrected_power = None
-    def load_params(self, method, params, chi): #process data using load_params.method :load_params.method, and later put fit results also under load_params.DCMparams (if it is DCM method)
-        if self.method == None: #
+
+    def load_params(self, method: str, params: list, chi: any): 
+        """
+        Loads model parameters for a corresponding fit technique.
+
+        Args:
+          method: One of DCM, PHI, DCM REFLECTION, INV, CPZM. Described
+            in the readme.
+          params: model fit parameters.
+          chi: TODO(mutus) desicribe this argument. What is this?
+
+        """
+        if self.method == None: 
             self.method = []
             self.fc = params[3]
             if method == 'DCM':
                 self.method.append("DCM")
-                self.DCMparams= DCMparams_class(params, chi)
+                self.DCMparams = DCMparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'PHI':
                 self.method.append("PHI")
-                self.DCMparams= DCMparams_class(params, chi)
+                self.DCMparams= DCMparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             if method == 'DCM REFLECTION':
                 self.method.append("DCM REFLECTION")
-                self.DCMparams= DCMparams_class(params, chi)
+                self.DCMparams= DCMparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'INV':
                 self.method.append("INV")
-                self.INVparams = INVparams_class(params, chi)
+                self.INVparams = INVparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.INVparams.all,'INV')
             elif method == 'CPZM':
                 self.method.append("CPZM")
-                self.CPZMparams = CPZMparams_class(params, chi)
+                self.CPZMparams = CPZMparams(params, chi)
             else:
                 print('Please input DCM, DCM REFLECTION, PHI, INV or CPZM')
         else:
@@ -84,46 +80,54 @@ class resonator(object): # object is defined in init below
 
                 if method == 'DCM':
                     self.method.append("DCM")
-                    self.DCMparams= DCMparams_class(params, chi)
+                    self.DCMparams = DCMparams(params, chi)
 
                 elif method == 'PHI':
                     self.method.append("PHI")
-                    self.DCMparams= DCMparams_class(params, chi)
+                    self.DCMparams = DCMparams(params, chi)
 
                 elif method == 'DCM REFLECTION':
                     self.method.append("DCM REFLECTION")
-                    self.DCMparams= DCMparams_class(params, chi)
+                    self.DCMparams = DCMparams(params, chi)
 
                 elif method == 'INV':
                     self.method.append("INV")
-                    self.INVparams = INVparams_class(params, chi)
+                    self.INVparams = INVparams(params, chi)
 
                 elif method == 'CPZM':
                     self.method.append("CPZM")
-                    self.CPZMparams = CPZMparams_class(params, chi)
+                    self.CPZMparams = CPZMparams(params, chi)
             else:
                 print("repeated load parameter")
 
-    def reload_params(self, method, params, chi):
+    def reload_params(self, method: str, params: list, chi: any):
+        """
+        Reloads model parameters for a corresponding fit technique.
+
+        Args:
+          method: One of DCM, PHI, DCM REFLECTION, INV, CPZM. Described
+            in the readme.
+          params: model fit parameters.
+          chi: TODO(mutus) desicribe this argument. What is this?
+
+        """
         if  method in self.method:
             print(self.name + ' changed params')
             self.fc = params[3]
             if method == 'DCM REFLECTION':
-                self.DCMparams= DCMparams_class(params, chi)
+                self.DCMparams= DCMparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'INV':
 
-                self.INVparams = INVparams_class(params, chi)
+                self.INVparams = INVparams(params, chi)
                 self.compare = fit_raw_compare(self.freq,self.S21,self.INVparams.all,'INV')
             elif method == 'CPZM':
                 self.method.append("CPZM")
-                self.CPZMparams = CPZMparams_class(params, chi)
+                self.CPZMparams = CPZMparams(params, chi)
         else:
             print('no')
-    def add_temp(self,temp): # temperature (any unit)
-        self.temp = temp
 
-    def power_calibrate(self,p): # optional input calibration: linear function of input S21(frequency) to sample cables, meas. at room temp.
+    def power_calibrate(self, p): # optional input calibration: linear function of input S21(frequency) to sample cables, meas. at room temp.
 
         assert (self.DCMparams is not None) or (self.INVparams is not None),'Please load parameters first'
         p = np.array(p)
@@ -145,7 +149,7 @@ class resonator(object): # object is defined in init below
 
     def fit(self,**kwargs):
         #define method
-        method_default = Fit_Method("INV")
+        method_default = FitMethod("INV")
         for key, value in kwargs.items():
             if key == 'MC_iteration':
                 method_default.MC_iteration = value
@@ -170,7 +174,6 @@ class resonator(object): # object is defined in init below
 
         #run Fit_Resonator with data from self and method just created for INV
         params_INV,fig_INV,chi_INV,init_INV = Fit_Resonator(self,method_default)
-#        self.load_params('INV',params_INV,chi_INV)
 
         #Do the same thing again with DCM this time
         init_DCM = convert_params('INV',params_INV)
@@ -206,7 +209,8 @@ class resonator(object): # object is defined in init below
         return DCM_list,INV_list,method_default
 
 
-class DCMparams_class(object): # DCM fitting results
+class DCMparams(object): # DCM fitting results
+    #TODO(mutus) change these to attr.dataclasses
     def __init__(self,params,chi):
         self.Qc = params[2]
         self.Q = params[1]
@@ -221,7 +225,8 @@ class DCMparams_class(object): # DCM fitting results
         self.theta = params[5]
         self.all = params
 
-class INVparams_class(object): # INV fitting results
+class INVparams(object): # INV fitting results
+    #TODO(mutus) change these to attr.dataclasses
     def __init__(self,params,chi):
         self.Qc = params[2]
         self.Qi = params[1]
@@ -235,14 +240,16 @@ class INVparams_class(object): # INV fitting results
         self.all = params
 
 
-class CPZMparams_class(object):
+class CPZMparams(object):
+    #TODO(mutus) change these to attr.dataclasses
     def __init__(self,params,chi):
         self.Qc = params[2]
         self.Qi = params[1]
         self.Qa = params[4]
         self.chi = chi
         self.fc = params[3]
-class Fit_Method(object):
+
+class FitMethod(object):
     """
     method: str
             "DCM" or 'INV' or 'CPZM'
@@ -281,23 +288,28 @@ class Fit_Method(object):
     vary: None or list of 6 booleans
           vary parameter in least square fit (which parameters change = true)
 """
-    def __init__(self, method,MC_iteration = 5, MC_rounds=100,\
-                 MC_weight = 'no',MC_weightvalue = 2,\
-                 MC_fix = ['Amp','w1','theta'],MC_step_const= 0.6,\
-                 find_circle = True,manual_init=None,vary = None):
-        assert method in ['DCM','DCM REFLECTION','PHI','INV','CPZM'],"Wrong Method, please input:PHI, DCM, INV or CPZM"
-        assert (manual_init == None) or (type(manual_init)==list and len(manual_init)==4),'Wrong manual_init, None or len = 6'
+    def __init__(self,
+                 method: fit_functions.FittingMethod,
+                 MC_iteration: int = 5,
+                 MC_rounds: int = 100,
+                 MC_weight: str = 'no',
+                 MC_weightvalue: int = 2,
+                 MC_fix: list = ['Amp','w1','theta'],
+                 MC_step_const: float = 0.6,
+                 find_circle: bool = True,
+                 manual_init: fit_functions.ModelParams=None,
+                 vary: bool = None):
         self.method = method
-        if method == 'DCM':
-            self.func = Cavity_DCM
-        elif method == 'DCM REFLECTION':
-            self.func = Cavity_DCM_REFLECTION
-        elif method == 'PHI':
-            self.func = Cavity_DCM
-        elif method == 'INV':
-            self.func = Cavity_inverse
-        elif method == 'CPZM':
-            self.func = Cavity_CPZM
+        if method.name == 'DCM':
+            self.func = fit_functions.cavity_DCM
+        elif method.name == 'DCM_REFLECTION':
+            self.func = fit_functions.cavity_DCM_REFLECTION
+        elif method.name == 'PHI':
+            self.func = fit_functions.cavity_DCM
+        elif method.name == 'INV':
+            self.func = fit_functions.cavity_inverse
+        elif method.name == 'CPZM':
+            self.func = fit_functions.cavity_CPZM
         self.MC_rounds = MC_rounds
         self.MC_iteration = MC_iteration
         self.MC_weight = MC_weight
@@ -308,20 +320,19 @@ class Fit_Method(object):
         self.manual_init = manual_init
         self.vary =  vary if vary is not None else [True]*6
 
-    def change_method(self,method):
-        assert method in ['DCM','DCM REFLECTION','INV','CPZM'],"Wrong Method, DCM,INV "
+    def change_method(self, method):
         if self.method == method:
             print("Fit method does not change")
         else:
             self.method = method
 
-            if method == 'DCM':
-                self.func = Cavity_DCM
-            if method == 'PHI':
-                self.func = Cavity_DCM
-            elif method == 'DCM REFLECTION':
-                self.func = Cavity_DCM_REFLECTION
-            elif method == 'INV':
-                self.func = Cavity_inverse
-            elif method == 'CPZM':
-                self.func = Cavity_CPZM
+            if method.name == 'DCM':
+                self.func = fit_functions.Cavity_DCM
+            if method.name == 'PHI':
+                self.func = fit_functions.Cavity_DCM
+            elif method.name == 'DCM_REFLECTION':
+                self.func = fit_functions.Cavity_DCM_REFLECTION
+            elif method.name == 'INV':
+                self.func = fit_functions.Cavity_inverse
+            elif method.name == 'CPZM':
+                self.func = fit_functions.Cavity_CPZM

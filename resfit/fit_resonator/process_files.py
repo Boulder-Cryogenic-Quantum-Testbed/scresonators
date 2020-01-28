@@ -14,8 +14,8 @@ from datetime import datetime
 from matplotlib.gridspec import GridSpec
 import re
 import matplotlib.pylab as pylab
-from .fit_S_data import Fit_Resonator,Cavity_DCM,Cavity_inverse
-from .resonator import resonator,Fit_Method
+from .fit_S_data import fit_resonator,Cavity_DCM,Cavity_inverse
+from .resonator import Resonator,FitMethod
 import ast
 params = {'legend.fontsize': 18,
           'figure.figsize': (10, 8),
@@ -76,7 +76,7 @@ def MultiFit(dic,list_resonators,method,fit = 'coarse'):
     manual_init = method.manual_init
     for k in list_resonators:
         print("Current fitting index " + str(i))
-        params,fig,chi,init = Fit_Resonator(k,method)
+        params,fig,chi,init = fit_resonator(k, method)
         filepath = path + '\\'+method.method+'_'+k.name+".jpg"
         k.load_params(method.method,params,chi)
         fig.savefig(filepath)
@@ -104,7 +104,7 @@ def MultiFit(dic,list_resonators,method,fit = 'coarse'):
         elif k== 0:
             method.manual_init= [k for k in Params_array[1]]
         print(method.manual_init)
-        params,fig,chi,init = Fit_Resonator(list_resonators[k],method)
+        params,fig,chi,init = fit_resonator(list_resonators[k], method)
         if chi < chi_array[k]:
             print(list_resonators[k].name+' changes the fitting\n chi: ' + str(chi_array[k])+' to '+str(chi))
             filepath = path + '\\' +method.method+'_'+list_resonators[k].name+"_second.jpg"
@@ -127,7 +127,7 @@ def MultiFit(dic,list_resonators,method,fit = 'coarse'):
                 df = k.INVparams.fc*factor/k.INVparams.Q
                 fc = k.INVparams.fc
             method.extract_factor = [fc-df/2,fc + df/2]
-            params,fig,chi,init = Fit_Resonator(k,method)
+            params,fig,chi,init = fit_resonator(k, method)
             print("Current finer fitting index " + str(i))
             filepath = path  +'\\Fine_'+method.method+'_'+k.name+".jpg"
             k.reload_params(method.method,params,chi)
@@ -362,7 +362,7 @@ def read_method(dic):
         df = df.reset_index()
         if k == 'DCM':
             i = i+1
-            Method1 = Fit_Method('DCM')
+            Method1 = FitMethod('DCM')
             delay = df[k][0]
             if pd.notna(df[k][1]):
                 Method1.extract_factor = df[k][1]
@@ -387,7 +387,7 @@ def read_method(dic):
 
         if k == 'INV':
             i = i+1
-            Method2 = Fit_Method('INV')
+            Method2 = FitMethod('INV')
             delay = df[k][0]
             if pd.notna(df[k][1]):
                 Method2.extract_factor = df[k][1]

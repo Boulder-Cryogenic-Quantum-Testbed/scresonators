@@ -90,6 +90,13 @@ ENV/
 env.bak/
 venv.bak/
 
+#intellij stuff
+.DS_Store
+.idea
+
+#github stuff
+raw.githubusercontent.com/
+
 # Spyder project settings
 .spyderproject
 .spyproject
