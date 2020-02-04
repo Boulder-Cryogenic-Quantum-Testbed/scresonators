@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 from matplotlib import pyplot as plt
 
-from resfit.fit_resonator import fit_functions
+import fit_resonator.fit_functions as ff
 
 
 class Resonator: # object is defined in init below
@@ -18,14 +18,14 @@ class Resonator: # object is defined in init below
       temp (optional): temperature of scan (in Kelvin).
       bias (optional): bias present during scan (in volts?).
     """
-    def __init__(self, 
-                 freq: np.ndarray, 
-                 S21: np.ndarray, 
-                 name: str = '', 
+    def __init__(self,
+                 freq: np.ndarray,
+                 S21: np.ndarray,
+                 name: str = '',
                  date: datetime.datetime = None,
                  temp: float = None,
                  bias: float = None):
-        self.name = name 
+        self.name = name
         self.freq = np.asarray(freq)
         self.date = date if date is not None else None
         self.temp = temp if temp is not None else None
@@ -39,7 +39,7 @@ class Resonator: # object is defined in init below
         self.DCMparams = None # later fit results
         self.INVparams = None # later fit results
 
-    def load_params(self, method: str, params: list, chi: any): 
+    def load_params(self, method: str, params: list, chi: any):
         """
         Loads model parameters for a corresponding fit technique.
 
@@ -50,7 +50,7 @@ class Resonator: # object is defined in init below
           chi: TODO(mutus) desicribe this argument. What is this?
 
         """
-        if self.method == None: 
+        if self.method == None:
             self.method = []
             self.fc = params[3]
             if method == 'DCM':
@@ -289,50 +289,51 @@ class FitMethod(object):
           vary parameter in least square fit (which parameters change = true)
 """
     def __init__(self,
-                 method: fit_functions.FittingMethod,
+                 method: str,
                  MC_iteration: int = 5,
                  MC_rounds: int = 100,
                  MC_weight: str = 'no',
                  MC_weightvalue: int = 2,
                  MC_fix: list = ['Amp','w1','theta'],
                  MC_step_const: float = 0.6,
-                 find_circle: bool = True,
-                 manual_init: fit_functions.ModelParams=None,
+                 manual_init: list = None,
                  vary: bool = None):
+        assert method in ['DCM','DCM REFLECTION','PHI','INV','CPZM'],"Wrong Method, please input:PHI, DCM, INV or CPZM"
+        assert (manual_init == None) or (type(manual_init)==list and len(manual_init)==4),'Wrong manual_init, None or len = 6'
         self.method = method
-        if method.name == 'DCM':
-            self.func = fit_functions.cavity_DCM
-        elif method.name == 'DCM_REFLECTION':
-            self.func = fit_functions.cavity_DCM_REFLECTION
-        elif method.name == 'PHI':
-            self.func = fit_functions.cavity_DCM
-        elif method.name == 'INV':
-            self.func = fit_functions.cavity_inverse
-        elif method.name == 'CPZM':
-            self.func = fit_functions.cavity_CPZM
+        if method == 'DCM':
+            self.func = ff.cavity_DCM
+        elif method == 'DCM REFLECTION':
+            self.func = ff.cavity_DCM_REFLECTION
+        elif method == 'PHI':
+            self.func = ff.cavity_DCM
+        elif method == 'INV':
+            self.func = ff.cavity_inverse
+        elif method == 'CPZM':
+            self.func = ff.cavity_CPZM
         self.MC_rounds = MC_rounds
         self.MC_iteration = MC_iteration
         self.MC_weight = MC_weight
         self.MC_weightvalue = MC_weightvalue
         self.MC_step_const = MC_step_const
         self.MC_fix = MC_fix
-        self.find_circle = find_circle
         self.manual_init = manual_init
         self.vary =  vary if vary is not None else [True]*6
 
-    def change_method(self, method):
+    def change_method(self,method):
+        assert method in ['DCM','DCM REFLECTION','INV','CPZM'],"Wrong Method, DCM,INV "
         if self.method == method:
             print("Fit method does not change")
         else:
             self.method = method
 
-            if method.name == 'DCM':
-                self.func = fit_functions.Cavity_DCM
-            if method.name == 'PHI':
-                self.func = fit_functions.Cavity_DCM
-            elif method.name == 'DCM_REFLECTION':
-                self.func = fit_functions.Cavity_DCM_REFLECTION
-            elif method.name == 'INV':
-                self.func = fit_functions.Cavity_inverse
-            elif method.name == 'CPZM':
-                self.func = fit_functions.Cavity_CPZM
+            if method == 'DCM':
+                self.func = ff.cavity_DCM
+            if method == 'PHI':
+                self.func = ff.cavity_DCM
+            elif method == 'DCM REFLECTION':
+                self.func = ff.cavity_DCM_REFLECTION
+            elif method == 'INV':
+                self.func = ff.cavity_inverse
+            elif method == 'CPZM':
+                self.func = ff.cavity_CPZM

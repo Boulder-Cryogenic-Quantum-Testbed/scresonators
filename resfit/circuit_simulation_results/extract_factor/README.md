@@ -21,15 +21,15 @@ built into them.
 ## Qi order 100:
 
 #### Impedance Mismatch = 0 Ohms
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/extract_factor/2_L%3D0.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/extract_factor/2_L%3D0.png)
 
 #### Impedance Mismatch = 0.32 Ohms
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/extract_factor/2_L%3D1.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/extract_factor/2_L%3D1.png)
 
 #### Impedance Mismatch = 7.6 Ohms
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/extract_factor/2_L%3D5.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/extract_factor/2_L%3D5.png)
 
 The results of the tests for Qi at order 100 indicate a few things. The first is that the fit function appears to be the most accurate at an extract factor of 1 3dB bandwidth.
 The second thing visible is that past a Qi/Qc ratio of 10 (the limit where Qi is dominating), the fit function loses much of its accuracy.
@@ -38,15 +38,15 @@ The fourth take away from this section is that DCM, INV and CPZM fits all appear
 
 ## Qi order 10,000:
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/extract_factor/4_L%3D0.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/extract_factor/4_L%3D0.png)
 
 #### Impedance Mismatch = 0.32 Ohms
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/extract_factor/4_L%3D1.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/extract_factor/4_L%3D1.png)
 
 #### Impedance Mismatch = 7.6 Ohms
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/extract_factor/4_L%3D5.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/extract_factor/4_L%3D5.png)
 
 The results of the tests for Qi at order 10,000 indicate a few things. The first is that the fit function appears to be the most accurate at an extract factor of 1 3dB bandwidth just like for Qi of order 100.
 The second thing visible is that past a Qi/Qc ratio of 10 (the limit where Qi is dominating), the fit function loses much of its accuracy.
@@ -56,15 +56,15 @@ As shown, the only noticeable source of error appears to be the high Qi/Qc range
 
 ## Qi order 1,000,000
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/extract_factor/6_L%3D0.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/extract_factor/6_L%3D0.png)
 
 #### Impedance Mismatch = 0.32 Ohms
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/extract_factor/6_L%3D1.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/extract_factor/6_L%3D1.png)
 
 #### Impedance Mismatch = 7.6 Ohms
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/extract_factor/6_L%3D5.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/extract_factor/6_L%3D5.png)
 
 The results of the tests for Qi at order 10,000 indicate a few things. The first is that the fit function appears to be the most accurate at an extract factor of 1 3dB bandwidth just like for the two previous Qi orders of magnitude.
 The second thing visible is that, once again, past a Qi/Qc ratio of 10 (the limit where Qi is dominating), the fit function loses much of its accuracy.
