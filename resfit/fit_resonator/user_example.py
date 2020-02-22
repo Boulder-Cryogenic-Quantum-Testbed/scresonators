@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Mon May 14 19:32:43 2018
-
-@author: hung93
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd #speadsheet commands
@@ -20,7 +14,7 @@ np.set_printoptions(precision=4,suppress=True)# display numbers with 4 sig. figu
 
                          ## Code Starts Here ##
 
-dir = "path to folder with your data here" #path to directory with data, make sure to use /
+dir = "path to folder with your data here" #make sure to use / instead of \
 filename = 'example.csv'
 
 #############################################
@@ -45,7 +39,7 @@ except:
 normalize = 10
 
 ### Fit Resonator function without background removal ###
-params1,fig1,chi1,init1 = fsd.Fit_Resonator(filename = filename,Method = Method,normalize = normalize,dir = dir)
+params,conf_array,fig1,chi1,init1 = fsd.fit_resonator(filename = filename,Method = Method,normalize = normalize,dir = dir)
 
 ### Fit Resonator function with background removal ###
 #background_file = 'example_background.csv'

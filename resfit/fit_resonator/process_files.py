@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri May 11 19:37:41 2018
-
-@author: hung93
-"""
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
