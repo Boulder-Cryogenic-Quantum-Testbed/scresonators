@@ -8,27 +8,27 @@ The linear fit is then subtracted such that the endpoints of user data are at (1
 
 #### Qi/Qc = 0, Impedance Mismatch = 0
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/normalize/L%3D0_Qc0.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/normalize/L%3D0_Qc0.png)
 
 Here, it is clearly shown that for the orders of Qi tested and for all fit types, the percent error of Qi is only considerable for an extract factor of 1.
 
 #### Qi/Qc = 10, Impedance Mismatch = 0
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/normalize/L%3D0_Qc1.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/normalize/L%3D0_Qc1.png)
 
 Here it can be seen that DCM and CPZM for high Qi carry the highest error in their respective fits. The error of all fit functions for all Qi values appears to
 converge within a 1-2% error range at some point close to a value of 10 for the number of 3dB bandwidths used for normalization.
 
 #### Qi/Qc = 1/10, Impedance Mismatch = 0
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/normalize/L%3D0_Qc-1.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/normalize/L%3D0_Qc-1.png)
 
 Here, it can be seen that nearly all of the functions are close to each other in error right from the beginning with a percent error of less than 5 for all even at
 only one 3dB bandwidth being used to normalize. All fit functions for all Qi values tested fall below 1% error at 3 3dB bandwidths used to normalize.
 
 #### Qi/Qc = 0, Impedance Mismatch = 0.32
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/normalize/L%3D1_Qc0.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/normalize/L%3D1_Qc0.png)
 
 Right away, it can be seen that all the fit functions for all Qi values tested seem to converge at 2 3dB bandwidths used to normalize. It can also be seen that
 error is very small for values of 2 and beyond for bandwidth used.

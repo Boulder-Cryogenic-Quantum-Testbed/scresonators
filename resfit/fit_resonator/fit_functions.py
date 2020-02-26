@@ -4,28 +4,6 @@ import enum
 
 import numpy as np
 
-@attr.s
-class ModelParams:
-    """All your model parameters defined with this."""
-    Qi = attr.ib(type=float)
-    Qc = attr.ib(type=float)
-    f_res = attr.ib(type=float)
-    phi = attr.ib(type=float)
-    Q = attr.ib(type=float)
-    Qa = attr.ib(type=float)
-    kappa = attr.ib(type=float)
-
-    @classmethod
-    def from_params(cls, Qi,  Qc, f_res, phi, Q=None):
-        if Qi and not Q:
-            Q = 1 / (1 / Qi + 1 / Qc)
-        elif Qi and Q:
-            print("Q Qi: ", Qi, Q)
-            raise ValueError('Specifiy either Qi or Q, not both.')
-        kappa = f_res/Qi
-        Qa = Qi/f_res
-        return cls(Qi=Qi, Qc=Qc, f_res=f_res,phi=phi, Q=Q, kappa=kappa, Qa=Qa)
-
 def cavity_DCM(x, Q, Qc, w1, phi):
     #DCM fit function
     return np.array(1-Q/Qc*np.exp(1j*phi)/(1 + 1j*(x-w1)/w1*2*Q))
@@ -51,12 +29,88 @@ def one_cavity_peak_abs_REFLECTION(x, Q, Qc, w1):
     #Ideal resonator fit function
     return np.abs(2*Q/Qc/(1 + 1j*(x-w1)/w1*2*Q))
 
-def cavity_phiRM():
-    raise Exception('Phi rotation method not implemented!')
+#############################################################################
+def fit_raw_compare(x,y,params,method):
+    if method == 'DCM':
+        func = cavity_DCM
+    if method == 'INV':
+        func = cavity_inverse
+    yfit = func(x,*params)
+    ym = np.abs(y-yfit)/np.abs(y)
+    return ym
+############################################################################
+    ## Least square fit model for one cavity, dip-like S21
+def min_one_Cavity_dip(parameter, x, data=None):
+    #fit function call for DCM fitting method
+    Q = parameter['Q']
+    Qc = parameter['Qc']
+    w1 = parameter['w1']
+    phi = parameter['phi']
 
-class FittingMethod(enum.Enum):
-    DCM = 1
-    DCM_REFLECTION = 2
-    PHI = 3
-    INV = 4
-    CPZM = 5
+    model = cavity_DCM(x, Q, Qc, w1,phi)
+    real_model = model.real
+    imag_model = model.imag
+    real_data = data.real
+    imag_data = data.imag
+
+    resid_re = real_model - real_data
+    resid_im = imag_model - imag_data
+    return np.concatenate((resid_re,resid_im))
+
+########################################################
+
+    ## Least square fit model for one cavity, dip-like S21
+def min_one_Cavity_DCM_REFLECTION(parameter, x, data=None):
+    #fit function call for DCM fitting method
+    Q = parameter['Q']
+    Qc = parameter['Qc']
+    w1 = parameter['w1']
+    phi = parameter['phi']
+
+    model = cavity_DCM_REFLECTION(x, Q, Qc, w1,phi)
+    real_model = model.real
+    imag_model = model.imag
+    real_data = data.real
+    imag_data = data.imag
+
+    resid_re = real_model - real_data
+    resid_im = imag_model - imag_data
+    return np.concatenate((resid_re,resid_im))
+
+########################################################
+    ## Least square fit model for one cavity, dip-like "Inverse" S21
+def min_one_Cavity_inverse(parameter, x, data=None):
+    #fit function call for INV fitting method
+    Qc = parameter['Qc']
+    Qi = parameter['Qi']
+    w1 = parameter['w1']
+    phi = parameter['phi']
+
+    model = cavity_inverse(x, Qi, Qc, w1,phi)
+    real_model = model.real
+    imag_model = model.imag
+    real_data = data.real
+    imag_data = data.imag
+
+    resid_re = real_model - real_data
+    resid_im = imag_model - imag_data
+    return np.concatenate((resid_re,resid_im))
+
+
+#####################################################################
+def min_one_Cavity_CPZM(parameter, x, data=None):
+    #fit function call for CPZM fitting method
+    Qc = parameter['Qc']
+    Qi = parameter['Qi']
+    w1 = parameter['w1']
+    Qa = parameter['Qa']
+
+    model = cavity_CPZM(x, Qi, Qc, w1,Qa)
+    real_model = model.real
+    imag_model = model.imag
+    real_data = data.real
+    imag_data = data.imag
+
+    resid_re = real_model - real_data
+    resid_im = imag_model - imag_data
+    return np.concatenate((resid_re,resid_im))

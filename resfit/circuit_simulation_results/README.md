@@ -5,7 +5,7 @@ By reading through this data, the user should be able to see the best data takin
 
 ## Model:
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/circuit.PNG)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/circuit.PNG)
 
 The model used here is a simple lumped element resonator RCL circuit capacitively coupled to a transmission line with data generated in AWR.
 Asymmetry is added by increasing inductance on one side of the transmission line and Qc is changed by varying the value of the coupling capacitor.
