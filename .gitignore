@@ -94,9 +94,6 @@ venv.bak/
 .DS_Store
 .idea
 
-#github stuff
-raw.githubusercontent.com/
-
 # Spyder project settings
 .spyderproject
 .spyproject
