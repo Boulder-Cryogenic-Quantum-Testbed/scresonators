@@ -678,7 +678,7 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
             for i in title: #remove period from title
                 if i != '.':
                     title_without_period = title_without_period + i
-            file = open(output_path + title_without_period + "_output.csv","w")
+            file = open(output_path + "fit_params.csv","w")
             if func == ff.cavity_inverse:
                 textstr = r'Qi = '+'%s' % float('{0:.10g}'.format(Qi))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[0]))+\
                 '\n' + r'Qc* = '+'%s' % float('{0:.10g}'.format(Qc))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[1]))+\
@@ -971,7 +971,7 @@ def min_fit(params,xdata,ydata,Method):
         quit()
 
 
-def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_array: np.ndarray = None, background: str = None, background_array: np.ndarray = None, plot_extra = True):
+def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_array: np.ndarray = None, background: str = None, background_array: np.ndarray = None, plot_extra = False):
     """Function to fit resonator data
 
     Args:
@@ -1016,6 +1016,7 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
     #make a folder to put all output in
     result = time.localtime(time.time())
     output = str(result.tm_year)
+    output = str(Method.method) + '_' + output
     if len(str(result.tm_mon)) < 2:
         output = output + '0' + str(result.tm_mon)
     else:
@@ -1240,11 +1241,10 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
         except:
             print(">Failed to plot CPZM fit for data")
             quit()
-    filename_without_period = ''
-    for i in filename:
-        if i != '.':
-            filename_without_period = filename_without_period + i
-    fig.savefig(output_path+filename_without_period+'_'+Method.method+'_fit.png')
+    if filename.endswith('.csv'):
+        filename = filename[:-4]
+    filename = filename.replace('.','p')
+    fig.savefig(output_path+Method.method+'_'+filename+'.png')
     return output_params,conf_array,fig,error,init
 
 
