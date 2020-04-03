@@ -971,7 +971,14 @@ def min_fit(params,xdata,ydata,Method):
         quit()
 
 
-def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_array: np.ndarray = None, background: str = None, background_array: np.ndarray = None, plot_extra = False):
+def fit_resonator(filename: str,
+                  Method,
+                  normalize: int,
+                  dir: str = None, 
+                  data_array: np.ndarray = None, 
+                  background: str = None, 
+                  background_array: np.ndarray = None, 
+                  plot_extra = False):
     """Function to fit resonator data
 
     Args:
@@ -1015,8 +1022,7 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
 
     #make a folder to put all output in
     result = time.localtime(time.time())
-    output = str(result.tm_year)
-    output = str(Method.method) + '_' + output
+    output = str(Method.method) + '_' + str(result.tm_year)
     if len(str(result.tm_mon)) < 2:
         output = output + '0' + str(result.tm_mon)
     else:
