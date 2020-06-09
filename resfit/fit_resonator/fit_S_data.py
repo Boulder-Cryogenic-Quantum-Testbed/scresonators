@@ -428,10 +428,10 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
 
     #add title
     if len(title) > 77:
-        plot_title = title[0:39] + "\n" + title[40:76] + '...'
+        plot_title = title[0:40] + "\n" + title[40:76] + '...'
         plt.gcf().text(0.05, 0.9, plot_title, fontsize=30)
     if len(title) > 40:
-        plot_title = title[0:39] + "\n" + title[40:]
+        plot_title = title[0:40] + "\n" + title[40:]
         plt.gcf().text(0.05, 0.9, plot_title, fontsize=30)
     else:
         plt.gcf().text(0.05, 0.92, title, fontsize=30)
@@ -777,7 +777,44 @@ def monte_carlo_fit(xdata= None,ydata=None,parameter=None,Method = None):
         stop_MC = True
     return parameter,stop_MC, error
 
+def get_header(line: str):
+    if (line.strip()[0:1]!='#'):
+        print("Header not found in file.")
+        quit()
+    line = line[2:]
+    if line[0:2].lower()=='hz':
+        frequency_units=line[0:2].lower()
+        line = line[3:]
+    elif line[0:3].lower()=='khz':
+        frequency_units=line[0:3].lower()
+        line = line[4:]
+    elif line[0:3].lower()=='mhz':
+        frequency_units=line[0:3].lower()
+        line = line[4:]
+    elif line[0:3].lower()=='ghz':
+        frequency_units=line[0:3].lower()
+        line = line[4:]
+    else:
+        print('Frequency units not found')
+        quit()
+    if line[0:1].lower()!='s':
+        print('Data is not an S parameter measurement')
+        quit()
+    line = line[2:]
 
+    if line[0:2].lower()=='db':
+        data_format=line[0:2].lower()
+        line = line[3:]
+    elif line[0:2].lower()=='ma':
+        data_format=line[0:2].lower()
+        line = line[3:]
+    elif line[0:2].lower()=='ri':
+        data_format=line[0:2].lower()
+        line = line[3:]
+    else:
+        print('Data format not found')
+        quit()
+    return frequency_units, data_format
 
 @attr.s
 class VNASweep:
@@ -788,18 +825,121 @@ class VNASweep:
     linear_amps = attr.ib(type=np.ndarray)
 
     @classmethod
-    def from_csv(cls, csv):
-        """Load data from csv file."""
-        try:
-            data = np.loadtxt(csv, delimiter=',')
-        except:
-            print("User data file not found.")
-            quit()
-        freqs = data.T[0] / 10**9
-        amps = data.T[1]
-        phases = data.T[2]
-        linear_amps = 10**(amps/20)
-        return cls(freqs=freqs,amps=amps,phases=phases,linear_amps=linear_amps)
+    def from_file(cls, file):
+        if (file[-1:]=='p' and file[-4:-2]=='.s'):
+            """Load data from .snp file."""
+            try:
+                snp = open(file, 'r')
+            except:
+                print("User data file not found.")
+                quit()
+
+            """Read in header for file"""
+            line = snp.readline()
+            while line:
+                if (line.strip()[0:1]=='#'):
+                    break
+                line = snp.readline()
+            frequency_units, data_format = get_header(line)
+
+            """Read in data segment"""
+            line = snp.readline().strip()
+            while line:
+                if line[0:1]=='!':
+                    line = snp.readline().strip()
+                    continue
+                else:
+                    break
+
+            row = line.split()
+            if row == []:
+                print("Data not found in file.")
+                quit()
+
+            if data_format == "db":
+                freqs = np.array(float(row[0]))
+                amps = np.array(float(row[1]))
+                phases = np.array(float(row[2]))
+                line = snp.readline().strip()
+
+                while line:
+                    if row[0:1]=='!':
+                        line = snp.readline().strip()
+                        continue
+
+                    row = line.split()
+                    freqs = np.append(freqs,float(row[0]))
+                    amps = np.append(amps,float(row[1]))
+                    phases = np.append(phases,float(row[2]))
+                    line = snp.readline().strip()
+                phases = phases*np.pi/180
+                linear_amps = 10**(amps/20)
+
+            elif data_format == "ma":
+                freqs = np.array(float(row[0]))
+                linear_amps = np.array(float(row[1]))
+                phases = np.array(float(row[2]))
+                line = snp.readline().strip()
+
+                while line:
+                    if row[0:1]=='!':
+                        line = snp.readline().strip()
+                        continue
+
+                    row = line.split()
+                    freqs = np.append(freqs,float(row[0]))
+                    linear_amps = np.append(linear_amps,float(row[1]))
+                    phases = np.append(phases,float(row[2]))
+                    line = snp.readline().strip()
+                phases = phases*np.pi/180
+                amps = np.log10(linear_amps)*20
+
+            elif data_format == "ri":
+                freqs = np.array(float(row[0]))
+                real = np.array(float(row[1]))
+                imaginary = np.array(float(row[2]))
+                line = snp.readline().strip()
+
+                while line:
+                    if row[0:1]=='!':
+                        line = snp.readline().strip()
+                        continue
+
+                    row = line.split()
+                    freqs = np.append(freqs,float(row[0]))
+                    real = np.append(real,float(row[1]))
+                    imaginary = np.append(imaginary,float(row[2]))
+                    line = snp.readline().strip()
+                linear_amps = np.absolute(real + imaginary)
+                phases = np.angle(real + 1j*imaginary, deg=True)
+                amps = np.log10(linear_amps)*20
+
+            else:
+                print("Data type in file not supported. Please use DB, MA, or RI.")
+                quit()
+
+            if frequency_units == "hz":
+                freqs = freqs / 10**9
+            elif frequency_units == "khz":
+                freqs = freqs / 10**6
+            elif frequency_units == "mhz":
+                freqs = freqs / 10**3
+            elif frequency_units != "ghz":
+                print("Units for the frequency not found. Please include units for frequency in the header of the file.")
+            return cls(freqs=freqs,amps=amps,phases=phases,linear_amps=linear_amps)
+
+        else:
+            """Load data from other type of file."""
+            try:
+                data = np.loadtxt(file, delimiter=',')
+            except:
+                print("User data file not found.")
+                quit()
+            freqs = data.T[0] / 10**9
+            amps = data.T[1]
+            phases = data.T[2]*np.pi/180
+            linear_amps = 10**(amps/20)
+            return cls(freqs=freqs,amps=amps,phases=phases,linear_amps=linear_amps)
 
     @classmethod
     def from_columns(cls, freqs, amps, phases):
@@ -995,7 +1135,7 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
     #read in data from file
     if dir != None:
         filepath = dir+'/'+filename
-        data = VNASweep.from_csv(filepath)
+        data = VNASweep.from_file(filepath)
     elif data_array.any():
         data = VNASweep.from_columns(freqs=data_array.T[0], amps=data_array.T[1], phases=data_array.T[2])
     else:
@@ -1006,7 +1146,7 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
     try:
         xdata = data.freqs
         linear_amps = data.linear_amps
-        phases = data.phases
+        phases = np.unwrap(data.phases)
 
         ydata = np.multiply(linear_amps,np.exp(1j*phases))
     except:
@@ -1028,6 +1168,11 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
         output_path = dir + '/' + output + '/'
     else:
         output_path = output + '/'
+    count=2
+    path = output_path
+    while os.path.isdir(output_path):
+        output_path=path[0:-1]+'_'+ str(count) +'/'
+        count = count+1
     os.mkdir(output_path)
 
     #remove user background file if present
@@ -1037,7 +1182,7 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
         else:
             print("Directory for background file not speficied")
             quit()
-        databg = VNASweep.from_csv(filepath)
+        databg = VNASweep.from_file(filepath)
         ydata = background_removal(databg, linear_amps, phases)
     elif background_array != None:
         databg = VNASweep.from_columns(freqs=background_array.T[0], amps=background_array.T[1], phases=background_array.T[2])
@@ -1126,9 +1271,9 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
         params.add('Qc', value=init[1],vary = vary[1],min = init[1]*0.8, max = init[1]*1.2)
         params.add('w1', value=init[2],vary = vary[2],min = init[2]*0.9, max = init[2]*1.1)
         if Method.method == 'CPZM':
-            params.add('Qa', value=init[3], vary = vary[3] , min = init[3]*0.9,max = init[3]*1.1)
+            params.add('Qa', value=init[3], vary = vary[3] , min = -init[3]*1.1,max = init[3]*1.1)
         else:
-            params.add('phi', value=init[3], vary = vary[3] , min = init[3]*0.9,max = init[3]*1.1)
+            params.add('phi', value=init[3], vary = vary[3] , min = -np.pi,max = np.pi)
     except:
         print(">Failed to define parameters, please make sure parameters are of correct format")
         quit()
