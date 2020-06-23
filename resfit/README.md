@@ -24,12 +24,14 @@ Additionally, the code is able to fit reflection type geometry resonators with a
 ![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/Fit_Equations.PNG)
 
 ## INPUT:
-The code takes in a .csv file (accepts .txt as well), containing 3 columns separated by commas where each line represents one point of data
-   >Note that as of right now, headers are not accepted in this file, the code only accepts the data with no header (currently planning to add header support 2/3/2020)
+The code takes in a file (currently accepts .snp .csv and .txt files). If the file is a .snp file it should follow the .snp format. If the file is a .csv or .txt it should contain 3 columns separated by commas where each line represents one point of data.
+   >Headers are not accepted in the file .csv and .txt files, the code only accepts the data with a header for .snp
+
+Format for .csv and .txt files:
 
 1. The first column is monotonically increasing frequency in GHz
 1. The second column is magnitude of S21 in dB (log mag)
-1. The third column is phase of S21 in radians
+1. The third column is phase of S21 in degrees
    >More information regarding standard data format can be found here https://github.com/Boulder-Cryogenic-Resonator-Testbed/measurement/issues/19
 
 The user has the option of including a background removal file in order to have a more accurate fit. This is recommended if the background is not linear.

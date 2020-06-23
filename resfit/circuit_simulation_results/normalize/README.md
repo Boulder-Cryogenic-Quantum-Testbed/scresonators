@@ -33,7 +33,7 @@ only one 3dB bandwidth being used to normalize. All fit functions for all Qi val
 Right away, it can be seen that all the fit functions for all Qi values tested seem to converge at 2 3dB bandwidths used to normalize. It can also be seen that
 error is very small for values of 2 and beyond for bandwidth used.
 
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/Resfit/circuit_simulation_results/normalize/L%3D1_Qc1.png)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/circuit_simulation_results/normalize/L%3D1_Qc1.png)
 
 Here it can be seen that CPZM carries the highest error in its fit. The error of all fit functions for all Qi values appears to converge below 1% error at around
 a value of 5 for the number of 3dB bandwidths used for normalization.
