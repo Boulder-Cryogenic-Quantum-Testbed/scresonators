@@ -1384,7 +1384,7 @@ def fit_resonator(filename: str,
                   background_array: np.ndarray = None,
                   plot_extra = False,
                   preprocess_method = "linear"):
-  
+
     """Function to fit resonator data
 
     Args:
