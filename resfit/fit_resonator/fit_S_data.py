@@ -374,7 +374,27 @@ def find_nearest(array,value):
     return val, idx
 
 
-def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Method,func,error,figurename,x_c,y_c,radius,output_path,conf_array,extract_factor = None,title = "Fit",manual_params = None):
+def PlotFit(x,
+            y,
+            x_initial,
+            y_initial,
+            slope,
+            intercept,
+            slope2,
+            intercept2,
+            params,
+            Method,
+            func,
+            error,
+            figurename,
+            x_c,
+            y_c,
+            radius,
+            output_path,
+            conf_array,
+            extract_factor = None,
+            title = "Fit",
+            manual_params = None):
     """Plots data and outputs fit parameters to a file
 
     Args:
@@ -678,7 +698,7 @@ def PlotFit(x,y,x_initial,y_initial,slope,intercept,slope2,intercept2,params,Met
             for i in title: #remove period from title
                 if i != '.':
                     title_without_period = title_without_period + i
-            file = open(output_path + title_without_period + "_output.csv","w")
+            file = open(output_path + "fit_params.csv","w")
             if func == ff.cavity_inverse:
                 textstr = r'Qi = '+'%s' % float('{0:.10g}'.format(Qi))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[0]))+\
                 '\n' + r'Qc* = '+'%s' % float('{0:.10g}'.format(Qc))+ r"+/-" + '%s' % float('{0:.1g}'.format(conf_array[1]))+\
@@ -957,7 +977,11 @@ class ComplexData:
 
 
 
-def preprocess(xdata: np.ndarray, ydata: np.ndarray, normalize: int, output_path: str, plot_extra):
+def preprocess(xdata: np.ndarray, 
+                ydata: np.ndarray, 
+                normalize: int, 
+                output_path: str, 
+                plot_extra):
     """
     Data Preprocessing. Get rid of cable delay and normalize phase/magnitude of S21 by linear fit of normalize # of endpoints
     """
@@ -993,7 +1017,9 @@ def preprocess(xdata: np.ndarray, ydata: np.ndarray, normalize: int, output_path
 
 
 
-def background_removal(databg: VNASweep, linear_amps: np.ndarray, phases: np.ndarray):
+def background_removal(databg: VNASweep, 
+                        linear_amps: np.ndarray, 
+                        phases: np.ndarray):
     x_bg = databg.freqs
     linear_amps_bg = databg.linear_amps
     phases_bg = databg.phases
@@ -1111,7 +1137,14 @@ def min_fit(params,xdata,ydata,Method):
         quit()
 
 
-def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_array: np.ndarray = None, background: str = None, background_array: np.ndarray = None, plot_extra = True):
+def fit_resonator(filename: str,
+                  Method,
+                  normalize: int,
+                  dir: str = None, 
+                  data_array: np.ndarray = None, 
+                  background: str = None, 
+                  background_array: np.ndarray = None, 
+                  plot_extra = False):
     """Function to fit resonator data
 
     Args:
@@ -1154,25 +1187,7 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
         quit()
 
     #make a folder to put all output in
-    result = time.localtime(time.time())
-    output = str(result.tm_year)
-    if len(str(result.tm_mon)) < 2:
-        output = output + '0' + str(result.tm_mon)
-    else:
-        output = output + str(result.tm_mon)
-    if len(str(result.tm_mday)):
-        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
-    else:
-        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
-    if dir != None:
-        output_path = dir + '/' + output + '/'
-    else:
-        output_path = output + '/'
-    count=2
-    path = output_path
-    while os.path.isdir(output_path):
-        output_path=path[0:-1]+'_'+ str(count) +'/'
-        count = count+1
+    output_path = name_folder(dir,str(Method.method))
     os.mkdir(output_path)
 
     #remove user background file if present
@@ -1385,15 +1400,20 @@ def fit_resonator(filename: str,Method,normalize: int,dir: str = None, data_arra
         except:
             print(">Failed to plot CPZM fit for data")
             quit()
-    filename_without_period = ''
-    for i in filename:
-        if i != '.':
-            filename_without_period = filename_without_period + i
-    fig.savefig(output_path+filename_without_period+'_'+Method.method+'_fit.png')
+
+    fig.savefig(name_plot(filename,str(Method.method),output_path))
     return output_params,conf_array,fig,error,init
 
 
-def plot(x,y,name,output_path,x_c=None,y_c=None,r=None,p_x=None,p_y=None):
+def plot(x,
+        y,
+        name,
+        output_path,
+        x_c=None,
+        y_c=None,
+        r=None,
+        p_x=None,
+        p_y=None):
     #plot any given set of x and y data
     fig = plt.figure('raw_data',figsize=(10, 10))
     gs = GridSpec(2,2)
@@ -1421,3 +1441,31 @@ def plot2(x,y,x2,y2,name,output_path):
     ax.plot(x,y,'bo',label = 'raw data',markersize = 3)
     ax.plot(x2,y2,'bo',label = 'raw data',markersize = 3, color = 'red')
     fig.savefig(output_path+name+'.png')
+
+def name_folder(dir,strmethod):
+    result = time.localtime(time.time())
+    output = strmethod + '_' + str(result.tm_year)
+    if len(str(result.tm_mon)) < 2:
+        output = output + '0' + str(result.tm_mon)
+    else:
+        output = output + str(result.tm_mon)
+    if len(str(result.tm_mday)):
+        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
+    else:
+        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
+    if dir != None:
+        output_path = dir + '/' + output + '/'
+    else:
+        output_path = output + '/'
+    count=2
+    path = output_path
+    while os.path.isdir(output_path):
+        output_path=path[0:-1]+'_'+ str(count) +'/'
+        count = count+1
+    return output_path
+
+def name_plot(filename,strmethod,output_path):
+    if filename.endswith('.csv'):
+        filename = filename[:-4]
+    filename = filename.replace('.','p')
+    return output_path+strmethod+'_'+filename+'.png'
