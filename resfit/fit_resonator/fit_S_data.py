@@ -968,8 +968,9 @@ def preprocess(xdata: np.ndarray, ydata: np.ndarray, normalize: int, output_path
         print("Not enough points to normalize, please lower value of normalize variable or take more points near resonance")
         quit()
     #normalize phase of S21 using linear fit
-    slope, intercept, r_value, p_value, std_err = stats.linregress(np.append(xdata[0:normalize],xdata[-normalize:]),np.append(np.angle(ydata[0:normalize]),np.angle(ydata[-normalize:])))
-    angle = np.subtract(np.angle(ydata),slope*xdata) #remove cable delay
+    phase = np.unwrap(np.angle(ydata))
+    slope, intercept, r_value, p_value, std_err = stats.linregress(np.append(xdata[0:normalize],xdata[-normalize:]),np.append(phase[0:normalize],phase[-normalize:]))
+    angle = np.subtract(phase,slope*xdata) #remove cable delay
     y_test = np.multiply(np.abs(ydata),np.exp(1j*angle))
     if plot_extra:
         plot(np.real(y_test),np.imag(y_test),"Normalize_2",output_path)
