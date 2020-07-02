@@ -2,8 +2,17 @@ import numpy as np
 import pyvisa
 import os
 from os import path
+import pandas as pd
+import time
 
-def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, power: float, edelay: float, averages: int):
+def pna_setup(pna, 
+            points: int, 
+            centerf: float, 
+            span: float, 
+            ifband: float, 
+            power: float, 
+            edelay: float, 
+            averages: int):
     '''
     set parameters for the PNA for the sweep (number of points, center frequency, span of frequencies, IF bandwidth, power, electrical delay and number of averages)
     '''
@@ -47,14 +56,24 @@ def read_data(pna, points, outputfile, power, temp):
     mag = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #open output file and put data points into the file
-    file = open(outputfile[0:-4]+'_'+str(power)+'dB'+'_'+str(temp)+'mK'+'.csv',"w")
+    filename = name_datafile(outputfile,power,temp)
+
+    file = open(filename+'.csv',"w")
     count = 0
     for i in freq:
         file.write(str(i)+','+str(mag[count])+','+str(phase[count])+'\n')
         count = count + 1
     file.close()
 
-def getdata(centerf: float, span: float, temp: float, averages: int = 100, power: float = -30, edelay: float = 40, ifband: float = 5, points: int = 201, outputfile: str = "results.csv"):
+def get_data(centerf: float, 
+            span: float, 
+            temp: float, 
+            averages: int = 100, 
+            power: float = -30, 
+            edelay: float = 40, 
+            ifband: float = 5, 
+            points: int = 201, 
+            outputfile: str = "results.csv"):
     '''
     function to get data and put it into a user specified file
     '''
@@ -75,10 +94,21 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100, power
     while(True):
         if (keysight.query('STAT:OPER:AVER1:COND?')[1] != "0"):
             break;
-
+    
     read_data(keysight, points, outputfile, power, temp)
 
-def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: float, span: float, temp: float, averages: float = 100, edelay: float = 40, ifband: float = 5, points: int = 201, outputfile: str = "results.csv"):
+def power_sweep(startpower: float, 
+                endpower: float, 
+                numsweeps: int, 
+                centerf: float, 
+                span: float, 
+                temp: float, 
+                averages: float = 100, 
+                edelay: float = 40, 
+                ifband: float = 5, 
+                points: int = 201, 
+                outputfile: str = "results.csv",
+                meastype: str = None):
     '''
     run a power sweep for specified power range with a certain number of sweeps
     '''
@@ -88,20 +118,12 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: floa
     stepsize = sweeps[0]-sweeps[1]
 
     #create a new directory for the output to be put into
-    if (path.isdir(outputfile[0:-4]+'_'+'_'+str(temp)+'mK')):
-        dircount = 1
-        while (True):
-            if (not path.isdir(outputfile[0:-4]+'_'+'_'+str(temp)+'mK'+str(dircount))):
-                break;
-            dircount = dircount + 1
-        os.mkdir(outputfile[0:-4]+'_'+'_'+str(temp)+'mK'+str(dircount))
-        outputfile = outputfile[0:-4]+'_'+'_'+str(temp)+'mK'+str(dircount) + '/' + outputfile
-    else:
-        os.mkdir(outputfile[0:-4]+'_'+'_'+str(temp)+'mK')
-        outputfile = outputfile[0:-4]+'_'+'_'+str(temp)+'mK' + '/' + outputfile
+    directory_name = timestamp_folder(os.getcwd(),meastype)
+    os.mkdir(directory_name)
+    outputfile = directory_name + '/' + outputfile
 
     #write an output file with conditions
-    file = open(outputfile[0:-4]+'_'+str(temp)+'mK_conditions'+'.csv',"w")
+    file = open(directory_name+'/'+'conditions.csv',"w")
     file.write('STARTPOWER: '+str(startpower)+' dB\n')
     file.write('ENDPOWER: '+str(endpower)+' dB\n')
     file.write('NUMSWEEPS: '+str(numsweeps)+'\n')
@@ -114,7 +136,40 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: floa
     file.write('POINTS: '+str(points)+'\n')
     file.close()
 
-    #run each sweep while increasing averages for each power
+    #run each sweep
     for i in sweeps:
-        getdata(centerf, span, temp, averages, i, edelay, ifband, points, outputfile)
+        get_data(centerf, span, temp, averages, i, edelay, ifband, points, outputfile)
+        # Iterate number of averages as power decreases
         averages = averages * ((10**(stepsize/10))**0.5)
+
+def name_datafile(outputfile,power,temp):
+    filename = outputfile+'_'+str(power)+'dB'+'_'+str(temp)+'mK'
+    filename = filename.replace('.','p')
+
+    return filename
+    
+def timestamp_folder(dir,meastype):
+    result = time.localtime(time.time())
+    output = str(result.tm_year)
+    if len(str(result.tm_mon)) < 2:
+        output = output + '0' + str(result.tm_mon)
+    else:
+        output = output + str(result.tm_mon)
+    if len(str(result.tm_mday)):
+        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
+    else:
+        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
+    
+    output = meastype+ '_' + output
+    output = output.replace('.','p')
+    
+    if dir != None:
+        output_path = dir + '/' + output + '/'
+    else:
+        output_path = output + '/'
+    count=2
+    path = output_path
+    while os.path.isdir(output_path):
+        output_path=path[0:-1]+'_'+ str(count) +'/'
+        count = count+1
+    return output_path
