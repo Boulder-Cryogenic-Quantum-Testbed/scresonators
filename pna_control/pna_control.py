@@ -25,8 +25,10 @@ def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, powe
     pna.write('SENSe1:AVERage:STATe ON')
 
     #ensure at least 10 averages are taken
-    if(averages < 10):
-        averages = 10
+    #if(averages < 10):
+    #    averages = 10
+    if(averages < 1):
+        averages = 1
     averages = averages//1
     pna.write('SENSe1:AVERage:Count {}'.format(averages))
 
