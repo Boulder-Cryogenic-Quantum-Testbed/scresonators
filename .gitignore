@@ -104,5 +104,9 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# Vim files
+*.swp
+*.swo
+
 # mypy
 .mypy_cache/
