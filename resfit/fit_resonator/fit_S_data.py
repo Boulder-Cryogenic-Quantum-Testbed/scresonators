@@ -62,7 +62,7 @@ def extract_near_res(x_raw: np.ndarray,
     y_temp = []
     # xdata is new set of data to be fit, within extract_factor times the bandwidth, ydata is S21 data to match indices with xdata
     for i, freq in enumerate(x_raw):
-        if (freq > xstart and freq< xend):
+        if (freq > xstart and freq < xend):
             x_temp.append(freq)
             y_temp.append(y_raw[i])
 
@@ -1230,11 +1230,18 @@ def fit_resonator(filename: str,
             if len(manual_init)==4:
 
                 #bandwidth for frequency values
-                kappa = init[2]/(init[0])
+                print(f'init: {init}')
+                
+                # FIXME: This is a bug in the manual_init != None case
+                #        It will result in a divide by zero exception, printed
+                #        below by the try - except block 
+                #        Solution is to move kappa into if
+                # kappa = init[2] / (init[0])
 
                 #If method is DCM or PHI, set parameter 1 equal to Q which is 1/(1/Qi + 1/Qc) aka. convert from Qi
                 if Method.method == 'DCM' or Method.method == "DCM REFLECTION" or Method.method == 'PHI':
                     manual_init[0] = 1/(1/manual_init[0] + 1/manual_init[1])
+                    kappa = manual_init[2] / manual_init[0] 
                 elif Method.method == 'CPZM':
                     Q = 1/(1/manual_init[0] + 1/manual_init[1])
                     kappa = manual_init[2]/Q
@@ -1251,7 +1258,9 @@ def fit_resonator(filename: str,
                 print(manual_init)
                 print(">Manual input wrong format, please follow the correct format of 4 parameters in an array")
                 quit()
-        except:
+        except Exception as exp:
+            print(">Expection caught: ", exp)
+            print(">Loaded manual_init: ", manual_init)
             print(">Problem loading manually initialized parameters, please make sure parameters are all numbers")
             quit()
     else:
