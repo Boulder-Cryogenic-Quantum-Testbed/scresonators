@@ -104,6 +104,16 @@ venv.bak/
 # mkdocs documentation
 /site
 
+# Mac files
+*.DS*
+
+# Figure and data files frm DCM fit runs
+*DCM*
+
+# tar and gzip files
+*.zip
+*.gz
+
 # Vim files
 *.swp
 *.swo
