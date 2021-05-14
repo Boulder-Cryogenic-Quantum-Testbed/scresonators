@@ -109,6 +109,7 @@ venv.bak/
 
 # Figure and data files frm DCM fit runs
 *DCM*
+*.pdf
 
 # tar and gzip files
 *.zip
@@ -117,6 +118,7 @@ venv.bak/
 # Vim files
 *.swp
 *.swo
+
 
 # mypy
 .mypy_cache/
