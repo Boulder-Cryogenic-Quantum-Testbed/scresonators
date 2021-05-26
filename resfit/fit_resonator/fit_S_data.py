@@ -797,43 +797,39 @@ def monte_carlo_fit(xdata= None,ydata=None,parameter=None,Method = None):
         stop_MC = True
     return parameter,stop_MC, error
 
+
 def get_header(line: str):
+    """ Extracts header from snp files of Touchstone version 1.0 and 2.0 """
+    # Extract the header from the line starting with #
     if (line.strip()[0:1]!='#'):
         print("Header not found in file.")
         quit()
     line = line[2:]
-    if line[0:2].lower()=='hz':
-        frequency_units=line[0:2].lower()
-        line = line[3:]
-    elif line[0:3].lower()=='khz':
-        frequency_units=line[0:3].lower()
-        line = line[4:]
-    elif line[0:3].lower()=='mhz':
-        frequency_units=line[0:3].lower()
-        line = line[4:]
-    elif line[0:3].lower()=='ghz':
-        frequency_units=line[0:3].lower()
-        line = line[4:]
-    else:
-        print('Frequency units not found')
-        quit()
-    if line[0:1].lower()!='s':
-        print('Data is not an S parameter measurement')
-        quit()
-    line = line[2:]
 
-    if line[0:2].lower()=='db':
-        data_format=line[0:2].lower()
-        line = line[3:]
-    elif line[0:2].lower()=='ma':
-        data_format=line[0:2].lower()
-        line = line[3:]
-    elif line[0:2].lower()=='ri':
-        data_format=line[0:2].lower()
-        line = line[3:]
+    # Assemble the frequency units and data formats as two lists
+    freq_keys = ['hz', 'khz', 'mhz', 'ghz']
+    data_fmts = ['db', 'ma', 'ri']
+
+    # Collect all non-empty strings in the header as a list, then convert to
+    # each substring to lowercase
+    header = [h.lower() for h in line.split(' ') if h != '']
+
+    # Check the first entry for the frequency format
+    if header[0] in freq_keys:
+        frequency_units = header[0]
     else:
-        print('Data format not found')
-        quit()
+        raise TypeError(f'frequency units ({header[0]}) not recognized.')
+
+    # Check that the data is S-parameter data
+    if 's' not in header:
+        raise TypeError(f'Data is not an S-parameter measurement.') 
+
+    # Extract the data format
+    if header[2] in data_fmts:
+       data_format = header[2] 
+    else:
+        raise TypeError(f'Data format not recognized from header:\n{header}.')
+    
     return frequency_units, data_format
 
 @attr.s
@@ -850,8 +846,9 @@ class VNASweep:
             """Load data from .snp file."""
             try:
                 snp = open(file, 'r')
-            except:
-                print("User data file not found.")
+            except as ex:
+                print(f'Exception in from_file:\n{ex}.' \
+                    + f'User data file not found.')
                 quit()
 
             """Read in header for file"""
@@ -877,6 +874,13 @@ class VNASweep:
                 quit()
 
             if data_format == "db":
+                # XXX:   Picks out Sii if full matrix given The user needs to
+                # remove other matrix elements to pass in Sij, i != j if doing
+                # transmission or hanger-mode like measurement -- two port data
+                # FIXME: Alternatively, one could try to read the entire matrix
+                # here and ask the user to specify the matrix element to fit. Or
+                # automatically check the file header to determine which matrix
+                # is the active one in the measurement.
                 freqs = np.array(float(row[0]))
                 amps = np.array(float(row[1]))
                 phases = np.array(float(row[2]))
@@ -1016,26 +1020,63 @@ def preprocess(xdata: np.ndarray,
     return preprocessed_data, slope, intercept, slope2, intercept2
 
 
+def background_removal(databg: VNASweep, datasrc: VNASweep, output_path: str):
+    """Removes background trace from original data
 
-def background_removal(databg: VNASweep, 
-                        linear_amps: np.ndarray, 
-                        phases: np.ndarray):
+    Args:
+        databg:         background data as a VNASweep object
+        datasrc:        data with background and resonance as a VNASweep object
+        output_path:    path to write plots of data, background, subtraction
+
+    Returns:
+        background-substracted data, complex S21 signal as numpy.ndarray
+    """
+    # Extract full data frequencies, linear amplitudes, phases
+    x_src = datasrc.freqs
+    linear_amps_src = datasrc.linear_amps
+    phases_src = datasrc.phases
+    
+    # Extract background data frequencies, linear amplitudes, phases
     x_bg = databg.freqs
     linear_amps_bg = databg.linear_amps
     phases_bg = databg.phases
 
-    ybg = np.multiply(linear_amps_bg,np.exp(1j*phases_bg))
+    # Interpolate the background on the same frequency scale as the signal
+    linear_amps_bg = np.interp(x_src, x_bg, linear_amps_bg)
+    phases_bg = np.interp(x_src, x_bg, phases_bg)
 
-    fmag = interp1d(x_bg, linear_amps_bg, kind='cubic')
-    fang = interp1d(x_bg, phases_bg, kind='cubic')
+    # Express the background as a complex signal
+    ybg = np.multiply(linear_amps_bg, np.exp(1j*phases_bg))
 
-    plot2(xdata,linear_amps,x_bg,linear_amps_bg,"VS_mag",output_path)
-    plot2(xdata,phases,x_bg,phases_bg,"VS_ang",output_path)
+    # Remove the linear amplitude and phase backoground data separately, then
+    # recombine as a complex signal at the end
+    linear_amps = np.divide(linear_amps_src, linear_amps_bg)
+    phases = np.subtract(phases_src, phases_bg)
 
-    linear_amps = np.divide(linear_amps,linear_amps_bg)
-    phases = np.subtract(phases,phases_bg)
+    # Plot the background and full signal magnitudes and phases
+    print(f'Plotting background subtraction results ...')
+    dB_amps_bg = 20 * np.log10(linear_amps_bg)
+    dB_amps_src = 20 * np.log10(linear_amps_src)
+    plot2labeled(x_src, dB_amps_src, x_src, dB_amps_bg, 'bg_mag_compare',
+                 output_path, data_labels=['Original Data', 'Background'],
+                 axes_labels={'x' : 'Frequency [GHz]',
+                              'y' : r'$|S_{21}|$ [dB]'})
+    plot2labeled(x_src, phases_src, x_src, phases_bg, 'bg_arg_compare',
+                 output_path, data_labels=['Original Data', 'Background'],
+                 axes_labels={'x' : 'Frequency [GHz]',
+                              'y' : r'ang$\left(S_{21}\right)$ [rad.]'})
 
-    return np.multiply(linear_amps,np.exp(1j*phases))
+    # Plot the background-subtracted results
+    dB_amps = 20 * np.log10(linear_amps)
+    plotlabeled(x_src, dB_amps, 'bg_subtract_mag',
+                 output_path, axes_labels={'x' : 'Frequency [GHz]',
+                                           'y' : r'$|S_{21}|$ [dB]'})
+    plotlabeled(x_src, phases, 'bg_subtract_arg',
+                 output_path, axes_labels={'x' : 'Frequency [GHz]',
+                                    'y' : r'ang$\left(S_{21}\right)$ [rad.]'})
+
+
+    return np.multiply(linear_amps, np.exp(1j*phases))
 
 
 #Fit data to least squares fit for respective fit type
@@ -1198,10 +1239,10 @@ def fit_resonator(filename: str,
             print("Directory for background file not speficied")
             quit()
         databg = VNASweep.from_file(filepath)
-        ydata = background_removal(databg, linear_amps, phases)
+        ydata = background_removal(databg, data, output_path)
     elif background_array != None:
         databg = VNASweep.from_columns(freqs=background_array.T[0], amps=background_array.T[1], phases=background_array.T[2])
-        ydata = background_removal(databg, linear_amps, phases)
+        ydata = background_removal(databg, data, output_path)
     #original data before normalization
     x_initial = xdata
     y_initial = ydata
@@ -1228,15 +1269,6 @@ def fit_resonator(filename: str,
     if manual_init != None:
         try:
             if len(manual_init)==4:
-
-                #bandwidth for frequency values
-                print(f'init: {init}')
-                
-                # FIXME: This is a bug in the manual_init != None case
-                #        It will result in a divide by zero exception, printed
-                #        below by the try - except block 
-                #        Solution is to move kappa into if
-                # kappa = init[2] / (init[0])
 
                 #If method is DCM or PHI, set parameter 1 equal to Q which is 1/(1/Qi + 1/Qc) aka. convert from Qi
                 if Method.method == 'DCM' or Method.method == "DCM REFLECTION" or Method.method == 'PHI':
@@ -1414,15 +1446,8 @@ def fit_resonator(filename: str,
     return output_params,conf_array,fig,error,init
 
 
-def plot(x,
-        y,
-        name,
-        output_path,
-        x_c=None,
-        y_c=None,
-        r=None,
-        p_x=None,
-        p_y=None):
+def plot(x, y, name, output_path, x_c=None, y_c=None, r=None, p_x=None,
+         p_y=None):
     #plot any given set of x and y data
     fig = plt.figure('raw_data',figsize=(10, 10))
     gs = GridSpec(2,2)
@@ -1450,6 +1475,79 @@ def plot2(x,y,x2,y2,name,output_path):
     ax.plot(x,y,'bo',label = 'raw data',markersize = 3)
     ax.plot(x2,y2,'bo',label = 'raw data',markersize = 3, color = 'red')
     fig.savefig(output_path+name+'.png')
+
+
+def plotlabeled(x1, y1, name, output_path,
+                axes_labels={'x' : 'Frequency [GHz]',
+                'y' : r'$|S_{21}|$ [dB]'}, fmt='pdf', fontsize=20):
+    """
+    Plots data sets with axes labels specified by the user
+    
+    Args:
+        x1, y1:         x, y data for data set 1
+        name:           filename for generated figure
+        output_path:    path to write the figure
+        axes_labels:    dictionary of labels for x, y axes
+        fmt:            output file format
+        fontsize:       axes labels, ticks fontsize
+
+    Returns:
+
+    """
+    # Get figure and axes from a 1 x 1 subplots object
+    fig, ax = plt.subplots(1, 1, tight_layout=True)
+    ax.plot(x1, y1, 'bo', markersize=3)
+    ax.set_xlabel(axes_labels['x'], fontsize=fontsize)
+    ax.set_ylabel(axes_labels['y'], fontsize=fontsize)
+
+    # Update axes ticks fontsizes
+    for tick in ax.get_xticklabels():
+        tick.set_fontsize(fontsize)
+    for tick in ax.get_yticklabels():
+        tick.set_fontsize(fontsize)
+    
+    fig.savefig(output_path+name+'.pdf')
+
+
+def plot2labeled(x1, y1, x2, y2, name, output_path,
+                 data_labels=['y1', 'y2'],
+                 axes_labels={'x' : 'Frequency [GHz]',
+                 'y' : r'$|S_{21}|$ [dB]'}, fmt='pdf', fontsize=20):
+    """
+    Plots two data sets with data labels and axes labels specified by the user
+    
+    Args:
+        x1, y1:         x, y data for data set 1
+        x2, y2:         x, y data for data set 2
+        name:           filename for generated figure
+        output_path:    path to write the figure
+        data_labels:    labels for data sets 1, 2
+        axes_labels:    dictionary of labels for x, y axes
+        fmt:            output file format
+        fontsize:       axes labels, ticks fontsize
+
+    Returns:
+
+    """
+    # Get figure and axes from a 1 x 1 subplots object
+    fig, ax = plt.subplots(1, 1, tight_layout=True)
+    ax.plot(x1, y1, 'bo', label=data_labels[0], markersize=3)
+    ax.plot(x2, y2, 'r-', label=data_labels[1], lw=2)
+    ax.set_xlabel(axes_labels['x'], fontsize=fontsize)
+    ax.set_ylabel(axes_labels['y'], fontsize=fontsize)
+
+    # Update axes ticks fontsizes
+    for tick in ax.get_xticklabels():
+        tick.set_fontsize(fontsize)
+    for tick in ax.get_yticklabels():
+        tick.set_fontsize(fontsize)
+
+    # Save the data to output_path + filename
+    hdls, legs = ax.get_legend_handles_labels()
+    ax.legend(hdls, legs, loc='best', fontsize=fontsize, framealpha=0.)
+
+    # Save the data to output_path + filename
+    fig.savefig(output_path+name+'.pdf')
 
 def name_folder(dir,strmethod):
     result = time.localtime(time.time())
