@@ -958,11 +958,11 @@ class VNASweep:
         else:
             """Load data from other type of file."""
             try:
-                data = np.loadtxt(file, delimiter='\t')
+                data = np.loadtxt(file, delimiter=',')
             except:
                 print("User data file not found.")
                 quit()
-            freqs = data.T[0]
+            freqs = data.T[0] / 10**9
             amps = data.T[1]
             phases = data.T[2]*np.pi/180
             linear_amps = 10**(amps/20)
