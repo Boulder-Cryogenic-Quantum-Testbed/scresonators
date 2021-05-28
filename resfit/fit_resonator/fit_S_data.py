@@ -1269,7 +1269,6 @@ def fit_resonator(filename: str,
     if manual_init != None:
         try:
             if len(manual_init)==4:
-
                 #If method is DCM or PHI, set parameter 1 equal to Q which is 1/(1/Qi + 1/Qc) aka. convert from Qi
                 if Method.method == 'DCM' or Method.method == "DCM REFLECTION" or Method.method == 'PHI':
                     manual_init[0] = 1/(1/manual_init[0] + 1/manual_init[1])
