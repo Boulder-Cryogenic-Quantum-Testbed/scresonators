@@ -294,7 +294,7 @@ class FitMethod(object):
                  MC_rounds: int = 100,
                  MC_weight: str = 'no',
                  MC_weightvalue: int = 2,
-                 MC_fix: list = ['Amp','w1','theta'],
+                 MC_fix: list = [],
                  MC_step_const: float = 0.6,
                  manual_init: list = None,
                  vary: bool = None):
