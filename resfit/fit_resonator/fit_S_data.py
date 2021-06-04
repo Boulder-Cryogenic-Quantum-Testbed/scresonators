@@ -1268,6 +1268,7 @@ def background_removal(databg: VNASweep, datasrc: VNASweep, output_path: str):
     linear_amps_src = datasrc.linear_amps
     phases_src = datasrc.phases
     
+    # Extract background data frequencies, linear amplitudes, phases
     x_bg = databg.freqs
     linear_amps_bg = databg.linear_amps
     phases_bg = databg.phases
@@ -1296,7 +1297,6 @@ def background_removal(databg: VNASweep, datasrc: VNASweep, output_path: str):
                  output_path, data_labels=['Original Data', 'Background'],
                  axes_labels={'x' : 'Frequency [GHz]',
                               'y' : r'ang$\left(S_{21}\right)$ [rad.]'})
-
     # Plot the background-subtracted results
     dB_amps = 20 * np.log10(linear_amps)
     plotlabeled(x_src, dB_amps, 'bg_subtract_mag',
@@ -1511,7 +1511,7 @@ def fit_resonator(filename: str,
         ydata = background_removal(databg, data, output_path)
     elif background_array != None:
         databg = VNASweep.from_columns(freqs=background_array.T[0], amps=background_array.T[1], phases=background_array.T[2])
-        ydata = background_removal(databg, linear_amps, phases,output_path)
+        ydata = background_removal(databg, data, output_path)
     elif preprocess_method == "linear":
         ydata, slope, intercept, slope2, intercept2 = preprocess_linear(xdata, ydata, normalize, output_path, plot_extra)
     elif preprocess_method == "circle":
@@ -1550,7 +1550,6 @@ def fit_resonator(filename: str,
     if manual_init != None:
         try:
             if len(manual_init)==4:
-
                 #If method is DCM or PHI, set parameter 1 equal to Q which is 1/(1/Qi + 1/Qc) aka. convert from Qi
                 if Method.method == 'DCM' or Method.method == "DCM REFLECTION" or Method.method == 'PHI':
                     Qc = manual_init[1]/np.exp(1j*manual_init[3])
