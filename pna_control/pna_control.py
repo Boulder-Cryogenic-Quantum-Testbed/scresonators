@@ -63,7 +63,15 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100, power
 
     #set up the PNA to measure s21 for the specific instrument GPIB0::16::INSTR
     rm = pyvisa.ResourceManager()
-    keysight = rm.open_resource('GPIB0::16::INSTR')
+
+    #handle failure to open the GPIB resource
+    #this is an issue when connecting to the PNA-X from newyork rather than ontario
+    try:
+        keysight = rm.open_resource('GPIB0::16::INSTR')
+    except Exception as ex:
+        print(f'Exception: {ex}\nTrying TCP address instead')
+        keysight = rm.open_resource('TCPIP0::K-Instr0000.local::hislip0::INSTR')
+
     pna_setup(keysight, points, centerf, span, ifband, power, edelay, averages)
 
     #start taking data for S21
