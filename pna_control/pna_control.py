@@ -56,7 +56,10 @@ def read_data(pna, points, outputfile, power, temp):
         count = count + 1
     file.close()
 
-def getdata(centerf: float, span: float, temp: float, averages: int = 100, power: float = -30, edelay: float = 40, ifband: float = 5, points: int = 201, outputfile: str = "results.csv"):
+def getdata(centerf: float, span: float, temp: float, averages: int = 100,
+        power: float = -30, edelay: float = 40, ifband: float = 5,
+        points: int = 201, outputfile: str = "results.csv",
+        instr_addr : str = 'TCPIP0::K-Instr0000.local::hislip0::INSTR'):
     '''
     function to get data and put it into a user specified file
     '''
@@ -67,10 +70,9 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100, power
     #handle failure to open the GPIB resource
     #this is an issue when connecting to the PNA-X from newyork rather than ontario
     try:
-        keysight = rm.open_resource('GPIB0::16::INSTR')
+        keysight = rm.open_resource(instr_addr)
     except Exception as ex:
-        print(f'Exception: {ex}\nTrying TCP address instead')
-        keysight = rm.open_resource('TCPIP0::K-Instr0000.local::hislip0::INSTR')
+        keysight = rm.open_resource('GPIB0::16::INSTR')
 
     pna_setup(keysight, points, centerf, span, ifband, power, edelay, averages)
 

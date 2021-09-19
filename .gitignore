@@ -119,6 +119,9 @@ venv.bak/
 *.swp
 *.swo
 
+# Temperature log files
+*log*
+
 
 # mypy
 .mypy_cache/
