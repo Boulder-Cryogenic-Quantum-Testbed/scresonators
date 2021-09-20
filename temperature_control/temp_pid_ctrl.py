@@ -36,6 +36,10 @@ from multiprocessing import Process, Manager
 import glob
 import numpy as np
 
+import sys
+sys.path.append(r'C:\Users\Lehnert Lab\GitHub\measurement\pna_control')
+import pna_control as PNA
+import os
 
 
 class JanusTemperatureController(object):
@@ -185,10 +189,21 @@ class JanusTemperatureController(object):
         return pid
 
     
-    def temperature_controller(self, idx, t, pid, fid, out):
+    def temperature_controller(self, idx, t, pid, fid, T_set, out):
         if idx == 'temp':
             print('Temperature control and measurement ...')
+            start_thermalize_timer = False
             while 1:
+                if abs(1e3 * (T - T_set)) < self.T_eps:
+                    start_thermalize_timer = True
+                
+                # Wait five more minutes
+                if start_thermalize_timer:
+                    print('Starting thermalization timer ...')
+                    time.sleep(self.therm_time)
+                    out[idx] = [tin, T, tstamp]
+                    break
+
                 Z, T, tstamp = self.read_cmn()
                 tin = t
                 if T is not None:
@@ -222,9 +237,31 @@ class JanusTemperatureController(object):
             else:
                 return None
     
-    def pna_process(self, idx, path_to_scr, out):
-        p = subprocess.Popen(['python', f'{path_to_scr}'])
-        out[idx] = p.wait()
+    def pna_process(self, idx, path_to_scr, T_set, out):
+        """
+        Performs a PNA-X measurement
+        """
+        # TODO: pull out these options as class members
+        AVERAGES = 1 # Number of averages for first (highest) power
+        EDELAY = 79.482 #ns
+        IFBAND = 1.0 #kHz
+        NUMSWEEPS = 2
+        CENTERF = 7.5777
+        SPAN = [50] #MHz
+        POINTS = 2001
+        
+        TEMP = T_set * 1e3 #mK
+        SAMPLEID = 'M3D6_02_with_InP' #project ID followed by sample number and die number
+        
+        STARTPOWER = -45
+        ENDPOWER = -45
+        fid.write(f'{t}\n')
+
+        OUTPUTFILE = SAMPLEID+'_'+str(CENTERF)+'GHz_'+f'LPsweep_{int(t)}s'
+        PNA.powersweep(STARTPOWER, ENDPOWER, NUMSWEEPS, CENTERF, SPAN,
+                    TEMP, AVERAGES, EDELAY, IFBAND, POINTS, OUTPUTFILE)
+
+        out[idx] = 0
 
 
     def run_temp_sweep(self):
@@ -240,7 +277,6 @@ class JanusTemperatureController(object):
             # Set the output filename and write the results with
             # standard text file IO operations
             dstr = datetime.datetime.today().strftime('%y%m%d')
-            eps = 1e-2
             T = 10 * T_set
             t = 0
         
@@ -264,7 +300,7 @@ class JanusTemperatureController(object):
                         # Measure the temperature, set the current, write
                         # results to file
                         t, T = self.temperature_controller('', t, pid, fid,
-                                None)
+                                T_set, None)
                         if t is None:
                             break
         
@@ -283,9 +319,9 @@ class JanusTemperatureController(object):
                             mng = Manager()
                             out = mng.dict()
                             ptemp = Process(target=self.temperature_controller,
-                                    args=('temp', t, pid, None, out))
+                                    args=('temp', t, pid, None, T_set, out))
                             pmeas = Process(target=self.pna_process,
-                                    args=('meas', path_to_script, out))
+                                    args=('meas', path_to_script, T_set, out))
                             ptemp.start()
                             pmeas.start()
                             ptemp.join()
@@ -296,7 +332,8 @@ class JanusTemperatureController(object):
 
                             # Write to the log file outside of the process
                             fid.write(f'{tstamp}, {T}, {t}\n')
-                            meas_ret     = out['meas']
+                            meas_ret = 0
+                            # meas_ret     = out['meas']
 
 
                 # Graceful exit on Ctrl-C interrupt by the user
@@ -315,7 +352,7 @@ class JanusTemperatureController(object):
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
-    Tstart = 0.03; Tstop = 0.30; dT = 0.01
+    Tstart = 0.05; Tstop = 0.30; dT = 0.01
     sample_time = 15; T_eps = 1e-2
     therm_time  = 300. # wait extra 5 minutes to thermalize
 
