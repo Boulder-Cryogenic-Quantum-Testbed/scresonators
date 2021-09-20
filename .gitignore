@@ -122,6 +122,9 @@ venv.bak/
 # Temperature log files
 *log*
 
+# PNA data files
+*M3D*
+
 
 # mypy
 .mypy_cache/

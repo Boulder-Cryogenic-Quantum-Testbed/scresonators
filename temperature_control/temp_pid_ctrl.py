@@ -185,23 +185,22 @@ class JanusTemperatureController(object):
         return pid
 
     
-    def temperature_controller(self, idx, t, pid, fid, out=None):
+    def temperature_controller(self, idx, t, pid, fid, out):
         if idx == 'temp':
-            print(f'Temperature control and measurement ...')
+            print('Temperature control and measurement ...')
             while 1:
                 Z, T, tstamp = self.read_cmn()
                 tin = t
                 if T is not None:
                     # Generate the output current
                     output = pid(T)
-                    print(f'{tstamp}, {1e3 * T} mK, {output} mA, {tstamp}, {t} s')
+                    print(f'{tstamp}, {1e3 * T} mK, {output} mA, {tstamp}, {tin} s')
                     self.set_current(output)
                     time.sleep(pid.sample_time)
                 
                     # Write the time stamp, temperature, and impedance to file
-                    fid.write(f'{tstamp}, {t}, {T}\n')
-                    tin += sample_time
-                    out[idx] = [tin, T]
+                    tin += self.sample_time
+                    out[idx] = [tin, T, tstamp]
                 else:
                     out[idx] = None
         else:
@@ -211,27 +210,112 @@ class JanusTemperatureController(object):
             if T is not None:
                 # Generate the output current
                 output = pid(T)
-                print(f'{tstamp}, {1e3 * T} mK, {output} mA, {tstamp}, {t} s')
+                print(f'{tstamp}, {1e3 * T} mK, {output} mA, {tstamp}, {tin} s')
                 self.set_current(output)
                 time.sleep(pid.sample_time)
             
                 # Write the time stamp, temperature, and impedance to file
-                fid.write(f'{tstamp}, {T}, {t}\n')
-                tin += sample_time
+                tin += self.sample_time
+                fid.write(f'{tstamp}, {T}, {tin}\n')
                 return tin, T
     
             else:
                 return None
     
-    def pna_process(self, idx, out):
-        p = subprocess.Popen([f'python {self.path_to_pna_script}'])
-        return p.wait()
+    def pna_process(self, idx, path_to_scr, out):
+        p = subprocess.Popen(['python', f'{path_to_scr}'])
+        out[idx] = p.wait()
+
+
+    def run_temp_sweep(self):
+        """
+        Execute the temperature sweep
+        """
+        # Iterate over the temperatures
+        for T_set in self.T_sweep_list:
+            # Get the pid controller object
+            print(f'PID controller for {T_set*1e3} mK ...')
+            pid = self.get_pid_ctrl(T_set)
+
+            # Set the output filename and write the results with
+            # standard text file IO operations
+            dstr = datetime.datetime.today().strftime('%y%m%d')
+            eps = 1e-2
+            T = 10 * T_set
+            t = 0
+        
+            # Set the log filename, log the temperature, time stamp, and time
+            fname = f'logs/temperature_{int(T_set * 1e3)}_mK_log_{dstr}.csv'
+        
+            # Flag to start measurement run
+            start_thermalize_timer = False
+            meas_ret = 1
+            path_to_script = self.path_to_pna_script
+            assert glob.glob(path_to_script) != [], 'Script not found!!!'
+
+            # Open file and start logging time stamps, elapsed time,
+            # temperature
+            with open(fname, 'w') as fid:
+                fid.write('# Time[HH:MM:SS], Time [s], Temperature [mK]\n')
+        
+                # Continue to run the PID controller as the measurement runs
+                try:
+                    while meas_ret:
+                        # Measure the temperature, set the current, write
+                        # results to file
+                        t, T = self.temperature_controller('', t, pid, fid,
+                                None)
+                        if t is None:
+                            break
+        
+                        # Check that the temperature has settled
+                        if abs(1e3 * (T - T_set)) < Tctrl.T_eps:
+                            start_thermalize_timer = True
+        
+                        # Wait five more minutes
+                        if start_thermalize_timer:
+                            print('Starting thermalization timer ...')
+                            time.sleep(therm_time)
+        
+                            # Launch the resonance measurement (power sweep,
+                            # etc.) Wait for the process to return
+                            print('Starting PNA measurement ...')
+                            mng = Manager()
+                            out = mng.dict()
+                            ptemp = Process(target=self.temperature_controller,
+                                    args=('temp', t, pid, None, out))
+                            pmeas = Process(target=self.pna_process,
+                                    args=('meas', path_to_script, out))
+                            ptemp.start()
+                            pmeas.start()
+                            ptemp.join()
+                            pmeas.join()
+
+                            # Read the time and measurement return code
+                            t, T, tstamp = out['temp']
+
+                            # Write to the log file outside of the process
+                            fid.write(f'{tstamp}, {T}, {t}\n')
+                            meas_ret     = out['meas']
+
+
+                # Graceful exit on Ctrl-C interrupt by the user
+                except KeyboardInterrupt:
+                    self.set_current(0.)
+                    self.socket.close()
+                    fid.close()
+        
+            # Close the file, just in case the context manager does not free it
+            fid.close()
+            
+        # Set the heater current back to 0 mA
+        self.set_current(0.)
 
 
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
-    Tstart = 0.03; Tstop = 0.3; dT = 0.01
+    Tstart = 0.03; Tstop = 0.30; dT = 0.01
     sample_time = 15; T_eps = 1e-2
     therm_time  = 300. # wait extra 5 minutes to thermalize
 
@@ -246,75 +330,5 @@ if __name__ == '__main__':
             sample_time=sample_time, T_eps=T_eps, therm_time=therm_time,
             path_to_pna_script=path_to_pna_script)
 
-    # Iterate over the temperatures
-    for T_set in Tctrl.T_sweep_list:
-        # Get the pid controller object
-        print(f'PID controller for {T_set*1e3} mK ...')
-        pid = Tctrl.get_pid_ctrl(T_set)
-
-        # Set the output filename and write the results with
-        # standard text file IO operations
-        dstr = datetime.datetime.today().strftime('%y%m%d')
-        eps = 1e-2
-        T = 10 * T_set
-        t = 0
-    
-        # Set the log filename, log the temperature, time stamp, and time
-        fname = f'logs/temperature_{int(T_set * 1e3)}_mK_log_{dstr}.csv'
-    
-        # Flag to start measurement run
-        start_thermalize_timer = False
-        meas_ret = 1
-
-        # Open file and start logging time stamps, elapsed time, temperature
-        with open(fname, 'w') as fid:
-            fid.write('# Time[HH:MM:SS], Time [s], Temperature [mK]\n')
-    
-            # Continue to run the PID controller as the measurement runs
-            try:
-                while meas_ret:
-                    # Measure the temperature, set the current, write results
-                    # to file
-                    t, T = Tctrl.temperature_controller('', t, pid, fid,
-                            out=None)
-                    if t is None:
-                        break
-    
-                    # Check that the temperature has settled
-                    if abs(1e3 * (T - T_set)) < Tctrl.T_eps:
-                        start_thermalize_timer = True
-    
-                    # Wait five more minutes
-                    if start_thermalize_timer:
-                        print('Starting thermalization timer ...')
-                        time.sleep(therm_time)
-    
-                        # Launch the resonance measurement (power sweep, etc.)
-                        # Wait for the process to return
-                        print(f'Starting PNA measurement ...')
-                        mng = Manager()
-                        out = mng.dict()
-                        pmeas = Process(target=Tctrl.pna_process,
-                                args=('meas', out))
-                        ptemp = Process(target=Tctrl.temperature_controller,
-                                args=('temp'.  t, pid, fid, out))
-                        pmeas.start()
-                        ptemp.start()
-                        pmeas.join()
-                        ptemp.join()
-
-                        # Read the time and measurement return code
-                        meas_ret = out['meas']
-                        t, T = out['temp']
-
-            # Graceful exit on Ctrl-C interrupt by the user
-            except KeyboardInterrupt:
-                Tctrl.set_current(0.)
-                Tctrl.socket.close()
-                fid.close()
-    
-        # Close the file, just in case the context manager does not free it
-        fid.close()
-        
-    # Set the heater current back to 0 mA
-    Tctrl.set_current(0.)
+    # Run the temperature sweep from within the class
+    Tctrl.run_temp_sweep()

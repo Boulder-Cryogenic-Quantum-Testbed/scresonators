@@ -126,7 +126,7 @@ def TemperatureController(idx, t, pid, fid, sck, out=None):
 
 def MeasurementProcess(idx, measurement_script_path, out):
     p = subprocess.Popen([f'python {measurement_script_path}'])
-    return p.wait()
+    out[idx] = p.wait()
 
 
 if __name__ == '__main__':
@@ -144,8 +144,8 @@ if __name__ == '__main__':
     # Path to the pna measurement script
     prepath = 'C:\\Users\\Lehnert Lab\\OneDrive - UCB-O365\\Experiment'
     res_script = 'repeat_resonance_measurement.py'
-    measurement_script_path = f'{prepath}\\Mines_6061_3_temperatures\\{res_script}'
-    assert glob.glob(measurement_script_path) != [], \
+    measurement_path = f'{prepath}\\Mines_6061_3_temperatures\\{res_script}'
+    assert glob.glob(measurement_path) != [], \
             f'{measurement_script_path} not found.'
     
 
@@ -203,8 +203,8 @@ if __name__ == '__main__':
         fname = f'temperature_{int(T_set * 1e3)}_mK_log_{dstr}.csv'
     
         # Flag to start measurement run
-        start_thermalize_timer = False
-        therm_time  = 300. # wait extra 5 minutes to thermalize
+        start_thermalize_timer = True
+        therm_time  = 3. # wait extra 5 minutes to thermalize
         meas_ret = 1
     
         # Open file and start logging time stamps, elapsed time, temperature
@@ -237,7 +237,7 @@ if __name__ == '__main__':
                         pmeas = Process(target=MeasurementProcess,
                                 args=('meas', measurement_path, out))
                         ptemp = Process(target=TemperatureController,
-                                args=('temp'.  t, pid, fid, sck, out))
+                                args=('temp', t, pid, fid, sck, out))
                         pmeas.start()
                         ptemp.start()
                         pmeas.join()
