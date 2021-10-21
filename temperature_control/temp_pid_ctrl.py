@@ -24,7 +24,6 @@ Example:
     python temp_pid_ctrl.py
 
 
-
 """
 
 import socket
@@ -193,6 +192,7 @@ class JanusTemperatureController(object):
         if idx == 'temp':
             print('Temperature control and measurement ...')
             start_thermalize_timer = False
+            T = 10 * T_set
             while 1:
                 if abs(1e3 * (T - T_set)) < self.T_eps:
                     start_thermalize_timer = True
@@ -209,7 +209,7 @@ class JanusTemperatureController(object):
                 if T is not None:
                     # Generate the output current
                     output = pid(T)
-                    print(f'{tstamp}, {1e3 * T} mK, {output} mA, {tstamp}, {tin} s')
+                    print(f'{tstamp}, {1e3 * T} mK, {output} mA, {tin} s')
                     self.set_current(output)
                     time.sleep(pid.sample_time)
                 
@@ -225,7 +225,7 @@ class JanusTemperatureController(object):
             if T is not None:
                 # Generate the output current
                 output = pid(T)
-                print(f'{tstamp}, {1e3 * T} mK, {output} mA, {tstamp}, {tin} s')
+                print(f'{tstamp}, {1e3 * T} mK, {output} mA, {tin} s')
                 self.set_current(output)
                 time.sleep(pid.sample_time)
             
@@ -255,9 +255,8 @@ class JanusTemperatureController(object):
         
         STARTPOWER = -45
         ENDPOWER = -45
-        fid.write(f'{t}\n')
 
-        OUTPUTFILE = SAMPLEID+'_'+str(CENTERF)+'GHz_'+f'LPsweep_{int(t)}s'
+        OUTPUTFILE = SAMPLEID+'_'+str(CENTERF)+'GHz_'+f'LPsweep'
         PNA.powersweep(STARTPOWER, ENDPOWER, NUMSWEEPS, CENTERF, SPAN,
                     TEMP, AVERAGES, EDELAY, IFBAND, POINTS, OUTPUTFILE)
 
@@ -271,7 +270,6 @@ class JanusTemperatureController(object):
         # Iterate over the temperatures
         for T_set in self.T_sweep_list:
             # Get the pid controller object
-            print(f'PID controller for {T_set*1e3} mK ...')
             pid = self.get_pid_ctrl(T_set)
 
             # Set the output filename and write the results with
@@ -318,26 +316,30 @@ class JanusTemperatureController(object):
                             print('Starting PNA measurement ...')
                             mng = Manager()
                             out = mng.dict()
-                            ptemp = Process(target=self.temperature_controller,
-                                    args=('temp', t, pid, None, T_set, out))
+                            # ptemp = Process(target=self.temperature_controller,
+                            #        args=('temp', t, pid, None, T_set, out))
                             pmeas = Process(target=self.pna_process,
                                     args=('meas', path_to_script, T_set, out))
-                            ptemp.start()
+                            # ptemp.start()
                             pmeas.start()
-                            ptemp.join()
+                            # ptemp.join()
                             pmeas.join()
+                            print('Finished PNA Measurement.')
 
-                            # Read the time and measurement return code
-                            t, T, tstamp = out['temp']
+                            # # Read the time and measurement return code
+                            # t, T = self.temperature_controller('', t, pid, fid,
+                            #     T_set, None)
+                            # print(f'{tstamp}, {1e3*T} mK, {output} mA, {t} s')
 
-                            # Write to the log file outside of the process
-                            fid.write(f'{tstamp}, {T}, {t}\n')
+                            # # Write to the log file outside of the process
+                            # fid.write(f'{tstamp}, {T}, {t}\n')
                             meas_ret = 0
+                            break
                             # meas_ret     = out['meas']
 
 
                 # Graceful exit on Ctrl-C interrupt by the user
-                except KeyboardInterrupt:
+                except (KeyboardInterrupt, Exception):
                     self.set_current(0.)
                     self.socket.close()
                     fid.close()
@@ -352,7 +354,7 @@ class JanusTemperatureController(object):
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
-    Tstart = 0.05; Tstop = 0.30; dT = 0.01
+    Tstart = 0.1; Tstop = 0.30; dT = 0.01
     sample_time = 15; T_eps = 1e-2
     therm_time  = 300. # wait extra 5 minutes to thermalize
 
@@ -368,4 +370,7 @@ if __name__ == '__main__':
             path_to_pna_script=path_to_pna_script)
 
     # Run the temperature sweep from within the class
-    Tctrl.run_temp_sweep()
+    # Tctrl.run_temp_sweep()
+    Tctrl.set_current(0.)
+    Z, T, tstamp = Tctrl.read_cmn()
+    print(f'{tstamp}, {T*1e3} mK')

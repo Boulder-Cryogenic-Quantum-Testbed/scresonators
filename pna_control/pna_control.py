@@ -3,14 +3,14 @@ import pyvisa
 import os
 from os import path
 
-def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, power: float, edelay: float, averages: int):
+def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, power: float, edelay: float, averages: int, sparam : str = 'S21'):
     '''
     set parameters for the PNA for the sweep (number of points, center frequency, span of frequencies, IF bandwidth, power, electrical delay and number of averages)
     '''
 
     #initial setup for measurement
-    if (pna.query('CALC:PAR:CAT:EXT?') != '"Meas,S21"\n'):
-        pna.write('CALCulate1:PARameter:DEFine:EXT \'Meas\',S21')
+    if (pna.query('CALC:PAR:CAT:EXT?') != f'"Meas,{sparam}"\n'):
+        pna.write(f'CALCulate1:PARameter:DEFine:EXT \'Meas\',{sparam}')
         pna.write('DISPlay:WINDow1:STATE ON')
         pna.write('DISPlay:WINDow1:TRACe1:FEED \'Meas\'')
         pna.write('DISPlay:WINDow1:TRACe2:FEED \'Meas\'')
@@ -59,7 +59,8 @@ def read_data(pna, points, outputfile, power, temp):
 def getdata(centerf: float, span: float, temp: float, averages: int = 100,
         power: float = -30, edelay: float = 40, ifband: float = 5,
         points: int = 201, outputfile: str = "results.csv",
-        instr_addr : str = 'TCPIP0::K-Instr0000.local::hislip0::INSTR'):
+        instr_addr : str = 'TCPIP0::K-Instr0000.local::hislip0::INSTR',
+        sparam : str = 'S21'):
     '''
     function to get data and put it into a user specified file
     '''
@@ -74,7 +75,8 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
     except Exception as ex:
         keysight = rm.open_resource('GPIB0::16::INSTR')
 
-    pna_setup(keysight, points, centerf, span, ifband, power, edelay, averages)
+    pna_setup(keysight, points, centerf, span, ifband, power, edelay, averages,
+              sparam=sparam)
 
     #start taking data for S21
     keysight.write('CALCulate1:PARameter:SELect \'Meas\'')
@@ -90,7 +92,9 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
 
     read_data(keysight, points, outputfile, power, temp)
 
-def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: float, span: float, temp: float, averages: float = 100, edelay: float = 40, ifband: float = 5, points: int = 201, outputfile: str = "results.csv"):
+def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: float, span: float, temp: float, 
+               averages: float = 100, edelay: float = 40, ifband: float = 5, points: int = 201, outputfile: str = "results.csv",
+               sparam : str = 'S21'):
     '''
     run a power sweep for specified power range with a certain number of sweeps
     '''
@@ -128,5 +132,6 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: floa
 
     #run each sweep while increasing averages for each power
     for i in sweeps:
-        getdata(centerf, span, temp, averages, i, edelay, ifband, points, outputfile)
+        getdata(centerf, span, temp, averages, i, edelay, ifband, points, outputfile,
+                sparam=sparam)
         averages = averages * ((10**(stepsize/10))**0.5)
