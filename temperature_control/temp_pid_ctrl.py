@@ -128,7 +128,10 @@ class JanusTemperatureController(object):
         This function takes the pid output (Current in mA)
         nd converts it to heater settings
         """
-        if x < 0.0316:
+        if np.isclose(x, 0.):
+            Range = 0
+            level = 0
+        elif x < 0.0316:
             Range = 1
             level = x*100/0.0316
         elif 0.0316 < x <= 0.1:
@@ -336,7 +339,6 @@ class JanusTemperatureController(object):
                             meas_ret = 0
                             break
                             # meas_ret     = out['meas']
-
 
                 # Graceful exit on Ctrl-C interrupt by the user
                 except (KeyboardInterrupt, Exception):

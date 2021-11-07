@@ -71,9 +71,11 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
     #handle failure to open the GPIB resource
     #this is an issue when connecting to the PNA-X from newyork rather than ontario
     try:
-        keysight = rm.open_resource(instr_addr)
-    except Exception as ex:
+        # keysight = rm.open_resource(instr_addr)
         keysight = rm.open_resource('GPIB0::16::INSTR')
+    except Exception as ex:
+        # keysight = rm.open_resource('GPIB0::16::INSTR')
+        keysight = rm.open_resource(instr_addr)
 
     pna_setup(keysight, points, centerf, span, ifband, power, edelay, averages,
               sparam=sparam)
