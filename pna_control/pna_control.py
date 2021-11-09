@@ -59,7 +59,7 @@ def read_data(pna, points, outputfile, power, temp):
 def getdata(centerf: float, span: float, temp: float, averages: int = 100,
         power: float = -30, edelay: float = 40, ifband: float = 5,
         points: int = 201, outputfile: str = "results.csv",
-        instr_addr : str = 'TCPIP0::K-Instr0000.local::hislip0::INSTR',
+        instr_addr : str = 'GPIB::16::INSTR',
         sparam : str = 'S21'):
     '''
     function to get data and put it into a user specified file
@@ -67,15 +67,18 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
 
     #set up the PNA to measure s21 for the specific instrument GPIB0::16::INSTR
     rm = pyvisa.ResourceManager()
+    GPIB_addr = 'GPIB0::16::INSTR'
 
     #handle failure to open the GPIB resource
     #this is an issue when connecting to the PNA-X from newyork rather than ontario
     try:
-        # keysight = rm.open_resource(instr_addr)
-        keysight = rm.open_resource('GPIB0::16::INSTR')
-    except Exception as ex:
-        # keysight = rm.open_resource('GPIB0::16::INSTR')
         keysight = rm.open_resource(instr_addr)
+        # keysight = rm.open_resource('GPIB0::16::INSTR')
+    except Exception as ex:
+        print(f'\n----------\nException:\n{ex}\n----------\n')
+        print(f'Trying GPIB address {GPIB_addr} ...')
+        keysight = rm.open_resource(GPIB_addr)
+        # keysight = rm.open_resource(instr_addr)
 
     pna_setup(keysight, points, centerf, span, ifband, power, edelay, averages,
               sparam=sparam)
