@@ -15,13 +15,13 @@ def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, powe
         pna.write('DISPlay:WINDow1:TRACe1:FEED \'Meas\'')
         pna.write('DISPlay:WINDow1:TRACe2:FEED \'Meas\'')
     #set parameters for sweep
-    pna.write('SENSe1:SWEep:POINts {}'.format(points))
-    pna.write('SENSe1:FREQuency:CENTer {}GHZ'.format(centerf))
-    pna.write('SENSe1:FREQuency:SPAN {}MHZ'.format(span))
-    pna.write('SENSe1:BANDwidth {}KHZ'.format(ifband))
-    pna.write('SENSe1:SWEep:TIME:AUTO ON')
-    pna.write('SOUR:POW1 {}'.format(power))
-    pna.write('CALCulate1:CORRection:EDELay:TIME {}NS'.format(edelay))
+    pna.write(f'SENSe1:SWEep:POINts {points}')
+    pna.write(f'SENSe1:FREQuency:CENTer {centerf}GHZ')
+    pna.write(f'SENSe1:FREQuency:SPAN {span}MHZ')
+    pna.write(f'SENSe1:BANDwidth {ifband}KHZ')
+    pna.write(f'SENSe1:SWEep:TIME:AUTO ON')
+    pna.write(f'SOUR:POW1 {power}')
+    pna.write(f'CALCulate1:CORRection:EDELay:TIME {edelay}NS')
     pna.write('SENSe1:AVERage:STATe ON')
 
     #ensure at least 10 averages are taken
@@ -95,6 +95,7 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
         if (keysight.query('STAT:OPER:AVER1:COND?')[1] != "0"):
             break;
 
+    keysight.write('OUTPut:STATe ON')
     read_data(keysight, points, outputfile, power, temp)
 
 def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: float, span: float, temp: float, 

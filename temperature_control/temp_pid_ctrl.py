@@ -62,6 +62,20 @@ class JanusTemperatureController(object):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.TCP_IP, self.TCP_PORT))
 
+        # Set the base temperature of the fridge here
+        self.T_base = 0.016
+
+        # Default VNA settings
+        # self.vna_averages = 1 # number of averages for first (highest) power
+        # self.vna_edelay = 78.06 #ns
+        # self.vna_ifband = 1.0 #khz
+        # self.vna_numsweeps = 3
+        # self.vna_centerf = 7.58967
+        # self.vna_span = 1 #mhz
+        # self.vna_points = 2001
+        # self.vna_startpower = -5
+        # self.vna_endpower = -65
+
         # Path to the pna measurement script
         prepath = 'C:\\Users\\Lehnert Lab\\OneDrive - UCB-O365\\Experiment'
         pna_scr = 'repeat_resonance_measurement.py'
@@ -200,6 +214,7 @@ class JanusTemperatureController(object):
 
         # Set the maximum current
         T_base = 0.013 #K (approx. base temperature)
+        T_base = self.T_base #K (approx. base temperature)
         Max_Current = 1.33*8.373*(Tset-T_base)**(0.720) #mA
         print(f'Max Curent: {Max_Current} mA')
         pid.output_limits = (0, Max_Current)
@@ -253,26 +268,27 @@ class JanusTemperatureController(object):
 
     def pna_process(self, idx, path_to_scr, Tset, out):
         """
-        Performs a PNA-X measurement
+        Performs a PNA measurement
         """
-        # TODO: pull out these options as class members
-        AVERAGES = 1 # Number of averages for first (highest) power
-        EDELAY = 78.06 #ns
-        IFBAND = 1.0 #kHz
-        NUMSWEEPS = 3
-        CENTERF = 7.58967
-        SPAN = [1] #MHz
-        POINTS = 2001
-        
-        TEMP = Tset * 1e3 #mK
-        SAMPLEID = 'M3D6_02_with_1SP_InP' #project ID followed by sample number and die number
-        
-        STARTPOWER = -65
-        ENDPOWER = -5
+        # Get the temperature from the temperature controller
+        temp = Tset * 1e3 #mk
+        sampleid = 'M3D6_02_WITH_1SP_INP' 
 
-        OUTPUTFILE = SAMPLEID+'_'+str(CENTERF)+'GHz_'+f'LTsweep'
-        PNA.powersweep(STARTPOWER, ENDPOWER, NUMSWEEPS, CENTERF, SPAN,
-                    TEMP, AVERAGES, EDELAY, IFBAND, POINTS, OUTPUTFILE)
+        # Preparing to measure frequencies, powers
+        powers = np.linspace(self.vna_startpower, self.vna_endpower,
+                             self.vna_numsweeps)
+        print(f'Measuring at {self.vna_centerf} GHz')
+        print(f'IFBW: {self.vna_ifband} kHz')
+        print(f'Span: {self.vna_span} MHz')
+        print(f'Npoints: {self.vna_points}')
+        print(f'Nsweeps: {self.vna_numsweeps}')
+        print(f'Powers: {powers} dBm')
+
+        outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz_'
+        PNA.powersweep(self.vna_startpower, self.vna_endpower,
+                self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
+                self.vna_averages, self.vna_edelay, self.vna_ifband,
+                self.vna_points, outputfile)
 
         out[idx] = 0
 
@@ -311,9 +327,9 @@ class JanusTemperatureController(object):
                         # Measure the temperature, set the current, write
                         # results to file
                         out = {}
-                        self.temperature_controller('tstamp [HH:MM:SS]',
-                                                    't [s]', 'T [mK]', t,
-                                                    Tset, out) 
+                        # self.temperature_controller('tstamp [HH:MM:SS]',
+                        #                             't [s]', 'T [mK]', t,
+                        #                             Tset, out) 
                         print(f'out:\n{out}')
                         del out
 
@@ -322,14 +338,14 @@ class JanusTemperatureController(object):
                         print('Starting PNA measurement ...')
                         mng = Manager()
                         out = mng.dict()
-                        ptemp = Process(target=self.temperature_controller,
-                               args=('temp', t, None, None, Tset, out))
-                        # pmeas = Process(target=self.pna_process,
-                        #         args=('meas', path_to_script, Tset, out))
-                        ptemp.start()
-                        # pmeas.start()
-                        ptemp.join()
-                        # pmeas.join()
+                        # ptemp = Process(target=self.temperature_controller,
+                        #        args=('temp', t, None, None, Tset, out))
+                        pmeas = Process(target=self.pna_process,
+                                args=('meas', path_to_script, Tset, out))
+                        # ptemp.start()
+                        pmeas.start()
+                        # ptemp.join()
+                        pmeas.join()
                         print(f'out:\n{out}')
                         print('Finished PNA Measurement.')
                         
@@ -362,7 +378,7 @@ class JanusTemperatureController(object):
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
-    Tstart = 0.035; Tstop = 0.100; dT = 0.01
+    Tstart = 0.03; Tstop = 0.100; dT = 0.01
     sample_time = 15; T_eps = 1e-2
     therm_time  = 600. # wait extra 5 minutes to thermalize
     therm_time  = 0. # wait extra 5 minutes to thermalize
@@ -377,6 +393,17 @@ if __name__ == '__main__':
     Tctrl = JanusTemperatureController(Tstart, Tstop, dT,
             sample_time=sample_time, T_eps=T_eps, therm_time=therm_time,
             path_to_pna_script=path_to_pna_script)
+
+    # Setup for the VNA controller
+    Tctrl.vna_averages = 10 # number of averages for first (highest) power
+    Tctrl.vna_edelay = 78.06 #ns
+    Tctrl.vna_ifband = 1.0 #khz
+    Tctrl.vna_numsweeps = 3
+    Tctrl.vna_centerf = 7.58967
+    Tctrl.vna_span = 1 #mhz
+    Tctrl.vna_points = 2001
+    Tctrl.vna_startpower = -45
+    Tctrl.vna_endpower = -65
 
     # Run the temperature sweep from within the class
     Tctrl.set_current(0.)
