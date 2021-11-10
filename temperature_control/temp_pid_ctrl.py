@@ -158,7 +158,7 @@ class JanusTemperatureController(object):
         This function takes the pid output (Current in mA)
         nd converts it to heater settings
         """
-        if np.isclose(x, 0., atol=1e-12, rtol=1e-16):
+        if np.isclose(x, 0.):
             Range = 0
             level = 0
         elif x < 0.0316:
@@ -232,7 +232,7 @@ class JanusTemperatureController(object):
 
         # Read the initial temperature
         Z, T, tstamp = self.read_cmn()
-        print(f'Heating to {Tset * 1e3} mK from {T * 1e3} ...')
+        print(f'Heating to {Tset * 1e3} mK from {T * 1e3} mK ...')
         tin = t
         while 1:
             if abs(1e3 * (T - Tset)) < self.T_eps:
@@ -327,9 +327,9 @@ class JanusTemperatureController(object):
                         # Measure the temperature, set the current, write
                         # results to file
                         out = {}
-                        # self.temperature_controller('tstamp [HH:MM:SS]',
-                        #                             't [s]', 'T [mK]', t,
-                        #                             Tset, out) 
+                        self.temperature_controller('tstamp [HH:MM:SS]',
+                                                    't [s]', 'T [mK]', t,
+                                                    Tset, out) 
                         print(f'out:\n{out}')
                         del out
 
@@ -338,13 +338,14 @@ class JanusTemperatureController(object):
                         print('Starting PNA measurement ...')
                         mng = Manager()
                         out = mng.dict()
-                        # ptemp = Process(target=self.temperature_controller,
-                        #        args=('temp', t, None, None, Tset, out))
+                        ptemp = Process(target=self.temperature_controller,
+                               args=('tstamp [HH:MM:SS]', 't [s]', 'T [mK]', t,
+                                   Tset, out))
                         pmeas = Process(target=self.pna_process,
                                 args=('meas', path_to_script, Tset, out))
-                        # ptemp.start()
+                        ptemp.start()
                         pmeas.start()
-                        # ptemp.join()
+                        ptemp.join()
                         pmeas.join()
                         print(f'out:\n{out}')
                         print('Finished PNA Measurement.')

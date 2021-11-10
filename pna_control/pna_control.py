@@ -97,6 +97,7 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
 
     keysight.write('OUTPut:STATe ON')
     read_data(keysight, points, outputfile, power, temp)
+    keysight.write('OUTPut:STATe OFF')
 
 def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: float, span: float, temp: float, 
                averages: float = 100, edelay: float = 40, ifband: float = 5, points: int = 201, outputfile: str = "results.csv",
