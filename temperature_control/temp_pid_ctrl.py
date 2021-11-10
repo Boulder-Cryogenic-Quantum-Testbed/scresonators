@@ -64,6 +64,7 @@ class JanusTemperatureController(object):
 
         # Set the base temperature of the fridge here
         self.T_base = 0.016
+        self.dstr = datetime.datetime.today().strftime('%y%m%d')
 
         # Default VNA settings
         # self.vna_averages = 1 # number of averages for first (highest) power
@@ -257,13 +258,15 @@ class JanusTemperatureController(object):
             
                 # Write the time stamp, temperature, and impedance to file
                 tin += self.sample_time
-                out[tsidx] = tstamp
-                out[Tidx]  = T * 1e3
-                out[tidx]  = tin
             else:
                 out[tsidx] = None
                 out[Tidx] = None
                 out[tidx] = None
+
+        # Write the outputs for file writing
+        out[tsidx] = tstamp
+        out[Tidx]  = T * 1e3
+        out[tidx]  = tin
     
 
     def pna_process(self, idx, path_to_scr, Tset, out):
@@ -272,7 +275,7 @@ class JanusTemperatureController(object):
         """
         # Get the temperature from the temperature controller
         temp = Tset * 1e3 #mk
-        sampleid = 'M3D6_02_WITH_1SP_INP' 
+        sampleid = f'M3D6_02_WITH_1SP_INP_{self.dstr}' 
 
         # Preparing to measure frequencies, powers
         powers = np.linspace(self.vna_startpower, self.vna_endpower,
@@ -284,7 +287,7 @@ class JanusTemperatureController(object):
         print(f'Nsweeps: {self.vna_numsweeps}')
         print(f'Powers: {powers} dBm')
 
-        outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz_'
+        outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz'
         PNA.powersweep(self.vna_startpower, self.vna_endpower,
                 self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
                 self.vna_averages, self.vna_edelay, self.vna_ifband,
@@ -303,7 +306,7 @@ class JanusTemperatureController(object):
 
             # Set the output filename and write the results with
             # standard text file IO operations
-            dstr = datetime.datetime.today().strftime('%y%m%d')
+            dstr =  self.dstr
             T = 10 * Tset
             t = 0
         
@@ -331,6 +334,11 @@ class JanusTemperatureController(object):
                                                     't [s]', 'T [mK]', t,
                                                     Tset, out) 
                         print(f'out:\n{out}')
+                        # Update the time stamp, elapsed time, temperature
+                        tsout = out['tstamp [HH:MM:SS]']
+                        tout  = out['t[s]']
+                        Tout  = out['T [mK]']
+                        fid.write(f'{tsout}, {tout}, {Tout}')
                         del out
 
                         # Launch the resonance measurement (power sweep,
@@ -347,7 +355,14 @@ class JanusTemperatureController(object):
                         pmeas.start()
                         ptemp.join()
                         pmeas.join()
+
+                        # Update the time stamp, elapsed time, temperature
                         print(f'out:\n{out}')
+                        tsout = out['tstamp [HH:MM:SS]']
+                        tout  = out['t[s]']
+                        Tout  = out['T [mK]']
+                        fid.write(f'{tsout}, {tout}, {Tout}')
+
                         print('Finished PNA Measurement.')
                         
                         meas_ret = 0
@@ -361,7 +376,6 @@ class JanusTemperatureController(object):
                     print('Setting current to 0 ...')
                     self.set_current(0.)
                     break
-                    # self.socket.close()
                     fid.close()
 
                 # Continue to the next for loop iteration
@@ -371,18 +385,13 @@ class JanusTemperatureController(object):
             # Close the file, just in case the context manager does not free it
             fid.close()
             
-        # Set the heater current back to 0 mA
-        print('Setting current to 0 ...')
-        self.set_current(0.)
-
 
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
     Tstart = 0.03; Tstop = 0.100; dT = 0.01
     sample_time = 15; T_eps = 1e-2
-    therm_time  = 600. # wait extra 5 minutes to thermalize
-    therm_time  = 0. # wait extra 5 minutes to thermalize
+    therm_time  = 600. # wait an extra 10 minutes to thermalize
 
     # Set the path to the PNA script
     prepath = 'C:\\Users\\Lehnert Lab\\OneDrive - UCB-O365\\Experiment'
