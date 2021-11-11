@@ -77,12 +77,6 @@ class JanusTemperatureController(object):
         # self.vna_startpower = -5
         # self.vna_endpower = -65
 
-        # Path to the pna measurement script
-        prepath = 'C:\\Users\\Lehnert Lab\\OneDrive - UCB-O365\\Experiment'
-        pna_scr = 'repeat_resonance_measurement.py'
-        sub_dir = 'Mines_6061_3_temperatures'
-        self.path_to_pna_script = f'{prepath}\\{sub_dir}\\{pna_scr}'
-
         # Update the arguments and the keyword arguments
         # This will overwrite the above defaults with the user-passed kwargs
         for k, v in kwargs.items():
@@ -106,10 +100,6 @@ class JanusTemperatureController(object):
             tsls = self.T_sweep_list_spacing
             raise ValueError(f'Temperature sweep spacing {tsls} not supported.')
 
-        # Check that the path exists for the file to run the PNA measurement
-        assert glob.glob(self.path_to_pna_script) != [], \
-                f'{self.path_to_pna_script} not found.'
-
         # Print all of the settings before proceeding
         print('\n---------------------------------------------------')
         print(f'JanusTemperatureController class instance members:')
@@ -122,9 +112,28 @@ class JanusTemperatureController(object):
         Deconstructor to free resources
         """
         # Set the current to zero and close the socket connection
+        print('Calling destructor ...')
         print('Setting current to 0 ...')
         self.set_current(0.)
         self.socket.close()
+        self.socket = None
+
+    def reset_socket(self):
+        if self.socket is not None:
+            print(f'Resetting socket ...')
+            self.socket.close()
+            self.socket = None
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((self.TCP_IP, self.TCP_PORT))
+        else:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((self.TCP_IP, self.TCP_PORT))
+
+    def close_socket(self):
+        if self.socket is not None:
+            self.socket.close()
+            self.socket = None
+
 
     def tcp_send(self, message):
         length = len(message)
@@ -159,7 +168,7 @@ class JanusTemperatureController(object):
         This function takes the pid output (Current in mA)
         nd converts it to heater settings
         """
-        if np.isclose(x, 0.):
+        if abs(x - 0) < 1e-8:
             Range = 0
             level = 0
         elif x < 0.0316:
@@ -226,6 +235,8 @@ class JanusTemperatureController(object):
 
     
     def temperature_controller(self, tsidx, tidx, Tidx, t, Tset, out):
+        # Reset the socket
+        self.reset_socket()
         start_thermalize_timer = False
 
         # Get the pid controller object
@@ -269,7 +280,7 @@ class JanusTemperatureController(object):
         out[tidx]  = tin
     
 
-    def pna_process(self, idx, path_to_scr, Tset, out):
+    def pna_process(self, idx, Tset, out):
         """
         Performs a PNA measurement
         """
@@ -314,10 +325,7 @@ class JanusTemperatureController(object):
             fname = f'logs/temperature_{int(Tset * 1e3)}_mK_log_{dstr}.csv'
         
             # Flag to start measurement run
-            start_thermalize_timer = False
             meas_ret = 1
-            path_to_script = self.path_to_pna_script
-            assert glob.glob(path_to_script) != [], 'Script not found!!!'
 
             # Open file and start logging time stamps, elapsed time,
             # temperature
@@ -336,32 +344,32 @@ class JanusTemperatureController(object):
                         print(f'out:\n{out}')
                         # Update the time stamp, elapsed time, temperature
                         tsout = out['tstamp [HH:MM:SS]']
-                        tout  = out['t[s]']
+                        tout  = out['t [s]']
                         Tout  = out['T [mK]']
-                        fid.write(f'{tsout}, {tout}, {Tout}')
-                        del out
+                        fid.write(f'{tsout}, {tout}, {Tout}\n')
 
                         # Launch the resonance measurement (power sweep,
                         # etc.) Wait for the process to return
                         print('Starting PNA measurement ...')
-                        mng = Manager()
-                        out = mng.dict()
-                        ptemp = Process(target=self.temperature_controller,
-                               args=('tstamp [HH:MM:SS]', 't [s]', 'T [mK]', t,
-                                   Tset, out))
-                        pmeas = Process(target=self.pna_process,
-                                args=('meas', path_to_script, Tset, out))
-                        ptemp.start()
-                        pmeas.start()
-                        ptemp.join()
-                        pmeas.join()
+                        # mng = Manager()
+                        # out = mng.dict()
+                        # ptemp = Process(target=self.temperature_controller,
+                        #        args=('tstamp [HH:MM:SS]', 't [s]', 'T [mK]', t,
+                        #            Tset, out))
+                        # pmeas = Process(target=self.pna_process,
+                        #         args=('meas', Tset, out))
+                        self.pna_process('meas', Tset, out)
+                        # ptemp.start()
+                        # pmeas.start()
+                        # ptemp.join()
+                        # pmeas.join()
 
                         # Update the time stamp, elapsed time, temperature
                         print(f'out:\n{out}')
-                        tsout = out['tstamp [HH:MM:SS]']
-                        tout  = out['t[s]']
-                        Tout  = out['T [mK]']
-                        fid.write(f'{tsout}, {tout}, {Tout}')
+                        # tsout = out['tstamp [HH:MM:SS]']
+                        # tout  = out['t [s]']
+                        # Tout  = out['T [mK]']
+                        # fid.write(f'{tsout}, {tout}, {Tout}')
 
                         print('Finished PNA Measurement.')
                         
@@ -374,14 +382,14 @@ class JanusTemperatureController(object):
                     print(f'Exception:\n{ex}')
                     print('-----------------\n')
                     print('Setting current to 0 ...')
-                    self.set_current(0.)
+                    if self.socket is not None:
+                        self.set_current(0.)
+                    else:
+                        self.reset_socket()
+                        self.set_current(0.)
                     break
                     fid.close()
 
-                # Continue to the next for loop iteration
-                finally:
-                    continue
-        
             # Close the file, just in case the context manager does not free it
             fid.close()
             
@@ -389,20 +397,14 @@ class JanusTemperatureController(object):
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
-    Tstart = 0.03; Tstop = 0.100; dT = 0.01
+    Tstart = 0.05; Tstop = 0.100; dT = 0.01
     sample_time = 15; T_eps = 1e-2
     therm_time  = 600. # wait an extra 10 minutes to thermalize
-
-    # Set the path to the PNA script
-    prepath = 'C:\\Users\\Lehnert Lab\\OneDrive - UCB-O365\\Experiment'
-    pna_scr = 'repeat_resonance_measurement.py'
-    sub_dir = 'Mines_6061_3_temperatures'
-    path_to_pna_script = f'{prepath}\\{sub_dir}\\{pna_scr}'
+    # therm_time  = 0. # wait an extra 10 minutes to thermalize
 
     # Setup the temperature controller class object
     Tctrl = JanusTemperatureController(Tstart, Tstop, dT,
-            sample_time=sample_time, T_eps=T_eps, therm_time=therm_time,
-            path_to_pna_script=path_to_pna_script)
+            sample_time=sample_time, T_eps=T_eps, therm_time=therm_time)
 
     # Setup for the VNA controller
     Tctrl.vna_averages = 10 # number of averages for first (highest) power
