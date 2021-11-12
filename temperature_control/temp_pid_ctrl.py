@@ -52,35 +52,29 @@ class JanusTemperatureController(object):
         # Set the defaults for the TCP address and ports
         self.TCP_IP   = 'localhost'
         self.TCP_PORT = 5559
+        self.init_socket = True
 
         # Default thermalization time
         self.therm_time  = 1200. # Wait extra 5 minutes to thermalize [s]
         self.T_eps       = 1e-2 # Temperature settling threshold [mK]
         self.T_sweep_list_spacing = 'linear'
 
-        # Create socket connection to the Janus Gas Handling System
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.connect((self.TCP_IP, self.TCP_PORT))
-
         # Set the base temperature of the fridge here
         self.T_base = 0.016
         self.dstr = datetime.datetime.today().strftime('%y%m%d')
-
-        # Default VNA settings
-        # self.vna_averages = 1 # number of averages for first (highest) power
-        # self.vna_edelay = 78.06 #ns
-        # self.vna_ifband = 1.0 #khz
-        # self.vna_numsweeps = 3
-        # self.vna_centerf = 7.58967
-        # self.vna_span = 1 #mhz
-        # self.vna_points = 2001
-        # self.vna_startpower = -5
-        # self.vna_endpower = -65
 
         # Update the arguments and the keyword arguments
         # This will overwrite the above defaults with the user-passed kwargs
         for k, v in kwargs.items():
             setattr(self, k, v)
+
+        # Create socket connection to the Janus Gas Handling System
+        if self.init_socket:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.connect((self.TCP_IP, self.TCP_PORT))
+        else:
+            self.socket = None
+
 
         # Set the temperature array
         ## Set the number of temperatures
@@ -113,10 +107,11 @@ class JanusTemperatureController(object):
         """
         # Set the current to zero and close the socket connection
         print('Calling destructor ...')
-        print('Setting current to 0 ...')
-        self.set_current(0.)
-        self.socket.close()
-        self.socket = None
+        if self.socket is not None:
+            print('Setting current to 0 ...')
+            self.set_current(0.)
+            self.socket.close()
+            self.socket = None
 
     def reset_socket(self):
         if self.socket is not None:
@@ -186,6 +181,16 @@ class JanusTemperatureController(object):
         elif 1.0 < x <= 3.16:
             Range = 5
             level = x*100/3.16
+        # Extended ranges added on 211111
+        elif 3.16 < x <= 10:
+            Range = 6
+            level = x*100/10
+        elif 10 < x <= 31.6:
+            Range = 7
+            level = x*100/31.6
+        elif 31.6 < x <= 100:
+            Range = 8
+            level = x*100/100
         else:
             print("DON'T MELT THE FRIDGE")
             Range = 0
@@ -302,7 +307,7 @@ class JanusTemperatureController(object):
         PNA.powersweep(self.vna_startpower, self.vna_endpower,
                 self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
                 self.vna_averages, self.vna_edelay, self.vna_ifband,
-                self.vna_points, outputfile)
+                self.vna_points, outputfile, sparam=self.sparam)
 
         out[idx] = 0
 
@@ -397,30 +402,69 @@ class JanusTemperatureController(object):
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
-    Tstart = 0.05; Tstop = 0.100; dT = 0.01
-    sample_time = 15; T_eps = 1e-2
-    therm_time  = 600. # wait an extra 10 minutes to thermalize
+    # Tstart = 0.03; Tstop = 0.1; dT = 0.01
+    Tstart = 0.405; Tstop = 0.450; dT = 0.015
+    sample_time = 15; T_eps = 2
+    therm_time  = 0. # wait an extra 10 minutes to thermalize
     # therm_time  = 0. # wait an extra 10 minutes to thermalize
 
     # Setup the temperature controller class object
     Tctrl = JanusTemperatureController(Tstart, Tstop, dT,
-            sample_time=sample_time, T_eps=T_eps, therm_time=therm_time)
+            sample_time=sample_time, T_eps=T_eps, therm_time=therm_time,
+            init_socket=True)
 
     # Setup for the VNA controller
-    Tctrl.vna_averages = 10 # number of averages for first (highest) power
-    Tctrl.vna_edelay = 78.06 #ns
+    Tctrl.sparam = 'S12'
+    Tctrl.vna_edelay = 78.06 # ns
+    Tctrl.vna_ifband = 1.0 # kHz
+    Tctrl.vna_centerf = 7.58967
+    Tctrl.vna_span = 1 # MHz
+    Tctrl.vna_points = 2001
+
+    # Temperature sweep settings
+    Tctrl.vna_averages = 3
     Tctrl.vna_ifband = 1.0 #khz
     Tctrl.vna_numsweeps = 3
-    Tctrl.vna_centerf = 7.58967
-    Tctrl.vna_span = 1 #mhz
-    Tctrl.vna_points = 2001
     Tctrl.vna_startpower = -45
     Tctrl.vna_endpower = -65
+
+    # # High power sweep
+    # Tctrl.vna_averages = 1
+    # Tctrl.vna_edelay = 50. # ns
+    # Tctrl.vna_ifband = 1.0 #khz
+    # Tctrl.vna_numsweeps = 2
+    # Tctrl.vna_startpower = 0 
+    # Tctrl.vna_endpower = -5
+
+    # # Intermediate power sweep #2
+    # Tctrl.vna_averages = 1
+    # Tctrl.vna_ifband = 1.0 #khz
+    # Tctrl.vna_numsweeps = 7
+    # Tctrl.vna_startpower = -10 
+    # Tctrl.vna_endpower = -40
+
+    # # Intermediate power sweep #1
+    # Tctrl.vna_averages = 10
+    # Tctrl.vna_ifband = 1.0 #khz
+    # Tctrl.vna_numsweeps = 7
+    # Tctrl.vna_startpower = -45
+    # Tctrl.vna_endpower = - -75
+
+    # # Low power sweep
+    # Tctrl.vna_averages = 800
+    # Tctrl.vna_ifband = 0.5 #khz
+    # Tctrl.vna_numsweeps = 4
+    # Tctrl.vna_startpower = -80
+    # Tctrl.vna_endpower = -95
 
     # Run the temperature sweep from within the class
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
+
+    # out = {}
+    # Tctrl.pna_process('meas', T, out)
+
     Tctrl.run_temp_sweep()
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()

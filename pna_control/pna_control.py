@@ -3,7 +3,7 @@ import pyvisa
 import os
 from os import path
 
-def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, power: float, edelay: float, averages: int, sparam : str = 'S21'):
+def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, power: float, edelay: float, averages: int, sparam : str = 'S12'):
     '''
     set parameters for the PNA for the sweep (number of points, center frequency, span of frequencies, IF bandwidth, power, electrical delay and number of averages)
     '''
@@ -60,7 +60,7 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
         power: float = -30, edelay: float = 40, ifband: float = 5,
         points: int = 201, outputfile: str = "results.csv",
         instr_addr : str = 'GPIB::16::INSTR',
-        sparam : str = 'S21'):
+        sparam : str = 'S12'):
     '''
     function to get data and put it into a user specified file
     '''
@@ -101,7 +101,7 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
 
 def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: float, span: float, temp: float, 
                averages: float = 100, edelay: float = 40, ifband: float = 5, points: int = 201, outputfile: str = "results.csv",
-               sparam : str = 'S21'):
+               sparam : str = 'S12'):
     '''
     run a power sweep for specified power range with a certain number of sweeps
     '''
@@ -109,6 +109,7 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: floa
     #create an array with the values of power for each sweep
     sweeps = np.linspace(startpower, endpower, numsweeps)
     stepsize = sweeps[0]-sweeps[1]
+    print(f'Measuring {sparam} ...')
 
     #create a new directory for the output to be put into
     if (path.isdir(outputfile[0:-4]+'_'+'_'+str(temp)+'mK')):
