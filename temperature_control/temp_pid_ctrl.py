@@ -94,12 +94,8 @@ class JanusTemperatureController(object):
             tsls = self.T_sweep_list_spacing
             raise ValueError(f'Temperature sweep spacing {tsls} not supported.')
 
-        # Print all of the settings before proceeding
-        print('\n---------------------------------------------------')
-        print(f'JanusTemperatureController class instance members:')
-        for k, v in self.__dict__.items():
-            print(f'{k} : {v}')
-        print('---------------------------------------------------\n')
+        # Print all of the members stored in the class
+        self.print_class_members()
 
     def __del__(self):
         """
@@ -112,6 +108,18 @@ class JanusTemperatureController(object):
             self.set_current(0.)
             self.socket.close()
             self.socket = None
+
+    def print_class_members(self):
+        """
+        Prints all the values of the members stored in the class instance
+        """
+        # Print all of the settings before proceeding
+        print('\n---------------------------------------------------')
+        print(f'JanusTemperatureController class instance members:')
+        for k, v in self.__dict__.items():
+            print(f'{k} : {v}')
+        print('---------------------------------------------------\n')
+
 
     def reset_socket(self):
         if self.socket is not None:
@@ -415,57 +423,59 @@ if __name__ == '__main__':
 
     # Setup for the VNA controller
     Tctrl.sparam = 'S12'
-    Tctrl.vna_edelay = 78.06 # ns
+    Tctrl.vna_edelay = 77.86 # ns
     Tctrl.vna_ifband = 1.0 # kHz
     Tctrl.vna_centerf = 7.58967
     Tctrl.vna_span = 1 # MHz
     Tctrl.vna_points = 2001
 
-    # Temperature sweep settings
-    Tctrl.vna_averages = 3
-    Tctrl.vna_ifband = 1.0 #khz
-    Tctrl.vna_numsweeps = 3
-    Tctrl.vna_startpower = -45
-    Tctrl.vna_endpower = -65
+    # # Temperature sweep settings
+    # Tctrl.vna_averages = 3
+    # Tctrl.vna_ifband = 1.0 #khz
+    # Tctrl.vna_numsweeps = 3
+    # Tctrl.vna_startpower = -45
+    # Tctrl.vna_endpower = -65
 
     # # High power sweep
-    # Tctrl.vna_averages = 1
-    # Tctrl.vna_edelay = 50. # ns
-    # Tctrl.vna_ifband = 1.0 #khz
-    # Tctrl.vna_numsweeps = 2
-    # Tctrl.vna_startpower = 0 
-    # Tctrl.vna_endpower = -5
-
-    # # Intermediate power sweep #2
-    # Tctrl.vna_averages = 1
-    # Tctrl.vna_ifband = 1.0 #khz
-    # Tctrl.vna_numsweeps = 7
-    # Tctrl.vna_startpower = -10 
-    # Tctrl.vna_endpower = -40
-
-    # # Intermediate power sweep #1
     # Tctrl.vna_averages = 10
     # Tctrl.vna_ifband = 1.0 #khz
     # Tctrl.vna_numsweeps = 7
-    # Tctrl.vna_startpower = -45
-    # Tctrl.vna_endpower = - -75
+    # Tctrl.vna_startpower = -35
+    # Tctrl.vna_endpower = -5
+
+    # Intermediate power sweep #2
+    Tctrl.vna_averages = 50
+    Tctrl.vna_ifband = 1.0 #khz
+    Tctrl.vna_numsweeps = 5
+    Tctrl.vna_startpower = -40
+    Tctrl.vna_endpower = -60
+
+    # # Intermediate power sweep #1
+    # Tctrl.vna_averages = 200
+    # Tctrl.vna_ifband = 0.5 #khz
+    # Tctrl.vna_numsweeps = 3
+    # Tctrl.vna_startpower = -70
+    # Tctrl.vna_endpower = -80
 
     # # Low power sweep
-    # Tctrl.vna_averages = 800
+    # Tctrl.vna_edelay = 78.056
+    # Tctrl.vna_averages = 10000 
     # Tctrl.vna_ifband = 0.5 #khz
-    # Tctrl.vna_numsweeps = 4
-    # Tctrl.vna_startpower = -80
+    # Tctrl.vna_numsweeps = 2 
+    # Tctrl.vna_startpower = -95
     # Tctrl.vna_endpower = -95
+
+    Tctrl.print_class_members()
 
     # Run the temperature sweep from within the class
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
 
-    # out = {}
-    # Tctrl.pna_process('meas', T, out)
+    out = {}
+    Tctrl.pna_process('meas', T, out)
 
-    Tctrl.run_temp_sweep()
-    Tctrl.set_current(0.)
-    Z, T, tstamp = Tctrl.read_cmn()
-    print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
+    # # Tctrl.run_temp_sweep()
+    # Tctrl.set_current(0.)
+    # Z, T, tstamp = Tctrl.read_cmn()
+    # print(f'{tstamp}, {Z} ohms, {T*1e3} mK')

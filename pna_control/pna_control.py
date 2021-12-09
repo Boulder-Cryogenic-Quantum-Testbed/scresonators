@@ -2,6 +2,7 @@ import numpy as np
 import pyvisa
 import os
 from os import path
+import time
 
 def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, power: float, edelay: float, averages: int, sparam : str = 'S12'):
     '''
@@ -29,6 +30,8 @@ def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, powe
     #    averages = 10
     if(averages < 1):
         averages = 1
+
+    # Convert averages to integer
     averages = averages//1
     pna.write('SENSe1:AVERage:Count {}'.format(averages))
 
@@ -38,14 +41,19 @@ def read_data(pna, points, outputfile, power, temp):
     '''
 
     #read in frequency
-    freq = np.linspace(float(pna.query('SENSe1:FREQuency:START?')), float(pna.query('SENSe1:FREQuency:STOP?')), points)
+    freq = np.linspace(float(pna.query('SENSe1:FREQuency:START?')),
+            float(pna.query('SENSe1:FREQuency:STOP?')), points)
 
     #read in phase
     pna.write('CALCulate1:FORMat PHASe')
+    pna.write('INITiate:CONTinuous OFF')
+    pna.write('INITiate:IMMediate;*wai')
     phase = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #read in mag
     pna.write('CALCulate1:FORMat MLOG')
+    pna.write('INITiate:CONTinuous OFF')
+    pna.write('INITiate:IMMediate;*wai')
     mag = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #open output file and put data points into the file
@@ -84,6 +92,8 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
               sparam=sparam)
 
     #start taking data for S21
+    keysight.write('INITiate:CONTinuous ON')
+    keysight.write('OUTPut:STATe ON')
     keysight.write('CALCulate1:PARameter:SELect \'Meas\'')
     keysight.write('FORMat ASCII')
 
@@ -95,9 +105,8 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
         if (keysight.query('STAT:OPER:AVER1:COND?')[1] != "0"):
             break;
 
-    keysight.write('OUTPut:STATe ON')
     read_data(keysight, points, outputfile, power, temp)
-    # keysight.write('OUTPut:STATe OFF')
+    keysight.write('OUTPut:STATe OFF')
 
 def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: float, span: float, temp: float, 
                averages: float = 100, edelay: float = 40, ifband: float = 5, points: int = 201, outputfile: str = "results.csv",
@@ -140,6 +149,7 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: floa
 
     #run each sweep while increasing averages for each power
     for i in sweeps:
+        print(f'{i} dBm, {averages//1} averages ...')
         getdata(centerf, span, temp, averages, i, edelay, ifband, points, outputfile,
                 sparam=sparam)
         averages = averages * ((10**(stepsize/10))**0.5)
