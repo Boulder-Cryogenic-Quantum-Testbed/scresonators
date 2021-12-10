@@ -28,8 +28,8 @@ def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, powe
     #ensure at least 10 averages are taken
     #if(averages < 10):
     #    averages = 10
-    if(averages < 1):
-        averages = 1
+    if(averages <= 1):
+        averages = 3
 
     # Convert averages to integer
     averages = averages//1
@@ -46,14 +46,14 @@ def read_data(pna, points, outputfile, power, temp):
 
     #read in phase
     pna.write('CALCulate1:FORMat PHASe')
-    pna.write('INITiate:CONTinuous OFF')
-    pna.write('INITiate:IMMediate;*wai')
+    # pna.write('INITiate:CONTinuous OFF')
+    # pna.write('INITiate:IMMediate;*wai')
     phase = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #read in mag
     pna.write('CALCulate1:FORMat MLOG')
-    pna.write('INITiate:CONTinuous OFF')
-    pna.write('INITiate:IMMediate;*wai')
+    # pna.write('INITiate:CONTinuous OFF')
+    # pna.write('INITiate:IMMediate;*wai')
     mag = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #open output file and put data points into the file
@@ -99,13 +99,19 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
 
     #wait until the averages are done being taken then read in the data
     count = 10000000
+    cnt = 0
     while(count > 0):
         count = count - 1
     while(True):
         if (keysight.query('STAT:OPER:AVER1:COND?')[1] != "0"):
+            cnt += 1
             break;
-
+    keysight.query('*OPC?')
+    keysight.write('*WAI')
+    time.sleep(3.0)
+    keysight.write('SYSTem:CHANnels:HOLD')
     read_data(keysight, points, outputfile, power, temp)
+    keysight.write('SYSTem:CHANnels:RESume')
     keysight.write('OUTPut:STATe OFF')
 
 def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: float, span: float, temp: float, 

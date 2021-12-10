@@ -324,27 +324,27 @@ class JanusTemperatureController(object):
         """
         Execute the temperature sweep
         """
-        # Iterate over the temperatures
-        for Tset in self.T_sweep_list:
-            # Get the pid controller object
+        # Set the output filename and write the results with
+        # standard text file IO operations
+        dstr =  self.dstr
 
-            # Set the output filename and write the results with
-            # standard text file IO operations
-            dstr =  self.dstr
-            T = 10 * Tset
-            t = 0
-        
-            # Set the log filename, log the temperature, time stamp, and time
-            fname = f'logs/temperature_{int(Tset * 1e3)}_mK_log_{dstr}.csv'
-        
-            # Flag to start measurement run
-            meas_ret = 1
+        # Set the log filename, log the temperature, time stamp, and time
+        fname = f'logs/temperature_{int(Tset * 1e3)}_mK_log_{dstr}.csv'
 
-            # Open file and start logging time stamps, elapsed time,
-            # temperature
-            with open(fname, 'w') as fid:
-                fid.write('# Time[HH:MM:SS], Time [s], Temperature [mK]\n')
-        
+        # Open file and start logging time stamps, elapsed time,
+        # temperature
+        with open(fname, 'w') as fid:
+            fid.write('# Time[HH:MM:SS], Time [s], Temperature [mK]\n')
+
+            # Iterate over the temperatures
+            for Tset in self.T_sweep_list:
+                # Scale the temperature to mK
+                T = 10 * Tset
+                t = 0
+            
+                # Flag to start measurement run
+                meas_ret = 1
+            
                 # Continue to run the PID controller as the measurement runs
                 try:
                     while meas_ret:
@@ -397,15 +397,13 @@ class JanusTemperatureController(object):
                     print('Setting current to 0 ...')
                     if self.socket is not None:
                         self.set_current(0.)
+                        fid.close()
                     else:
                         self.reset_socket()
                         self.set_current(0.)
+                        fid.close()
                     break
-                    fid.close()
-
-            # Close the file, just in case the context manager does not free it
-            fid.close()
-            
+                
 
 if __name__ == '__main__':
     # Iterate over a list of temperatures
@@ -430,28 +428,30 @@ if __name__ == '__main__':
     Tctrl.vna_points = 2001
 
     # # Temperature sweep settings
+    # Tctrl.sparam = 'S12'
     # Tctrl.vna_averages = 3
     # Tctrl.vna_ifband = 1.0 #khz
     # Tctrl.vna_numsweeps = 3
     # Tctrl.vna_startpower = -45
     # Tctrl.vna_endpower = -65
 
-    # # High power sweep
-    # Tctrl.vna_averages = 10
-    # Tctrl.vna_ifband = 1.0 #khz
-    # Tctrl.vna_numsweeps = 7
-    # Tctrl.vna_startpower = -35
-    # Tctrl.vna_endpower = -5
-
-    # Intermediate power sweep #2
-    Tctrl.vna_averages = 50
+    # High power sweep
+    Tctrl.vna_averages = 10
     Tctrl.vna_ifband = 1.0 #khz
-    Tctrl.vna_numsweeps = 5
-    Tctrl.vna_startpower = -40
-    Tctrl.vna_endpower = -60
+    Tctrl.vna_numsweeps = 7
+    Tctrl.vna_startpower = -35
+    Tctrl.vna_endpower = -5
 
-    # # Intermediate power sweep #1
-    # Tctrl.vna_averages = 200
+    # # Intermediate power sweep #2
+    # Tctrl.sparam = 'S12'
+    # Tctrl.vna_averages = 100
+    # Tctrl.vna_ifband = 1.0 #khz
+    # Tctrl.vna_numsweeps = 5
+    # Tctrl.vna_startpower = -40
+    # Tctrl.vna_endpower = -60
+
+    # # Low power sweep #1
+    # Tctrl.vna_averages = 500
     # Tctrl.vna_ifband = 0.5 #khz
     # Tctrl.vna_numsweeps = 3
     # Tctrl.vna_startpower = -70
