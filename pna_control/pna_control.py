@@ -1,12 +1,26 @@
+# -*- encoding: utf-8 -*-
+"""
+Collection of functions defining control of the Keysight PNA instrument
+
+TODO:
+    * Collect all functions into a single class
+    * Sends commands to the instrument with a socket or other connection
+    * Commands of the SCPI variety using the pyvisa interface
+    * Write a wrapper that uses the powersweep() function for legacy users
+
+"""
 import numpy as np
 import pyvisa
 import os
 from os import path
 import time
 
-def pna_setup(pna, points: int, centerf: float, span: float, ifband: float, power: float, edelay: float, averages: int, sparam : str = 'S12'):
+def pna_setup(pna, points: int, centerf: float, span: float, ifband: float,
+        power: float, edelay: float, averages: int, sparam : str = 'S12'):
     '''
-    set parameters for the PNA for the sweep (number of points, center frequency, span of frequencies, IF bandwidth, power, electrical delay and number of averages)
+    set parameters for the PNA for the sweep (number of points, center
+    frequency, span of frequencies, IF bandwidth, power, electrical delay and
+    number of averages)
     '''
 
     #initial setup for measurement
@@ -48,7 +62,8 @@ def read_data(pna, points, outputfile, power, temp):
     pna.write('CALCulate1:FORMat PHASe')
     # pna.write('INITiate:CONTinuous OFF')
     # pna.write('INITiate:IMMediate;*wai')
-    phase = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
+    phase = pna.query_ascii_values('CALCulate1:DATA? FDATA',
+            container=np.array)
 
     #read in mag
     pna.write('CALCulate1:FORMat MLOG')
@@ -77,8 +92,8 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
     rm = pyvisa.ResourceManager()
     GPIB_addr = 'GPIB0::16::INSTR'
 
-    #handle failure to open the GPIB resource
-    #this is an issue when connecting to the PNA-X from newyork rather than ontario
+    # handle failure to open the GPIB resource #this is an issue when connecting
+    # to the PNA-X from newyork rather than ontario
     try:
         keysight = rm.open_resource(instr_addr)
         # keysight = rm.open_resource('GPIB0::16::INSTR')
@@ -114,9 +129,10 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
     keysight.write('SYSTem:CHANnels:RESume')
     keysight.write('OUTPut:STATe OFF')
 
-def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: float, span: float, temp: float, 
-               averages: float = 100, edelay: float = 40, ifband: float = 5, points: int = 201, outputfile: str = "results.csv",
-               sparam : str = 'S12'):
+def powersweep(startpower: float, endpower: float, numsweeps: int, centerf:
+        float, span: float, temp: float, averages: float = 100,
+        edelay: float = 40, ifband: float = 5, points: int = 201,
+        outputfile: str = "results.csv", sparam : str = 'S12'):
     '''
     run a power sweep for specified power range with a certain number of sweeps
     '''
@@ -156,6 +172,7 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf: floa
     #run each sweep while increasing averages for each power
     for i in sweeps:
         print(f'{i} dBm, {averages//1} averages ...')
-        getdata(centerf, span, temp, averages, i, edelay, ifband, points, outputfile,
-                sparam=sparam)
+        getdata(centerf, span, temp, averages, i, edelay, ifband, points,
+                outputfile, sparam=sparam)
         averages = averages * ((10**(stepsize/10))**0.5)
+    print('Power sweep completed.')

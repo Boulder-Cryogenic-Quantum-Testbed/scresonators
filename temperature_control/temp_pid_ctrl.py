@@ -54,6 +54,11 @@ class JanusTemperatureController(object):
         self.TCP_PORT = 5559
         self.init_socket = True
 
+        # Set as True to start the PID controller, then set to False to allow
+        # for updates to the PID values from the previous temperature set point
+        self.is_pid_init = True
+        self.pid_values  = None
+
         # Default thermalization time
         self.therm_time  = 1200. # Wait extra 5 minutes to thermalize [s]
         self.T_eps       = 1e-2 # Temperature settling threshold [mK]
@@ -221,23 +226,36 @@ class JanusTemperatureController(object):
         # 
         # go to https://en.wikipedia.org/wiki/Ziegler%E2%80%93Nichols_method
         # for info on Ku and Tu and how they relate to PID gain settings
-        Ku = 70
-        Tu =  186#s
+        # if self.is_pid_init:
+        Ku = 70.
+        Tu = 186 #s -- this is close to Nyquist, 2 * 90 s update time
+        # Tu = 90#s
         Kp = 0.6 * Ku
         Ki = 1.2 * Ku / Tu
         Kd = 0.075 * Ku * Tu
+        self.pid_values = [Kp, Ki, Kp]
+        # else:
+        #     self.pid_values = pid.components
+        #     Kp, Ki, Kp = self.pid_values
+        #     Ku = Ki * Tu / 1.2
+        #     Tu = Kd / (0.075 * Ku)
+
         #Temperature setpoint must be in Kelvin!
         #sample_time is in seconds
         stime = self.sample_time if hasattr(self, 'sample_time') \
                 else sample_time
         
         print(f'PID controller for {Tset*1e3} mK ...')
-        # Tset = 0.03
+        print(f'PID settings:')
+        print(f'Ku: {Ku}\tTu: {Tu}')
+        print(f'Kp: {Kp}\tKi: {Ki}\tKd: {Kd}')
         pid = simple_pid.PID(Kp, Ki, Kd, setpoint=Tset, sample_time=stime)
 
         # Set the maximum current
-        T_base = 0.013 #K (approx. base temperature)
+        # T_base = 0.013 #K (approx. base temperature)
         T_base = self.T_base #K (approx. base temperature)
+
+        # Limits the current to 1/3 of the total range?
         Max_Current = 1.33*8.373*(Tset-T_base)**(0.720) #mA
         print(f'Max Curent: {Max_Current} mA')
         pid.output_limits = (0, Max_Current)
@@ -247,7 +265,7 @@ class JanusTemperatureController(object):
         return pid
 
     
-    def temperature_controller(self, tsidx, tidx, Tidx, t, Tset, out):
+    def temperature_controller(self, tsidx, tidx, Tidx, t, Tset, fid, out):
         # Reset the socket
         self.reset_socket()
         start_thermalize_timer = False
@@ -264,42 +282,63 @@ class JanusTemperatureController(object):
                 start_thermalize_timer = True
             
             # Wait five more minutes
-            if start_thermalize_timer:
-                print('Starting thermalization timer ...')
-                time.sleep(self.therm_time)
-                out[tsidx] = tstamp
-                out[Tidx]  = T * 1e3
-                out[tidx]  = tin + self.therm_time
-                break
-
+            # if start_thermalize_timer:
+            #     print('Starting thermalization timer ...')
+            #     time.sleep(self.therm_time)
+            #     out[tsidx] = tstamp
+            #     out[Tidx]  = T * 1e3
+            #     out[tidx]  = tin + self.therm_time
+            #     out['Iout [mA]'] = Iout
+            #     break
+            
+            # Get the CMN impedance, temperature, and timestamp
             Z, T, tstamp = self.read_cmn()
             if T is not None:
                 # Generate the output current
-                output = self.pid(T)
-                print(f'{tstamp}, {1e3 * T} mK, {output} mA, {tin} s')
-                self.set_current(output)
+                Iout = self.pid(T)
+                P, I, D = self.pid.components
+                print(f'{tstamp}, {1e3 * T:.2f} mK, {Iout:.2f} mA, {P:.2f}, {I:.2f}, {D:.2f}, {tin} s')
+                self.set_current(Iout)
+
+                # Read the current values of the PID controller
+                P, I, D = self.pid.components
                 time.sleep(self.pid.sample_time)
             
                 # Write the time stamp, temperature, and impedance to file
                 tin += self.sample_time
+                out[tsidx] = tstamp
+                out[Tidx]  = T * 1e3
+                out[tidx]  = tin + self.therm_time
+                out['Iout [mA]'] = Iout
+                tsout = out[tsidx]; tout = out[tidx]; Tout = out[Tidx]
+                out['PID'] = [P, I, D]
             else:
-                out[tsidx] = None
-                out[Tidx] = None
-                out[tidx] = None
+                Iout             = None
+                out[tsidx]       = None
+                out[Tidx]        = None
+                out[tidx]        = None
+                out['Iout [mA]'] = None
+                out['PID']       = None
+                tsout = out[tsidx]; tout = out[tidx]; Tout = out[Tidx]
+
+            # Write the timestamp, elapsed time, temperature, current,
+            # P, I, D values to file
+            fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}\n')
 
         # Write the outputs for file writing
-        out[tsidx] = tstamp
-        out[Tidx]  = T * 1e3
-        out[tidx]  = tin
+        out[tsidx]       = tstamp
+        out[Tidx]        = T * 1e3
+        out[tidx]        = tin
+        out['Iout [mA]'] = Iout
     
 
-    def pna_process(self, idx, Tset, out):
+    def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP'):
         """
         Performs a PNA measurement
         """
         # Get the temperature from the temperature controller
         temp = Tset * 1e3 #mk
-        sampleid = f'M3D6_02_WITH_1SP_INP_{self.dstr}' 
+        sampleid = f'{prefix}_{self.dstr}' 
 
         # Preparing to measure frequencies, powers
         powers = np.linspace(self.vna_startpower, self.vna_endpower,
@@ -311,7 +350,10 @@ class JanusTemperatureController(object):
         print(f'Nsweeps: {self.vna_numsweeps}')
         print(f'Powers: {powers} dBm')
 
-        outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz'
+        # Note: PNA power sweep assumes the outputfile has .csv as its last
+        # four characters and removes them when manipulating strings and
+        # directories
+        outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz.csv'
         PNA.powersweep(self.vna_startpower, self.vna_endpower,
                 self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
                 self.vna_averages, self.vna_edelay, self.vna_ifband,
@@ -320,7 +362,7 @@ class JanusTemperatureController(object):
         out[idx] = 0
 
 
-    def run_temp_sweep(self):
+    def run_temp_sweep(self, measure_vna=False):
         """
         Execute the temperature sweep
         """
@@ -329,12 +371,13 @@ class JanusTemperatureController(object):
         dstr =  self.dstr
 
         # Set the log filename, log the temperature, time stamp, and time
-        fname = f'logs/temperature_{int(Tset * 1e3)}_mK_log_{dstr}.csv'
+        fname = f'logs/temperature_mK_log_{dstr}.csv'
+        hdr = '# Time[HH:MM:SS], Time [s], Temperature [mK], Current [mA], P, I, D\n'
 
         # Open file and start logging time stamps, elapsed time,
         # temperature
         with open(fname, 'w') as fid:
-            fid.write('# Time[HH:MM:SS], Time [s], Temperature [mK]\n')
+            fid.write(hdr)
 
             # Iterate over the temperatures
             for Tset in self.T_sweep_list:
@@ -353,17 +396,19 @@ class JanusTemperatureController(object):
                         out = {}
                         self.temperature_controller('tstamp [HH:MM:SS]',
                                                     't [s]', 'T [mK]', t,
-                                                    Tset, out) 
+                                                    Tset, fid, out) 
                         print(f'out:\n{out}')
                         # Update the time stamp, elapsed time, temperature
-                        tsout = out['tstamp [HH:MM:SS]']
-                        tout  = out['t [s]']
-                        Tout  = out['T [mK]']
-                        fid.write(f'{tsout}, {tout}, {Tout}\n')
+                        tsout     = out['tstamp [HH:MM:SS]']
+                        tout      = out['t [s]']
+                        Tout      = out['T [mK]']
+                        Iout      = out['Iout [mA]']
+                        P, I, D   = out['PID']
+                        data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}'
+                        fid.write(data + '\n')
 
                         # Launch the resonance measurement (power sweep,
                         # etc.) Wait for the process to return
-                        print('Starting PNA measurement ...')
                         # mng = Manager()
                         # out = mng.dict()
                         # ptemp = Process(target=self.temperature_controller,
@@ -371,7 +416,9 @@ class JanusTemperatureController(object):
                         #            Tset, out))
                         # pmeas = Process(target=self.pna_process,
                         #         args=('meas', Tset, out))
-                        self.pna_process('meas', Tset, out)
+                        if measure_vna:
+                            print('Starting PNA measurement ...')
+                            self.pna_process('meas', Tset, out)
                         # ptemp.start()
                         # pmeas.start()
                         # ptemp.join()
@@ -379,10 +426,13 @@ class JanusTemperatureController(object):
 
                         # Update the time stamp, elapsed time, temperature
                         print(f'out:\n{out}')
-                        # tsout = out['tstamp [HH:MM:SS]']
-                        # tout  = out['t [s]']
-                        # Tout  = out['T [mK]']
-                        # fid.write(f'{tsout}, {tout}, {Tout}')
+                        tsout   = out['tstamp [HH:MM:SS]']
+                        tout    = out['t [s]']
+                        Tout    = out['T [mK]']
+                        Iout    = out['Iout [mA]']
+                        P, I, D = out['PID']
+                        data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}'
+                        fid.write(data + '\n')
 
                         print('Finished PNA Measurement.')
                         
@@ -391,17 +441,24 @@ class JanusTemperatureController(object):
 
                 # Graceful exit on Ctrl-C interrupt by the user
                 except (KeyboardInterrupt, Exception) as ex:
+                    # Write the last result to file
+                    tsout   = out['tstamp [HH:MM:SS]']
+                    tout    = out['t [s]']
+                    Tout    = out['T [mK]']
+                    Iout    = out['Iout [mA]']
+                    P, I, D = out['PID']
+                    data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}'
+                    fid.write(data + '\n')
+                    fid.close()
                     print('\n\n-----------------')
                     print(f'Exception:\n{ex}')
                     print('-----------------\n')
                     print('Setting current to 0 ...')
                     if self.socket is not None:
                         self.set_current(0.)
-                        fid.close()
                     else:
                         self.reset_socket()
                         self.set_current(0.)
-                        fid.close()
                     break
                 
 
@@ -409,7 +466,7 @@ if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
     # Tstart = 0.03; Tstop = 0.1; dT = 0.01
-    Tstart = 0.405; Tstop = 0.450; dT = 0.015
+    Tstart = 0.150; Tstop = 0.350; dT = 0.1
     sample_time = 15; T_eps = 2
     therm_time  = 0. # wait an extra 10 minutes to thermalize
     # therm_time  = 0. # wait an extra 10 minutes to thermalize
@@ -421,41 +478,66 @@ if __name__ == '__main__':
 
     # Setup for the VNA controller
     Tctrl.sparam = 'S12'
-    Tctrl.vna_edelay = 77.86 # ns
+    Tctrl.vna_edelay = 77.935 #ns
     Tctrl.vna_ifband = 1.0 # kHz
-    Tctrl.vna_centerf = 7.58967
+    # 1SP InP
+    # Tctrl.vna_centerf = 7.58967
+    # 2SP InP
+    Tctrl.vna_centerf = 8.01385
     Tctrl.vna_span = 1 # MHz
     Tctrl.vna_points = 2001
 
-    # # Temperature sweep settings
-    # Tctrl.sparam = 'S12'
-    # Tctrl.vna_averages = 3
-    # Tctrl.vna_ifband = 1.0 #khz
-    # Tctrl.vna_numsweeps = 3
-    # Tctrl.vna_startpower = -45
-    # Tctrl.vna_endpower = -65
+    # Temperature sweep settings
+    Tctrl.sparam = 'S12'
 
-    # High power sweep
-    Tctrl.vna_averages = 10
+    # First sweep, high power
+    Tctrl.vna_averages = 3
     Tctrl.vna_ifband = 1.0 #khz
-    Tctrl.vna_numsweeps = 7
-    Tctrl.vna_startpower = -35
-    Tctrl.vna_endpower = -5
+    Tctrl.vna_numsweeps = 9
+    Tctrl.vna_startpower = -5
+    Tctrl.vna_endpower = -45
 
-    # # Intermediate power sweep #2
-    # Tctrl.sparam = 'S12'
+    # Second sweep, intermediate power
+    Tctrl.vna_averages = 100
+    Tctrl.vna_ifband = 1.0 #khz
+    Tctrl.vna_numsweeps = 6
+    Tctrl.vna_startpower = -50
+    Tctrl.vna_endpower = -75
+
+    # # Third sweep, low power
+    # Tctrl.vna_averages = 5000
+    # Tctrl.vna_ifband = 0.5 #khz
+    # Tctrl.vna_numsweeps = 2 
+    # Tctrl.vna_startpower = -90
+    # Tctrl.vna_endpower = -95
+
+    # Fast test sweep, low power
+    Tctrl.vna_averages = 3
+    Tctrl.vna_ifband = 1 #khz
+    Tctrl.vna_numsweeps = 2 
+    Tctrl.vna_startpower = -30
+    Tctrl.vna_endpower = -35
+
+    # # High power sweep
+    # Tctrl.vna_averages = 10
+    # Tctrl.vna_ifband = 1.0 #khz
+    # Tctrl.vna_numsweeps = 7
+    # Tctrl.vna_startpower = -35
+    # Tctrl.vna_endpower = -5
+
+    # Intermediate power sweep #2
     # Tctrl.vna_averages = 100
     # Tctrl.vna_ifband = 1.0 #khz
     # Tctrl.vna_numsweeps = 5
     # Tctrl.vna_startpower = -40
     # Tctrl.vna_endpower = -60
 
-    # # Low power sweep #1
+    # Low power sweep #1
     # Tctrl.vna_averages = 500
     # Tctrl.vna_ifband = 0.5 #khz
-    # Tctrl.vna_numsweeps = 3
-    # Tctrl.vna_startpower = -70
-    # Tctrl.vna_endpower = -80
+    # Tctrl.vna_numsweeps = 5
+    # Tctrl.vna_startpower = -65
+    # Tctrl.vna_endpower = -85
 
     # # Low power sweep
     # Tctrl.vna_edelay = 78.056
@@ -473,9 +555,10 @@ if __name__ == '__main__':
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
 
     out = {}
-    Tctrl.pna_process('meas', T, out)
+    sample_name = 'M3D6_02_WITH_2SP_INP'
+    Tctrl.pna_process('meas', T, out, prefix=sample_name)
 
-    # # Tctrl.run_temp_sweep()
-    # Tctrl.set_current(0.)
-    # Z, T, tstamp = Tctrl.read_cmn()
-    # print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
+    # Tctrl.run_temp_sweep(measure_vna=False)
+    Tctrl.set_current(0.)
+    Z, T, tstamp = Tctrl.read_cmn()
+    print(f'{tstamp}, {Z} ohms, {T*1e3} mK')

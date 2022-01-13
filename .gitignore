@@ -118,6 +118,7 @@ venv.bak/
 # Vim files
 *.swp
 *.swo
+*.swn
 
 # Temperature log files
 *log*
