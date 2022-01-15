@@ -157,6 +157,10 @@ class JanusTemperatureController(object):
         return data
     
     def read_cmn(self):
+        """
+        Reads the CMN temperature sensor and returns the sensor impedance,
+        temperature in K and timestamp
+        """
         self.tcp_send('readCMNTemp(9)')
         data = self.tcp_rcev()
         Z, T, tstamp, status = data.split(',')
@@ -168,7 +172,23 @@ class JanusTemperatureController(object):
         if not status:
             return Z, T, tstamp
         else:
-            print(f'tcp_send() failed with status: {status}')
+            print(f'tcp_send(readCMNTemp(9)) failed with status: {status}')
+            return None, None, None
+
+    def read_flow_meter(self):
+        """
+        Reads the flow meter and returns the flow rate in volts, umol / s, and
+        the timestamp
+        """
+        self.tcp_send('readFlow(1)')
+        data = self.tcp_rcev()
+        flow_V, flow_umol_s1, tstamp, status = data.split(',')
+        tstamp = tstamp.split(' ')
+        tstamp = tstamp[0].split('.')[0]
+        if not status:
+            return flow_V, flow_umol_s1, tstamp
+        else:
+            print(f'tcp_send(readFlow(1)) failed with status: {status}')
             return None, None, None
     
     def get_heater_rng_lvl(self, x):
@@ -277,19 +297,24 @@ class JanusTemperatureController(object):
         Z, T, tstamp = self.read_cmn()
         print(f'Heating to {Tset * 1e3} mK from {T * 1e3} mK ...')
         tin = t
+        print(f'T_eps: {self.T_eps * 1e3} mK')
         while 1:
-            if abs(1e3 * (T - Tset)) < self.T_eps:
+            diff = abs(1e3 * (T - Tset))
+            if  diff < (1e3 * self.T_eps):
                 start_thermalize_timer = True
             
             # Wait five more minutes
-            # if start_thermalize_timer:
-            #     print('Starting thermalization timer ...')
-            #     time.sleep(self.therm_time)
-            #     out[tsidx] = tstamp
-            #     out[Tidx]  = T * 1e3
-            #     out[tidx]  = tin + self.therm_time
-            #     out['Iout [mA]'] = Iout
-            #     break
+            if start_thermalize_timer:
+                print('Starting thermalization timer ...')
+                time.sleep(self.therm_time)
+                Iout             = self.pid(T)
+                P, I, D          = self.pid.components
+                out[tsidx]       = tstamp
+                out[Tidx]        = T * 1e3
+                out[tidx]        = tin + self.therm_time
+                out['Iout [mA]'] = Iout
+                out['PID']       = [P, I, D]
+                break
             
             # Get the CMN impedance, temperature, and timestamp
             Z, T, tstamp = self.read_cmn()
@@ -297,7 +322,7 @@ class JanusTemperatureController(object):
                 # Generate the output current
                 Iout = self.pid(T)
                 P, I, D = self.pid.components
-                print(f'{tstamp}, {1e3 * T:.2f} mK, {Iout:.2f} mA, {P:.2f}, {I:.2f}, {D:.2f}, {tin} s')
+                print(f'{tstamp}, {1e3 * T:.2f} mK, {diff:.1f} mK, {Iout:.2f} mA, {P:.2f}, {I:.2f}, {D:.2f}, {tin} s')
                 self.set_current(Iout)
 
                 # Read the current values of the PID controller
@@ -376,7 +401,7 @@ class JanusTemperatureController(object):
 
         # Open file and start logging time stamps, elapsed time,
         # temperature
-        with open(fname, 'w') as fid:
+        with open(fname, 'a') as fid:
             fid.write(hdr)
 
             # Iterate over the temperatures
@@ -465,9 +490,10 @@ class JanusTemperatureController(object):
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
-    # Tstart = 0.03; Tstop = 0.1; dT = 0.01
-    Tstart = 0.150; Tstop = 0.350; dT = 0.1
-    sample_time = 15; T_eps = 2
+    Tstart = 0.03; Tstop = 0.315; dT = 0.015
+    Tstart = 0.285; Tstop = 0.315; dT = 0.015
+    # Tstart = 0.150; Tstop = 0.350; dT = 0.1
+    sample_time = 15; T_eps = 0.001
     therm_time  = 0. # wait an extra 10 minutes to thermalize
     # therm_time  = 0. # wait an extra 10 minutes to thermalize
 
@@ -498,25 +524,25 @@ if __name__ == '__main__':
     Tctrl.vna_endpower = -45
 
     # Second sweep, intermediate power
-    Tctrl.vna_averages = 100
+    Tctrl.vna_averages = 3
     Tctrl.vna_ifband = 1.0 #khz
-    Tctrl.vna_numsweeps = 6
-    Tctrl.vna_startpower = -50
-    Tctrl.vna_endpower = -75
+    Tctrl.vna_numsweeps = 3
+    Tctrl.vna_startpower = -20
+    Tctrl.vna_endpower = -60
 
     # # Third sweep, low power
-    # Tctrl.vna_averages = 5000
+    # Tctrl.vna_averages = 20000
     # Tctrl.vna_ifband = 0.5 #khz
     # Tctrl.vna_numsweeps = 2 
-    # Tctrl.vna_startpower = -90
+    # Tctrl.vna_startpower = -95
     # Tctrl.vna_endpower = -95
 
-    # Fast test sweep, low power
-    Tctrl.vna_averages = 3
-    Tctrl.vna_ifband = 1 #khz
-    Tctrl.vna_numsweeps = 2 
-    Tctrl.vna_startpower = -30
-    Tctrl.vna_endpower = -35
+    # # Fast test sweep, low power
+    # Tctrl.vna_averages = 3
+    # Tctrl.vna_ifband = 1 #khz
+    # Tctrl.vna_numsweeps = 2 
+    # Tctrl.vna_startpower = -30
+    # Tctrl.vna_endpower = -35
 
     # # High power sweep
     # Tctrl.vna_averages = 10
@@ -554,11 +580,11 @@ if __name__ == '__main__':
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
 
-    out = {}
-    sample_name = 'M3D6_02_WITH_2SP_INP'
-    Tctrl.pna_process('meas', T, out, prefix=sample_name)
+    # out = {}
+    # sample_name = 'M3D6_02_WITH_2SP_INP'
+    # Tctrl.pna_process('meas', T, out, prefix=sample_name)
 
-    # Tctrl.run_temp_sweep(measure_vna=False)
+    Tctrl.run_temp_sweep(measure_vna=True)
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
