@@ -41,7 +41,7 @@ import pna_control as PNA
 import os
 
 
-class JanusTemperatureController(object):
+class JanusCtrl(object):
     """
     Class that implments the Janus temperature controller
     """
@@ -68,6 +68,11 @@ class JanusTemperatureController(object):
         self.T_base = 0.016
         self.dstr = datetime.datetime.today().strftime('%y%m%d')
 
+        # Dictionary with the channels on the Lakeshore
+        self.channel_dict = {'50K'     : 1, '10K'    : 2, '3K'  : 3,
+                             'JT'      : 4, 'still'  : 5, 'ICP' : 6,
+                             'MC JRS'  : 7, 'Cernox' : 8}
+
         # Update the arguments and the keyword arguments
         # This will overwrite the above defaults with the user-passed kwargs
         for k, v in kwargs.items():
@@ -79,7 +84,6 @@ class JanusTemperatureController(object):
             self.socket.connect((self.TCP_IP, self.TCP_PORT))
         else:
             self.socket = None
-
 
         # Set the temperature array
         ## Set the number of temperatures
@@ -120,7 +124,7 @@ class JanusTemperatureController(object):
         """
         # Print all of the settings before proceeding
         print('\n---------------------------------------------------')
-        print(f'JanusTemperatureController class instance members:')
+        print(f'JanusCtrl class instance members:')
         for k, v in self.__dict__.items():
             print(f'{k} : {v}')
         print('---------------------------------------------------\n')
@@ -175,6 +179,38 @@ class JanusTemperatureController(object):
             print(f'tcp_send(readCMNTemp(9)) failed with status: {status}')
             return None, None, None
 
+    def read_temp(self, channel_name='still'):
+        """
+        Reads the temperature of one of the channels from the Lakeshore
+        """
+        if channel_name == 'all':
+            for key, ch in self.channel_dict.items():
+
+                self.tcp_send(f'readTemp({ch})')
+                data = self.tcp_rcev()
+                Z, T, tstamp, status = data.split(',')
+                tstamp = tstamp.split(' ')
+                tstamp = tstamp[0].split('.')[0]
+                Z = float(Z)
+                T = float(T)
+                print(f'{tstamp}, {key}: {T:.4g} K')
+        else:
+            channel = self.channel_dict[channel_name]
+            self.tcp_send(f'readTemp({channel})')
+            data = self.tcp_rcev()
+            Z, T, tstamp, status = data.split(',')
+            Z = float(Z)
+            T = float(T)
+            status = int(status)
+            tstamp = tstamp.split(' ')
+            tstamp = tstamp[0].split('.')[0]
+            msg = f'tcp_send(readTemp({channel})) failed with status: {status}'
+            if not status:
+                return Z, T, tstamp
+            else:
+                print(msg)
+                return None, None, None
+
     def read_flow_meter(self):
         """
         Reads the flow meter and returns the flow rate in volts, umol / s, and
@@ -183,6 +219,7 @@ class JanusTemperatureController(object):
         self.tcp_send('readFlow(1)')
         data = self.tcp_rcev()
         flow_V, flow_umol_s1, tstamp, status = data.split(',')
+        status = int(status)
         tstamp = tstamp.split(' ')
         tstamp = tstamp[0].split('.')[0]
         if not status:
@@ -281,7 +318,6 @@ class JanusTemperatureController(object):
         pid.output_limits = (0, Max_Current)
 
         self.pid = pid
-
         return pid
 
     
@@ -293,8 +329,18 @@ class JanusTemperatureController(object):
         # Get the pid controller object
         self.get_pid_ctrl(Tset)
 
+        # Dictionary keys for long inputs
+        flo_key = 'flow rate [umol/s]'
+        Ikey    = 'Iout [mA]'
+
         # Read the initial temperature
         Z, T, tstamp = self.read_cmn()
+
+        # Get the initial values from all sensors
+        Iout        = self.pid(T)
+        P, I, D     = self.pid.components
+        _, flow, _  = self.read_flow_meter()
+
         print(f'Heating to {Tset * 1e3} mK from {T * 1e3} mK ...')
         tin = t
         print(f'T_eps: {self.T_eps * 1e3} mK')
@@ -307,13 +353,15 @@ class JanusTemperatureController(object):
             if start_thermalize_timer:
                 print('Starting thermalization timer ...')
                 time.sleep(self.therm_time)
-                Iout             = self.pid(T)
-                P, I, D          = self.pid.components
-                out[tsidx]       = tstamp
-                out[Tidx]        = T * 1e3
-                out[tidx]        = tin + self.therm_time
-                out['Iout [mA]'] = Iout
-                out['PID']       = [P, I, D]
+                _, flow, _   = self.read_flow_meter()
+                Iout         = self.pid(T)
+                P, I, D      = self.pid.components
+                out[flo_key] = flow
+                out[tsidx]   = tstamp
+                out[Tidx]    = T * 1e3
+                out[tidx]    = tin + self.therm_time
+                out[Ikey]    = Iout
+                out['PID']   = [P, I, D]
                 break
             
             # Get the CMN impedance, temperature, and timestamp
@@ -322,8 +370,13 @@ class JanusTemperatureController(object):
                 # Generate the output current
                 Iout = self.pid(T)
                 P, I, D = self.pid.components
-                print(f'{tstamp}, {1e3 * T:.2f} mK, {diff:.1f} mK, {Iout:.2f} mA, {P:.2f}, {I:.2f}, {D:.2f}, {tin} s')
+
+                # Read the flow meter
+                _, flow, _       = self.read_flow_meter()
+
+                print(f'{tstamp}, {1e3 * T:.2f} mK, {flow:.1f} umol/s, {Iout:.2f} mA, {P:.2f}, {I:.2f}, {D:.2f}, {tin} s')
                 self.set_current(Iout)
+
 
                 # Read the current values of the PID controller
                 P, I, D = self.pid.components
@@ -331,30 +384,39 @@ class JanusTemperatureController(object):
             
                 # Write the time stamp, temperature, and impedance to file
                 tin += self.sample_time
-                out[tsidx] = tstamp
-                out[Tidx]  = T * 1e3
-                out[tidx]  = tin + self.therm_time
-                out['Iout [mA]'] = Iout
-                tsout = out[tsidx]; tout = out[tidx]; Tout = out[Tidx]
-                out['PID'] = [P, I, D]
+                out[flo_key]    = flow
+                out[tsidx]      = tstamp
+                out[Tidx]       = T * 1e3
+                out[tidx]       = tin + self.therm_time
+                out[Ikey]       = Iout
+                tsout           = out[tsidx]
+                tout            = out[tidx]
+                Tout            = out[Tidx]
+                out['PID']      = [P, I, D]
             else:
-                Iout             = None
-                out[tsidx]       = None
-                out[Tidx]        = None
-                out[tidx]        = None
-                out['Iout [mA]'] = None
-                out['PID']       = None
-                tsout = out[tsidx]; tout = out[tidx]; Tout = out[Tidx]
+                Iout            = None
+                flow            = None
+                out[flo_key]    = None
+                out[tsidx]      = None
+                out[Tidx]       = None
+                out[tidx]       = None
+                out[Ikey]       = None
+                out['PID']      = None
+                tsout           = out[tsidx]
+                tout            = out[tidx]
+                Tout            = out[Tidx]
 
             # Write the timestamp, elapsed time, temperature, current,
             # P, I, D values to file
-            fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}\n')
+            fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}\n')
 
         # Write the outputs for file writing
-        out[tsidx]       = tstamp
-        out[Tidx]        = T * 1e3
-        out[tidx]        = tin
-        out['Iout [mA]'] = Iout
+        out[tsidx]      = tstamp
+        out[Tidx]       = T * 1e3
+        out[tidx]       = tin
+        out[Ikey]       = Iout
+        out['PID']      = [P, I, D]
+        out[flo_key]    = flow
     
 
     def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP'):
@@ -387,7 +449,7 @@ class JanusTemperatureController(object):
         out[idx] = 0
 
 
-    def run_temp_sweep(self, measure_vna=False):
+    def run_temp_sweep(self, measure_vna=False, prefix='M3D6_02_WITH_1SP_INP'):
         """
         Execute the temperature sweep
         """
@@ -397,12 +459,19 @@ class JanusTemperatureController(object):
 
         # Set the log filename, log the temperature, time stamp, and time
         fname = f'logs/temperature_mK_log_{dstr}.csv'
-        hdr = '# Time[HH:MM:SS], Time [s], Temperature [mK], Current [mA], P, I, D\n'
+        hdr = '# Time[HH:MM:SS], Time [s], Temperature [mK], Current [mA], P, I, D, Flow Rate [umol/s]\n'
+
+        # Check that file does not exist before writing header
+        if not os.path.isfile(fname):
+            write_hdr = True
+        else:
+            write_hdr = False
 
         # Open file and start logging time stamps, elapsed time,
         # temperature
         with open(fname, 'a') as fid:
-            fid.write(hdr)
+            if write_hdf:
+                fid.write(hdr)
 
             # Iterate over the temperatures
             for Tset in self.T_sweep_list:
@@ -424,6 +493,7 @@ class JanusTemperatureController(object):
                                                     Tset, fid, out) 
                         print(f'out:\n{out}')
                         # Update the time stamp, elapsed time, temperature
+                        flow      = out['flow [umol / s]']
                         tsout     = out['tstamp [HH:MM:SS]']
                         tout      = out['t [s]']
                         Tout      = out['T [mK]']
@@ -443,7 +513,7 @@ class JanusTemperatureController(object):
                         #         args=('meas', Tset, out))
                         if measure_vna:
                             print('Starting PNA measurement ...')
-                            self.pna_process('meas', Tset, out)
+                            self.pna_process('meas', Tset, out, prefix=prefix)
                         # ptemp.start()
                         # pmeas.start()
                         # ptemp.join()
@@ -456,7 +526,7 @@ class JanusTemperatureController(object):
                         Tout    = out['T [mK]']
                         Iout    = out['Iout [mA]']
                         P, I, D = out['PID']
-                        data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}'
+                        data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}'
                         fid.write(data + '\n')
 
                         print('Finished PNA Measurement.')
@@ -498,7 +568,7 @@ if __name__ == '__main__':
     # therm_time  = 0. # wait an extra 10 minutes to thermalize
 
     # Setup the temperature controller class object
-    Tctrl = JanusTemperatureController(Tstart, Tstop, dT,
+    Tctrl = JanusCtrl(Tstart, Tstop, dT,
             sample_time=sample_time, T_eps=T_eps, therm_time=therm_time,
             init_socket=True)
 
@@ -530,12 +600,12 @@ if __name__ == '__main__':
     Tctrl.vna_startpower = -20
     Tctrl.vna_endpower = -60
 
-    # # Third sweep, low power
-    # Tctrl.vna_averages = 20000
-    # Tctrl.vna_ifband = 0.5 #khz
-    # Tctrl.vna_numsweeps = 2 
-    # Tctrl.vna_startpower = -95
-    # Tctrl.vna_endpower = -95
+    # Third sweep, low power
+    Tctrl.vna_averages = 1000
+    Tctrl.vna_ifband = 0.05 #khz
+    Tctrl.vna_numsweeps = 4
+    Tctrl.vna_startpower = -80
+    Tctrl.vna_endpower = -95
 
     # # Fast test sweep, low power
     # Tctrl.vna_averages = 3
@@ -579,12 +649,17 @@ if __name__ == '__main__':
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
+    flow_V, flow_umol_s1, tstamp = Tctrl.read_flow_meter()
+    print(f'{tstamp}, {flow_V} V, {flow_umol_s1} umol / s')
+    Tctrl.read_temp('all')
 
     # out = {}
     # sample_name = 'M3D6_02_WITH_2SP_INP'
     # Tctrl.pna_process('meas', T, out, prefix=sample_name)
 
-    Tctrl.run_temp_sweep(measure_vna=True)
+
+    # sample_name = 'M3D6_02_WITH_2SP_INP'
+    # Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
