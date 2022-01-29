@@ -220,6 +220,8 @@ class JanusCtrl(object):
         data = self.tcp_rcev()
         flow_V, flow_umol_s1, tstamp, status = data.split(',')
         status = int(status)
+        flow_V = float(flow_V)
+        flow_umol_s1 = float(flow_umol_s1)
         tstamp = tstamp.split(' ')
         tstamp = tstamp[0].split('.')[0]
         if not status:
@@ -351,8 +353,10 @@ class JanusCtrl(object):
             
             # Wait five more minutes
             if start_thermalize_timer:
-                print('Starting thermalization timer ...')
+                therm_min = self.therm_time / 60.
+                print(f'Starting thermalization timer {therm_min} min ...')
                 time.sleep(self.therm_time)
+                print('Thermalization timer done.')
                 _, flow, _   = self.read_flow_meter()
                 Iout         = self.pid(T)
                 P, I, D      = self.pid.components
@@ -456,6 +460,7 @@ class JanusCtrl(object):
         # Set the output filename and write the results with
         # standard text file IO operations
         dstr =  self.dstr
+        flo_key = 'flow rate [umol/s]'
 
         # Set the log filename, log the temperature, time stamp, and time
         fname = f'logs/temperature_mK_log_{dstr}.csv'
@@ -470,7 +475,7 @@ class JanusCtrl(object):
         # Open file and start logging time stamps, elapsed time,
         # temperature
         with open(fname, 'a') as fid:
-            if write_hdf:
+            if write_hdr:
                 fid.write(hdr)
 
             # Iterate over the temperatures
@@ -493,31 +498,19 @@ class JanusCtrl(object):
                                                     Tset, fid, out) 
                         print(f'out:\n{out}')
                         # Update the time stamp, elapsed time, temperature
-                        flow      = out['flow [umol / s]']
+                        flow      = out[flo_key]
                         tsout     = out['tstamp [HH:MM:SS]']
                         tout      = out['t [s]']
                         Tout      = out['T [mK]']
                         Iout      = out['Iout [mA]']
                         P, I, D   = out['PID']
-                        data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}'
+                        data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}'
                         fid.write(data + '\n')
 
-                        # Launch the resonance measurement (power sweep,
-                        # etc.) Wait for the process to return
-                        # mng = Manager()
-                        # out = mng.dict()
-                        # ptemp = Process(target=self.temperature_controller,
-                        #        args=('tstamp [HH:MM:SS]', 't [s]', 'T [mK]', t,
-                        #            Tset, out))
-                        # pmeas = Process(target=self.pna_process,
-                        #         args=('meas', Tset, out))
+                        # Start the PNA measurement
                         if measure_vna:
                             print('Starting PNA measurement ...')
                             self.pna_process('meas', Tset, out, prefix=prefix)
-                        # ptemp.start()
-                        # pmeas.start()
-                        # ptemp.join()
-                        # pmeas.join()
 
                         # Update the time stamp, elapsed time, temperature
                         print(f'out:\n{out}')
@@ -530,19 +523,19 @@ class JanusCtrl(object):
                         fid.write(data + '\n')
 
                         print('Finished PNA Measurement.')
-                        
                         meas_ret = 0
                         break
 
                 # Graceful exit on Ctrl-C interrupt by the user
                 except (KeyboardInterrupt, Exception) as ex:
                     # Write the last result to file
+                    flow    = out[flo_key]
                     tsout   = out['tstamp [HH:MM:SS]']
                     tout    = out['t [s]']
                     Tout    = out['T [mK]']
                     Iout    = out['Iout [mA]']
                     P, I, D = out['PID']
-                    data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}'
+                    data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}'
                     fid.write(data + '\n')
                     fid.close()
                     print('\n\n-----------------')
@@ -560,26 +553,30 @@ class JanusCtrl(object):
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
-    Tstart = 0.03; Tstop = 0.315; dT = 0.015
-    Tstart = 0.285; Tstop = 0.315; dT = 0.015
+    # Tstart = 0.03; Tstop = 0.315; dT = 0.015
+    Tstart = 0.255; Tstop = 0.315; dT = 0.015
     # Tstart = 0.150; Tstop = 0.350; dT = 0.1
-    sample_time = 15; T_eps = 0.001
+    # sample_time = 15; T_eps = 0.001 -- up to 240 mK
+    sample_time = 15; T_eps = 0.0025 # -- 255 mK and up
+    # therm_time  = 5. * 60. # wait an extra 5 minutes to thermalize
     therm_time  = 0. # wait an extra 10 minutes to thermalize
-    # therm_time  = 0. # wait an extra 10 minutes to thermalize
 
     # Setup the temperature controller class object
     Tctrl = JanusCtrl(Tstart, Tstop, dT,
-            sample_time=sample_time, T_eps=T_eps, therm_time=therm_time,
+            sample_time=sample_time, T_eps=T_eps,
+            therm_time=therm_time,
             init_socket=True)
 
     # Setup for the VNA controller
     Tctrl.sparam = 'S12'
-    Tctrl.vna_edelay = 77.935 #ns
+    Tctrl.vna_edelay = 76.983 #ns
     Tctrl.vna_ifband = 1.0 # kHz
     # 1SP InP
     # Tctrl.vna_centerf = 7.58967
     # 2SP InP
-    Tctrl.vna_centerf = 8.01385
+    # Tctrl.vna_centerf = 8.01385
+    # Mines 3D #1, bare
+    Tctrl.vna_centerf = 9.22753
     Tctrl.vna_span = 1 # MHz
     Tctrl.vna_points = 2001
 
@@ -600,12 +597,12 @@ if __name__ == '__main__':
     Tctrl.vna_startpower = -20
     Tctrl.vna_endpower = -60
 
-    # Third sweep, low power
-    Tctrl.vna_averages = 1000
-    Tctrl.vna_ifband = 0.05 #khz
-    Tctrl.vna_numsweeps = 4
-    Tctrl.vna_startpower = -80
-    Tctrl.vna_endpower = -95
+    # # Third sweep, low power
+    # Tctrl.vna_averages = 1000
+    # Tctrl.vna_ifband = 0.05 #khz
+    # Tctrl.vna_numsweeps = 4
+    # Tctrl.vna_startpower = -80
+    # Tctrl.vna_endpower = -95
 
     # # Fast test sweep, low power
     # Tctrl.vna_averages = 3
@@ -621,26 +618,26 @@ if __name__ == '__main__':
     # Tctrl.vna_startpower = -35
     # Tctrl.vna_endpower = -5
 
-    # Intermediate power sweep #2
+    # # Intermediate power sweep #2
     # Tctrl.vna_averages = 100
     # Tctrl.vna_ifband = 1.0 #khz
     # Tctrl.vna_numsweeps = 5
-    # Tctrl.vna_startpower = -40
-    # Tctrl.vna_endpower = -60
+    # Tctrl.vna_startpower = -50
+    # Tctrl.vna_endpower = -70
 
-    # Low power sweep #1
+    # # Low power sweep #1
     # Tctrl.vna_averages = 500
-    # Tctrl.vna_ifband = 0.5 #khz
-    # Tctrl.vna_numsweeps = 5
-    # Tctrl.vna_startpower = -65
+    # Tctrl.vna_ifband = 0.1 #khz
+    # Tctrl.vna_numsweeps = 3
+    # Tctrl.vna_startpower = -75
     # Tctrl.vna_endpower = -85
 
     # # Low power sweep
     # Tctrl.vna_edelay = 78.056
-    # Tctrl.vna_averages = 10000 
-    # Tctrl.vna_ifband = 0.5 #khz
+    # Tctrl.vna_averages = 2000 
+    # Tctrl.vna_ifband = 0.1 #khz
     # Tctrl.vna_numsweeps = 2 
-    # Tctrl.vna_startpower = -95
+    # Tctrl.vna_startpower = -90
     # Tctrl.vna_endpower = -95
 
     Tctrl.print_class_members()
@@ -653,12 +650,14 @@ if __name__ == '__main__':
     print(f'{tstamp}, {flow_V} V, {flow_umol_s1} umol / s')
     Tctrl.read_temp('all')
 
-    # out = {}
     # sample_name = 'M3D6_02_WITH_2SP_INP'
+    # out = {}
+    # sample_name = 'M3D6_02_BARE'
     # Tctrl.pna_process('meas', T, out, prefix=sample_name)
 
 
     # sample_name = 'M3D6_02_WITH_2SP_INP'
+    # sample_name = 'M3D6_02_BARE'
     # Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
