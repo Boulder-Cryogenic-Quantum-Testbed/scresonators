@@ -60,7 +60,7 @@ class JanusCtrl(object):
         self.pid_values  = None
 
         # Default thermalization time
-        self.therm_time  = 1200. # Wait extra 5 minutes to thermalize [s]
+        self.therm_time  = 300. # Wait extra 5 minutes to thermalize [s]
         self.T_eps       = 1e-2 # Temperature settling threshold [mK]
         self.T_sweep_list_spacing = 'linear'
 
@@ -345,27 +345,50 @@ class JanusCtrl(object):
 
         print(f'Heating to {Tset * 1e3} mK from {T * 1e3} mK ...')
         tin = t
-        print(f'T_eps: {self.T_eps * 1e3} mK')
+
+        # Set to 2.5 % of the target
+        T_eps = 0.025 * Tset
+        print(f'T_eps: {T_eps * 1e3} mK')
         while 1:
             diff = abs(1e3 * (T - Tset))
-            if  diff < (1e3 * self.T_eps):
+            if  diff < (1e3 * T_eps):
                 start_thermalize_timer = True
             
             # Wait five more minutes
             if start_thermalize_timer:
                 therm_min = self.therm_time / 60.
+                therm_time = self.therm_time - self.pid.sample_time * therm_min 
+
+                # Check that the thermalization time - the sample time > 0
+                # Otherwise, tell the user to choose a larger therm_time
+                assert therm_time > 0, f'therm_time {therm_time} < 0 s!'
                 print(f'Starting thermalization timer {therm_min} min ...')
-                time.sleep(self.therm_time)
+                tstart = time.time()
+                while time.time() < (therm_time + tstart):
+                    Z, T, tstamp = self.read_cmn()
+                    _, flow, _   = self.read_flow_meter()
+                    Iout         = self.pid(T)
+                    P, I, D      = self.pid.components
+
+                    # Wait the update time
+                    time.sleep(self.pid.sample_time)
+                    tin += self.pid.sample_time
+                    out[flo_key] = flow
+                    out[tsidx]   = tstamp
+                    out[Tidx]    = T * 1e3
+                    out[tidx]    = tin 
+                    out[Ikey]    = Iout
+                    out['PID']   = [P, I, D]
+                    tsout        = out[tsidx]
+                    tout         = out[tidx]
+                    Tout         = out[Tidx]
+                    self.set_current(Iout)
+                    print(f'{tstamp}, {1e3 * T:.2f} mK, {flow:.1f} umol/s, {Iout:.2f} mA, {P:.2f}, {I:.2f}, {D:.2f}, {tout} s')
+                    fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}\n')
                 print('Thermalization timer done.')
-                _, flow, _   = self.read_flow_meter()
-                Iout         = self.pid(T)
-                P, I, D      = self.pid.components
-                out[flo_key] = flow
-                out[tsidx]   = tstamp
-                out[Tidx]    = T * 1e3
-                out[tidx]    = tin + self.therm_time
-                out[Ikey]    = Iout
-                out['PID']   = [P, I, D]
+
+                # Reset the thermalize_timer flag
+                start_thermalize_timer = False
                 break
             
             # Get the CMN impedance, temperature, and timestamp
@@ -380,7 +403,6 @@ class JanusCtrl(object):
 
                 print(f'{tstamp}, {1e3 * T:.2f} mK, {flow:.1f} umol/s, {Iout:.2f} mA, {P:.2f}, {I:.2f}, {D:.2f}, {tin} s')
                 self.set_current(Iout)
-
 
                 # Read the current values of the PID controller
                 P, I, D = self.pid.components
@@ -421,6 +443,7 @@ class JanusCtrl(object):
         out[Ikey]       = Iout
         out['PID']      = [P, I, D]
         out[flo_key]    = flow
+        fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}\n')
     
 
     def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP'):
@@ -553,13 +576,13 @@ class JanusCtrl(object):
 if __name__ == '__main__':
     # Iterate over a list of temperatures
     # 30 mK -- 300 mK, 10 mK steps
-    # Tstart = 0.03; Tstop = 0.315; dT = 0.015
-    Tstart = 0.255; Tstop = 0.315; dT = 0.015
+    Tstart = 0.03; Tstop = 0.315; dT = 0.015
+    # Tstart = 0.255; Tstop = 0.315; dT = 0.015
     # Tstart = 0.150; Tstop = 0.350; dT = 0.1
     # sample_time = 15; T_eps = 0.001 -- up to 240 mK
     sample_time = 15; T_eps = 0.0025 # -- 255 mK and up
     # therm_time  = 5. * 60. # wait an extra 5 minutes to thermalize
-    therm_time  = 0. # wait an extra 10 minutes to thermalize
+    therm_time  = 300. # wait an extra 10 minutes to thermalize
 
     # Setup the temperature controller class object
     Tctrl = JanusCtrl(Tstart, Tstop, dT,
@@ -576,8 +599,12 @@ if __name__ == '__main__':
     # 2SP InP
     # Tctrl.vna_centerf = 8.01385
     # Mines 3D #1, bare
-    Tctrl.vna_centerf = 9.22753
-    Tctrl.vna_span = 1 # MHz
+    # Tctrl.vna_centerf = 9.22753
+    # Tctrl.vna_span = 1 # MHz
+    # NYU 2D Al on InP
+    Tctrl.vna_edelay = 76.635 #ns
+    Tctrl.vna_centerf = 7.7182
+    Tctrl.vna_span = 15 # MHz
     Tctrl.vna_points = 2001
 
     # Temperature sweep settings
@@ -621,16 +648,16 @@ if __name__ == '__main__':
     # # Intermediate power sweep #2
     # Tctrl.vna_averages = 100
     # Tctrl.vna_ifband = 1.0 #khz
-    # Tctrl.vna_numsweeps = 5
+    # Tctrl.vna_numsweeps = 8
     # Tctrl.vna_startpower = -50
-    # Tctrl.vna_endpower = -70
+    # Tctrl.vna_endpower = -85
 
     # # Low power sweep #1
-    # Tctrl.vna_averages = 500
-    # Tctrl.vna_ifband = 0.1 #khz
-    # Tctrl.vna_numsweeps = 3
-    # Tctrl.vna_startpower = -75
-    # Tctrl.vna_endpower = -85
+    # Tctrl.vna_averages = 1500
+    # Tctrl.vna_ifband = 0.150 #khz
+    # Tctrl.vna_numsweeps = 2
+    # Tctrl.vna_startpower = -90
+    # Tctrl.vna_endpower = -95
 
     # # Low power sweep
     # Tctrl.vna_edelay = 78.056
@@ -650,15 +677,20 @@ if __name__ == '__main__':
     print(f'{tstamp}, {flow_V} V, {flow_umol_s1} umol / s')
     Tctrl.read_temp('all')
 
+    # Mines 3D cavity 9.2 GHz with, without InP
     # sample_name = 'M3D6_02_WITH_2SP_INP'
-    # out = {}
     # sample_name = 'M3D6_02_BARE'
+    # NYU 2D resonator, Al on InP
+    # sample_name = 'NYU2D_AL_INP'
+    # out = {}
     # Tctrl.pna_process('meas', T, out, prefix=sample_name)
 
 
     # sample_name = 'M3D6_02_WITH_2SP_INP'
     # sample_name = 'M3D6_02_BARE'
-    # Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
+    # NYU 2D resonator, Al on InP
+    sample_name = 'NYU2D_AL_INP'
+    Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')

@@ -125,6 +125,7 @@ venv.bak/
 
 # PNA data files
 *M3D*
+*NYU*
 
 
 # mypy
