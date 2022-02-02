@@ -34,6 +34,7 @@ import subprocess
 from multiprocessing import Process, Manager
 import glob
 import numpy as np
+import errno
 
 import sys
 sys.path.append(r'C:\Users\Lehnert Lab\GitHub\measurement\pna_control')
@@ -150,14 +151,23 @@ class JanusCtrl(object):
     def tcp_send(self, message):
         length = len(message)
         length = length.to_bytes(4, 'big')
-        self.socket.send(length)
-        self.socket.send(message.encode('ASCII'))
+        exceptions = (socket.error, socket.error, KeyboardInterrupt, Exception)
+        try:
+            self.socket.send(length)
+            self.socket.send(message.encode('ASCII'))
+        except exceptions as error:
+            raise RuntimeError(f'tcp_send: {error}')
     
-    def tcp_rcev(self):
-        buffer = self.socket.recv(4)
+    def tcp_recv(self):
+        exceptions = (socket.error, socket.error, KeyboardInterrupt, Exception)
+        try:
+            buffer = self.socket.recv(4)
+        except exceptions as error:
+            raise RuntimeError(f'tcp_recv: {error}')
+
         buffer = int.from_bytes(buffer, 'big')
-        data = self.socket.recv(buffer)
-        data = data.decode('ascii')
+        data   = self.socket.recv(buffer)
+        data   = data.decode('ascii')
         return data
     
     def read_cmn(self):
@@ -166,7 +176,7 @@ class JanusCtrl(object):
         temperature in K and timestamp
         """
         self.tcp_send('readCMNTemp(9)')
-        data = self.tcp_rcev()
+        data = self.tcp_recv()
         Z, T, tstamp, status = data.split(',')
         Z = float(Z)
         T = float(T)
@@ -187,7 +197,7 @@ class JanusCtrl(object):
             for key, ch in self.channel_dict.items():
 
                 self.tcp_send(f'readTemp({ch})')
-                data = self.tcp_rcev()
+                data = self.tcp_recv()
                 Z, T, tstamp, status = data.split(',')
                 tstamp = tstamp.split(' ')
                 tstamp = tstamp[0].split('.')[0]
@@ -197,7 +207,7 @@ class JanusCtrl(object):
         else:
             channel = self.channel_dict[channel_name]
             self.tcp_send(f'readTemp({channel})')
-            data = self.tcp_rcev()
+            data = self.tcp_recv()
             Z, T, tstamp, status = data.split(',')
             Z = float(Z)
             T = float(T)
@@ -217,7 +227,7 @@ class JanusCtrl(object):
         the timestamp
         """
         self.tcp_send('readFlow(1)')
-        data = self.tcp_rcev()
+        data = self.tcp_recv()
         flow_V, flow_umol_s1, tstamp, status = data.split(',')
         status = int(status)
         flow_V = float(flow_V)
@@ -275,7 +285,7 @@ class JanusCtrl(object):
         """
         Range, level = self.get_heater_rng_lvl(x)
         self.tcp_send(f'setHtrCntrlModeOpenLoop(1,{level},{Range})')
-        self.tcp_rcev()
+        _ = self.tcp_recv()
 
     def get_pid_ctrl(self, Tset, sample_time=15):
         """
@@ -346,8 +356,8 @@ class JanusCtrl(object):
         print(f'Heating to {Tset * 1e3} mK from {T * 1e3} mK ...')
         tin = t
 
-        # Set to 2.5 % of the target
-        T_eps = 0.025 * Tset
+        # Set to 2 % of the target
+        T_eps = 0.02 * Tset
         print(f'T_eps: {T_eps * 1e3} mK')
         while 1:
             diff = abs(1e3 * (T - Tset))
@@ -689,8 +699,8 @@ if __name__ == '__main__':
     # sample_name = 'M3D6_02_WITH_2SP_INP'
     # sample_name = 'M3D6_02_BARE'
     # NYU 2D resonator, Al on InP
-    sample_name = 'NYU2D_AL_INP'
-    Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
+    # sample_name = 'NYU2D_AL_INP'
+    # Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
