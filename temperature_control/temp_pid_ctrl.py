@@ -239,6 +239,44 @@ class JanusCtrl(object):
         else:
             print(f'tcp_send(readFlow(1)) failed with status: {status}')
             return None, None, None
+
+    def read_pressure(self, channel='all'):
+        """
+        Reads the temperature of one of the channels from the Lakeshore
+        """
+        all_channels = [1, 2, 3, 4]
+        if channel == 'all':
+            for ch in all_channels:
+
+                self.tcp_send(f'readPressure({ch})')
+                data = self.tcp_recv()
+                P_V, P_mbar, tstamp, status = data.split(',')
+                tstamp = tstamp.split(' ')
+                tstamp = tstamp[0].split('.')[0]
+                P_V    = float(P_V)
+                P_mbar = float(P_mbar)
+                status = int(status)
+                print(f'{tstamp}, G{ch}: {P_mbar:.4g} mbar')
+        elif channel in all_channels:
+
+            self.tcp_send(f'readPressure({channel})')
+            data = self.tcp_recv()
+            P_V, P_mbar, tstamp, status = data.split(',')
+            tstamp = tstamp.split(' ')
+            tstamp = tstamp[0].split('.')[0]
+            P_V    = float(P_V)
+            P_mbar = float(P_mbar)
+            status = int(status)
+            tstamp = tstamp.split(' ')
+            tstamp = tstamp[0].split('.')[0]
+            msg = f'tcp_send(readPressure({channel})) failed with status: {status}'
+            if not status:
+                return P_V, P_mbar, tstamp
+            else:
+                print(msg)
+                return None, None, None
+        else:
+            raise RuntimeError(f'Pressure gauge ({channel}) not recognized')
     
     def get_heater_rng_lvl(self, x):
         """
@@ -686,6 +724,7 @@ if __name__ == '__main__':
     flow_V, flow_umol_s1, tstamp = Tctrl.read_flow_meter()
     print(f'{tstamp}, {flow_V} V, {flow_umol_s1} umol / s')
     Tctrl.read_temp('all')
+    Tctrl.read_pressure('all')
 
     # Mines 3D cavity 9.2 GHz with, without InP
     # sample_name = 'M3D6_02_WITH_2SP_INP'
