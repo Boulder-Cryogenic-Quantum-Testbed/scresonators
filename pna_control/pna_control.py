@@ -162,7 +162,7 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf:
     file.write('NUMSWEEPS: '+str(numsweeps)+'\n')
     file.write('CENTERF: '+str(centerf)+' GHz\n')
     file.write('SPAN: '+str(span)+' MHz\n')
-    file.write('TEMP: '+f'{temp:.0f}'+' mK\n')
+    file.write('TEMP: '+f'{temp:.3f}'+' mK\n')
     file.write('STARTING AVERAGES: '+str(averages)+'\n')
     file.write('EDELAY: '+str(edelay)+' ns\n')
     file.write('IFBAND: '+str(ifband)+' kHz\n')

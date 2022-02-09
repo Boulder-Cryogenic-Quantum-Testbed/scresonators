@@ -619,6 +619,39 @@ class JanusCtrl(object):
                         self.reset_socket()
                         self.set_current(0.)
                     break
+
+
+    def pna_sweep_multiple_resonators(self, freqs : list, ifbws : list,
+            delays : list, spans : list, start_powers : list, 
+            end_powers : list, num_powers : list, sample_name : str, avgs :
+            list, pts : int=2001, sparam : str='S12'):
+        """
+        Sweeps the VNA through multiple resonators a fixed or multiple powers
+        """
+        # Initial measurement setup
+        self.sparam = sparam
+        self.vna_points = pts
+
+        # Iterate over each frequency
+        for idx, f in enumerate(freqs):
+            self.vna_edelay     = delays[idx]
+            self.vna_ifband     = ifbws[idx]
+            self.vna_centerf    = f
+            self.vna_span       = spans[idx]
+            self.vna_numsweeps  = num_powers[idx]
+            self.vna_startpower = start_powers[idx]
+            self.vna_endpower   = end_powers[idx]
+            print(f'Running {sparam} measurement of {f:.2f} GHz resonator ...')
+            Z, T, tstamp = self.read_cmn()
+            out = {}
+            self.pna_process('meas', T, out, prefix=sample_name)
+
+        print(f'PNA multiple resonator measurements complete.')
+
+        self.set_current(0.)
+        Z, T, tstamp = self.read_cmn()
+        print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
+
                 
 
 if __name__ == '__main__':
@@ -672,10 +705,13 @@ if __name__ == '__main__':
 
     # Second sweep, intermediate power
     Tctrl.vna_averages = 3
-    Tctrl.vna_ifband = 1.0 #khz
+    Tctrl.vna_ifband = 10 #khz
     Tctrl.vna_numsweeps = 3
-    Tctrl.vna_startpower = -20
-    Tctrl.vna_endpower = -60
+    Tctrl.vna_startpower = -5
+    Tctrl.vna_endpower = -15
+    Tctrl.vna_centerf = 4.224
+    Tctrl.vna_span = 1000. # MHz
+    Tctrl.vna_points = 32001
 
     # # Third sweep, low power
     # Tctrl.vna_averages = 1000
@@ -739,15 +775,36 @@ if __name__ == '__main__':
     sample_name = 'M3D6_03_BARE'
     # # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'
+
+    # # Rigetti Reference Wafer 1, Die 1
+    # sample_name = 'RGREF01_01'
     # out = {}
     # Tctrl.pna_process('meas', T, out, prefix=sample_name)
 
+    # Rigetti Reference Wafer 1, Die 1 -- all resonators
+    sample_name = 'RGREF01_01'
+    freqs = [4.22383,   4.848,     5.0256, 5.431545, 5.8265775,
+             6.2312162, 6.6399276, 6.9799, 7.435832, 7.8459646]
+    flen = len(freqs)
+    start_powers = [-10] * flen
+    end_powers = [-30] * flen
+    num_powers = [3] * flen
+    spans = [0.2, 250., 0.2, 0.2, 0.2,
+             0.2, 0.2,  10., 0.2, 0.2]
+    delays = [60.93,  61.95, 61.86, 61.85, 61.833,
+              61.823, 61.82, 61.5, 61.665, 61.672]
+    ifbws = [1.] * flen
+    avgs = [3.] * flen
+    Tctrl.pna_sweep_multiple_resonators(freqs, ifbws, delays, spans,
+            start_powers, end_powers, num_powers, sample_name,
+            avgs, pts=2001, sparam='S21')
+
     # sample_name = 'M3D6_02_WITH_2SP_INP'
     # sample_name = 'M3D6_02_BARE'
-    sample_name = 'M3D6_03_BARE'
+    # sample_name = 'M3D6_03_BARE'
     # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'
-    Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
+    # Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
