@@ -256,7 +256,7 @@ class JanusCtrl(object):
                 P_V    = float(P_V)
                 P_mbar = float(P_mbar)
                 status = int(status)
-                print(f'{tstamp}, G{ch}: {P_mbar:.4g} mbar')
+                print(f'{tstamp}, G{ch}: {P_mbar:.4e} mbar')
         elif channel in all_channels:
 
             self.tcp_send(f'readPressure({channel})')
@@ -630,7 +630,7 @@ if __name__ == '__main__':
     # sample_time = 15; T_eps = 0.001 -- up to 240 mK
     sample_time = 15; T_eps = 0.0025 # -- 255 mK and up
     # therm_time  = 5. * 60. # wait an extra 5 minutes to thermalize
-    therm_time  = 300. # wait an extra 10 minutes to thermalize
+    therm_time  = 300. # wait an extra 5 minutes to thermalize
 
     # Setup the temperature controller class object
     Tctrl = JanusCtrl(Tstart, Tstop, dT,
@@ -646,24 +646,29 @@ if __name__ == '__main__':
     # Tctrl.vna_centerf = 7.58967
     # 2SP InP
     # Tctrl.vna_centerf = 8.01385
-    # Mines 3D #1, bare
-    # Tctrl.vna_centerf = 9.22753
-    # Tctrl.vna_span = 1 # MHz
-    # NYU 2D Al on InP
-    Tctrl.vna_edelay = 76.635 #ns
-    Tctrl.vna_centerf = 7.7182
-    Tctrl.vna_span = 15 # MHz
+    # # Mines 3D #1, bare
+    # Tctrl.vna_centerf = 9.23069
+    # Tctrl.vna_span = 0.75 # MHz
+    # Tctrl.vna_edelay = 77.62 #ns
+    # Mines 3D #2, bare
+    Tctrl.vna_centerf = 7.62093
+    Tctrl.vna_span = 30 # MHz
+    Tctrl.vna_edelay = 77.74 #ns
+    # # NYU 2D Al on InP
+    # Tctrl.vna_edelay = 76.635 #ns
+    # Tctrl.vna_centerf = 7.7182
+    # Tctrl.vna_span = 15 # MHz
     Tctrl.vna_points = 2001
 
     # Temperature sweep settings
     Tctrl.sparam = 'S12'
 
-    # First sweep, high power
-    Tctrl.vna_averages = 3
-    Tctrl.vna_ifband = 1.0 #khz
-    Tctrl.vna_numsweeps = 9
-    Tctrl.vna_startpower = -5
-    Tctrl.vna_endpower = -45
+    # # First sweep, int power
+    # Tctrl.vna_averages = 3
+    # Tctrl.vna_ifband = 1.0 #khz
+    # Tctrl.vna_numsweeps = 9
+    # Tctrl.vna_startpower = -5
+    # Tctrl.vna_endpower = -45
 
     # Second sweep, intermediate power
     Tctrl.vna_averages = 3
@@ -729,17 +734,20 @@ if __name__ == '__main__':
     # Mines 3D cavity 9.2 GHz with, without InP
     # sample_name = 'M3D6_02_WITH_2SP_INP'
     # sample_name = 'M3D6_02_BARE'
-    # NYU 2D resonator, Al on InP
+
+    # # Mines 3D cavity 7.6 GHz with, without InP
+    sample_name = 'M3D6_03_BARE'
+    # # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'
     # out = {}
     # Tctrl.pna_process('meas', T, out, prefix=sample_name)
 
-
     # sample_name = 'M3D6_02_WITH_2SP_INP'
     # sample_name = 'M3D6_02_BARE'
+    sample_name = 'M3D6_03_BARE'
     # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'
-    # Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
+    Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
     Tctrl.set_current(0.)
     Z, T, tstamp = Tctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')

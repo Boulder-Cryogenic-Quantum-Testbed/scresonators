@@ -72,7 +72,7 @@ def read_data(pna, points, outputfile, power, temp):
     mag = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #open output file and put data points into the file
-    file = open(outputfile[0:-4]+'_'+str(power)+'dB'+'_'+str(temp)+'mK'+'.csv',"w")
+    file = open(outputfile[0:-4]+'_'+str(power)+'dB'+'_'+f'{temp:.0f}'+'mK'+'.csv',"w")
     count = 0
     for i in freq:
         file.write(str(i)+','+str(mag[count])+','+str(phase[count])+'\n')
@@ -143,26 +143,26 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf:
     print(f'Measuring {sparam} ...')
 
     #create a new directory for the output to be put into
-    if (path.isdir(outputfile[0:-4]+'_'+'_'+str(temp)+'mK')):
+    if (path.isdir(outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK')):
         dircount = 1
         while (True):
-            if (not path.isdir(outputfile[0:-4]+'_'+'_'+str(temp)+'mK'+str(dircount))):
+            if (not path.isdir(outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK'+str(dircount))):
                 break;
             dircount = dircount + 1
-        os.mkdir(outputfile[0:-4]+'_'+'_'+str(temp)+'mK'+str(dircount))
-        outputfile = outputfile[0:-4]+'_'+'_'+str(temp)+'mK'+str(dircount) + '/' + outputfile
+        os.mkdir(outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK'+str(dircount))
+        outputfile = outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK'+str(dircount) + '/' + outputfile
     else:
-        os.mkdir(outputfile[0:-4]+'_'+'_'+str(temp)+'mK')
-        outputfile = outputfile[0:-4]+'_'+'_'+str(temp)+'mK' + '/' + outputfile
+        os.mkdir(outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK')
+        outputfile = outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK' + '/' + outputfile
 
     #write an output file with conditions
-    file = open(outputfile[0:-4]+'_'+str(temp)+'mK_conditions'+'.csv',"w")
+    file = open(outputfile[0:-4]+'_'+f'{temp:.0f}'+'mK_conditions'+'.csv',"w")
     file.write('STARTPOWER: '+str(startpower)+' dB\n')
     file.write('ENDPOWER: '+str(endpower)+' dB\n')
     file.write('NUMSWEEPS: '+str(numsweeps)+'\n')
     file.write('CENTERF: '+str(centerf)+' GHz\n')
     file.write('SPAN: '+str(span)+' MHz\n')
-    file.write('TEMP: '+str(temp)+' mK\n')
+    file.write('TEMP: '+f'{temp:.0f}'+' mK\n')
     file.write('STARTING AVERAGES: '+str(averages)+'\n')
     file.write('EDELAY: '+str(edelay)+' ns\n')
     file.write('IFBAND: '+str(ifband)+' kHz\n')
