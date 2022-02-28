@@ -42,7 +42,7 @@ import pna_control as PNA
 import os
 
 
-class JanusCtrl(object):
+class JanisCtrl(object):
     """
     Class that implments the Janus temperature controller
     """
@@ -125,7 +125,7 @@ class JanusCtrl(object):
         """
         # Print all of the settings before proceeding
         print('\n---------------------------------------------------')
-        print(f'JanusCtrl class instance members:')
+        print(f'JanisCtrl class instance members:')
         for k, v in self.__dict__.items():
             print(f'{k} : {v}')
         print('---------------------------------------------------\n')
@@ -637,6 +637,7 @@ class JanusCtrl(object):
             self.vna_edelay     = delays[idx]
             self.vna_ifband     = ifbws[idx]
             self.vna_centerf    = f
+            self.vna_averages   = avgs[idx]
             self.vna_span       = spans[idx]
             self.vna_numsweeps  = num_powers[idx]
             self.vna_startpower = start_powers[idx]
@@ -652,7 +653,75 @@ class JanusCtrl(object):
         Z, T, tstamp = self.read_cmn()
         print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
 
-                
+
+def multiple_resonator_driver(Jctrl : JanisCtrl):
+    """
+    Script to drive the above function using an instance of the JanisCtrl class
+    """
+    # Set the sample name
+    sample_name = 'RGREF01_01'
+
+    # Set the frequencies
+    # freqs = [4.22383,   4.6247,     5.0256, 5.431545, 5.8265775,
+    #          6.2312162, 6.6399276, 6.9799, 7.435832, 7.8459646]
+    # freqs = [4.22383,   4.6247,     5.0256, 5.8265775,
+    #          6.2312162, 6.6399276, 6.9799, 7.435832, 7.8459646]
+    # freqs = [4.6247,     5.0256, 5.8265775,
+    #          6.2312162, 6.6399276, 6.9799, 7.435832, 7.8459646]
+    # freqs = [5.0256, 5.8265775,
+    #          6.2312162, 6.6399276, 6.9799, 7.435832, 7.8459646]
+    # freqs = [6.6399276, 6.9799, 7.435832, 7.8459646]
+    freqs = [5.431545]
+    flen = len(freqs)
+
+    # Set the powers
+    # start_powers = [15] * flen
+    # end_powers = [0] * flen
+    # num_powers = [4] * flen
+    # start_powers = [-5] * flen
+    # end_powers = [-50] * flen
+    # num_powers = [10] * flen
+    # start_powers = [-50] * flen
+    # end_powers = [-70] * flen
+    # num_powers = [5] * flen
+    start_powers = [-95] * flen
+    end_powers = [-95] * flen
+    num_powers = [2] * flen
+
+    # Set the frequency spans
+    # spans = [0.2, 0.2, 0.2, 0.2, 0.2,
+    #          0.2, 0.2,  10., 0.2, 0.2]
+    # delays = [60.93,  61., 61.86, 61.85, 61.833,
+    #           61.823, 61.82, 61.5, 61.665, 61.672]
+    # spans = [0.2, 0.2, 0.2, 0.2, 
+    #          0.2, 0.2,  10., 0.2, 0.2]
+    # delays = [60.93,  61., 61.86, 61.833,
+    #           61.823, 61.82, 61.5, 61.665, 61.672]
+    # spans = [0.2, 0.2, 0.2, 
+    #          0.2, 0.2,  10., 0.2, 0.2]
+    # delays = [61., 61.86, 61.833,
+    #           61.823, 61.82, 61.5, 61.665, 61.672]
+    # spans = [0.2, 0.2, 
+    #          0.2, 0.2,  10., 0.2, 0.2]
+    # delays = [61.86, 61.833,
+    #           61.823, 61.82, 61.5, 61.665, 61.672]
+    # spans = [0.2,  10., 0.2, 0.2]
+    # delays = [61.82, 61.5, 61.665, 61.672]
+    spans = [0.2]
+    delays = [61.85]
+
+    # Set the IF bandwidths and number of averages
+    ifbws = [1.] * flen
+    # avgs = [3.] * flen
+    # avgs = [50.] * flen
+    # avgs = [600.] * flen
+    avgs = [3000.] * flen
+
+    # Call the class function
+    Jctrl.pna_sweep_multiple_resonators(freqs, ifbws, delays, spans,
+            start_powers, end_powers, num_powers, sample_name,
+            avgs, pts=1001, sparam='S12')
+
 
 if __name__ == '__main__':
     # Iterate over a list of temperatures
@@ -666,106 +735,106 @@ if __name__ == '__main__':
     therm_time  = 300. # wait an extra 5 minutes to thermalize
 
     # Setup the temperature controller class object
-    Tctrl = JanusCtrl(Tstart, Tstop, dT,
+    Jctrl = JanisCtrl(Tstart, Tstop, dT,
             sample_time=sample_time, T_eps=T_eps,
             therm_time=therm_time,
             init_socket=True)
 
     # Setup for the VNA controller
-    Tctrl.sparam = 'S12'
-    Tctrl.vna_edelay = 76.983 #ns
-    Tctrl.vna_ifband = 1.0 # kHz
+    Jctrl.sparam = 'S12'
+    Jctrl.vna_edelay = 76.983 #ns
+    Jctrl.vna_ifband = 1.0 # kHz
     # 1SP InP
-    # Tctrl.vna_centerf = 7.58967
+    # Jctrl.vna_centerf = 7.58967
     # 2SP InP
-    # Tctrl.vna_centerf = 8.01385
+    # Jctrl.vna_centerf = 8.01385
     # # Mines 3D #1, bare
-    # Tctrl.vna_centerf = 9.23069
-    # Tctrl.vna_span = 0.75 # MHz
-    # Tctrl.vna_edelay = 77.62 #ns
+    # Jctrl.vna_centerf = 9.23069
+    # Jctrl.vna_span = 0.75 # MHz
+    # Jctrl.vna_edelay = 77.62 #ns
     # Mines 3D #2, bare
-    Tctrl.vna_centerf = 7.62093
-    Tctrl.vna_span = 30 # MHz
-    Tctrl.vna_edelay = 77.74 #ns
+    Jctrl.vna_centerf = 4.22383
+    Jctrl.vna_span = 0.2 # MHz
+    Jctrl.vna_edelay = 60.93 #ns
     # # NYU 2D Al on InP
-    # Tctrl.vna_edelay = 76.635 #ns
-    # Tctrl.vna_centerf = 7.7182
-    # Tctrl.vna_span = 15 # MHz
-    Tctrl.vna_points = 2001
+    # Jctrl.vna_edelay = 76.635 #ns
+    # Jctrl.vna_centerf = 7.7182
+    # Jctrl.vna_span = 15 # MHz
+    Jctrl.vna_points = 1001
 
     # Temperature sweep settings
-    Tctrl.sparam = 'S12'
+    Jctrl.sparam = 'S12'
 
-    # # First sweep, int power
-    # Tctrl.vna_averages = 3
-    # Tctrl.vna_ifband = 1.0 #khz
-    # Tctrl.vna_numsweeps = 9
-    # Tctrl.vna_startpower = -5
-    # Tctrl.vna_endpower = -45
+    # First sweep, int power
+    Jctrl.vna_averages = 10000
+    Jctrl.vna_ifband = 1.0 #khz
+    Jctrl.vna_numsweeps = 2 
+    Jctrl.vna_startpower = -95
+    Jctrl.vna_endpower = -95
 
     # Second sweep, intermediate power
-    Tctrl.vna_averages = 3
-    Tctrl.vna_ifband = 10 #khz
-    Tctrl.vna_numsweeps = 3
-    Tctrl.vna_startpower = -5
-    Tctrl.vna_endpower = -15
-    Tctrl.vna_centerf = 4.224
-    Tctrl.vna_span = 1000. # MHz
-    Tctrl.vna_points = 32001
+    # Jctrl.vna_averages = 3
+    # Jctrl.vna_ifband = 10 #khz
+    # Jctrl.vna_numsweeps = 3
+    # Jctrl.vna_startpower = -5
+    # Jctrl.vna_endpower = -15
+    # Jctrl.vna_centerf = 4.224
+    # Jctrl.vna_span = 1000. # MHz
+    # Jctrl.vna_points = 32001
 
     # # Third sweep, low power
-    # Tctrl.vna_averages = 1000
-    # Tctrl.vna_ifband = 0.05 #khz
-    # Tctrl.vna_numsweeps = 4
-    # Tctrl.vna_startpower = -80
-    # Tctrl.vna_endpower = -95
+    # Jctrl.vna_averages = 1000
+    # Jctrl.vna_ifband = 0.05 #khz
+    # Jctrl.vna_numsweeps = 4
+    # Jctrl.vna_startpower = -80
+    # Jctrl.vna_endpower = -95
 
     # # Fast test sweep, low power
-    # Tctrl.vna_averages = 3
-    # Tctrl.vna_ifband = 1 #khz
-    # Tctrl.vna_numsweeps = 2 
-    # Tctrl.vna_startpower = -30
-    # Tctrl.vna_endpower = -35
+    # Jctrl.vna_averages = 3
+    # Jctrl.vna_ifband = 1 #khz
+    # Jctrl.vna_numsweeps = 2 
+    # Jctrl.vna_startpower = -30
+    # Jctrl.vna_endpower = -35
 
     # # High power sweep
-    # Tctrl.vna_averages = 10
-    # Tctrl.vna_ifband = 1.0 #khz
-    # Tctrl.vna_numsweeps = 7
-    # Tctrl.vna_startpower = -35
-    # Tctrl.vna_endpower = -5
+    # Jctrl.vna_averages = 10
+    # Jctrl.vna_ifband = 1.0 #khz
+    # Jctrl.vna_numsweeps = 7
+    # Jctrl.vna_startpower = -35
+    # Jctrl.vna_endpower = -5
 
     # # Intermediate power sweep #2
-    # Tctrl.vna_averages = 100
-    # Tctrl.vna_ifband = 1.0 #khz
-    # Tctrl.vna_numsweeps = 8
-    # Tctrl.vna_startpower = -50
-    # Tctrl.vna_endpower = -85
+    # Jctrl.vna_averages = 100
+    # Jctrl.vna_ifband = 1.0 #khz
+    # Jctrl.vna_numsweeps = 8
+    # Jctrl.vna_startpower = -50
+    # Jctrl.vna_endpower = -85
 
     # # Low power sweep #1
-    # Tctrl.vna_averages = 1500
-    # Tctrl.vna_ifband = 0.150 #khz
-    # Tctrl.vna_numsweeps = 2
-    # Tctrl.vna_startpower = -90
-    # Tctrl.vna_endpower = -95
+    # Jctrl.vna_averages = 1500
+    # Jctrl.vna_ifband = 0.150 #khz
+    # Jctrl.vna_numsweeps = 2
+    # Jctrl.vna_startpower = -90
+    # Jctrl.vna_endpower = -95
 
     # # Low power sweep
-    # Tctrl.vna_edelay = 78.056
-    # Tctrl.vna_averages = 2000 
-    # Tctrl.vna_ifband = 0.1 #khz
-    # Tctrl.vna_numsweeps = 2 
-    # Tctrl.vna_startpower = -90
-    # Tctrl.vna_endpower = -95
+    # Jctrl.vna_edelay = 78.056
+    # Jctrl.vna_averages = 2000 
+    # Jctrl.vna_ifband = 0.1 #khz
+    # Jctrl.vna_numsweeps = 2 
+    # Jctrl.vna_startpower = -90
+    # Jctrl.vna_endpower = -95
 
-    Tctrl.print_class_members()
+    Jctrl.print_class_members()
 
     # Run the temperature sweep from within the class
-    Tctrl.set_current(0.)
-    Z, T, tstamp = Tctrl.read_cmn()
+    Jctrl.set_current(0.)
+    Z, T, tstamp = Jctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
-    flow_V, flow_umol_s1, tstamp = Tctrl.read_flow_meter()
+    flow_V, flow_umol_s1, tstamp = Jctrl.read_flow_meter()
     print(f'{tstamp}, {flow_V} V, {flow_umol_s1} umol / s')
-    Tctrl.read_temp('all')
-    Tctrl.read_pressure('all')
+    Jctrl.read_temp('all')
+    Jctrl.read_pressure('all')
 
     # Mines 3D cavity 9.2 GHz with, without InP
     # sample_name = 'M3D6_02_WITH_2SP_INP'
@@ -777,34 +846,19 @@ if __name__ == '__main__':
     # sample_name = 'NYU2D_AL_INP'
 
     # # Rigetti Reference Wafer 1, Die 1
-    # sample_name = 'RGREF01_01'
+    sample_name = 'RGREF01_01'
     # out = {}
-    # Tctrl.pna_process('meas', T, out, prefix=sample_name)
+    # Jctrl.pna_process('meas', T, out, prefix=sample_name)
 
     # Rigetti Reference Wafer 1, Die 1 -- all resonators
-    sample_name = 'RGREF01_01'
-    freqs = [4.22383,   4.848,     5.0256, 5.431545, 5.8265775,
-             6.2312162, 6.6399276, 6.9799, 7.435832, 7.8459646]
-    flen = len(freqs)
-    start_powers = [-10] * flen
-    end_powers = [-30] * flen
-    num_powers = [3] * flen
-    spans = [0.2, 250., 0.2, 0.2, 0.2,
-             0.2, 0.2,  10., 0.2, 0.2]
-    delays = [60.93,  61.95, 61.86, 61.85, 61.833,
-              61.823, 61.82, 61.5, 61.665, 61.672]
-    ifbws = [1.] * flen
-    avgs = [3.] * flen
-    Tctrl.pna_sweep_multiple_resonators(freqs, ifbws, delays, spans,
-            start_powers, end_powers, num_powers, sample_name,
-            avgs, pts=2001, sparam='S21')
+    # multiple_resonator_driver(Jctrl)
 
     # sample_name = 'M3D6_02_WITH_2SP_INP'
     # sample_name = 'M3D6_02_BARE'
     # sample_name = 'M3D6_03_BARE'
     # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'
-    # Tctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
-    Tctrl.set_current(0.)
-    Z, T, tstamp = Tctrl.read_cmn()
+    # Jctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
+    Jctrl.set_current(0.)
+    Z, T, tstamp = Jctrl.read_cmn()
     print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
