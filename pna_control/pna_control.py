@@ -150,33 +150,21 @@ def name_datafile(outputfile: str,
 
     return filename
     
-def timestamp_folder(dir: str,
-                     meastype: str) -> str:
-            
+def timestamp_folder(dir: str, meastype: str) -> str:
     """Create a filename and directory structure to annotate the scan.
 
-    Takes a root directory, appends scan type and timestamp.
+        Takes a root directory, appends scan type and timestamp.
 
-    Args:
+        Args:
             dir: root directory for the scan
             meastype: type of measurements, eg: 'powersweep' 
 
-    Returns:
-    Formatted path eg. foo/bar_202007013_9_45_28/ 
+        Returns:
+            Formatted path eg. dir/5p51414GHz_HPsweep_200713_12_18_04/ 
     """
-            
-    result = time.localtime(time.time())
-    output = str(result.tm_year)
-    if len(str(result.tm_mon)) < 2:
-        output = output + '0' + str(result.tm_mon)
-    else:
-        output = output + str(result.tm_mon)
-    if len(str(result.tm_mday)):
-        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
-    else:
-        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
-    
-    output = meastype+ '_' + output
+    now = time.strftime("%y%m%d_%H_%M_%S", time.localtime())
+
+    output = meastype+ '_' + now
     output = output.replace('.','p')
     
     if dir != None:
