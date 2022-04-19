@@ -152,6 +152,19 @@ def name_datafile(outputfile: str,
     
 def timestamp_folder(dir: str,
                      meastype: str) -> str:
+            
+    """Create a filename and directory structure to annotate the scan.
+
+    Takes a root directory, appends scan type and timestamp.
+
+    Args:
+            dir: root directory for the scan
+            meastype: type of measurements, eg: 'powersweep' 
+
+    Returns:
+    Formatted path eg. foo/bar_202007013_9_45_28/ 
+    """
+            
     result = time.localtime(time.time())
     output = str(result.tm_year)
     if len(str(result.tm_mon)) < 2:
