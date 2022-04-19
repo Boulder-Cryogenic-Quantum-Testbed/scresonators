@@ -142,13 +142,16 @@ def power_sweep(startpower: float,
         # Iterate number of averages as power decreases
         averages = averages * ((10**(stepsize/10))**0.5)
 
-def name_datafile(outputfile,power,temp):
+def name_datafile(outputfile: str,
+                  power: float,
+                  temp: float) -> str:
     filename = outputfile+'_'+str(power)+'dB'+'_'+str(temp)+'mK'
     filename = filename.replace('.','p')
 
     return filename
     
-def timestamp_folder(dir,meastype):
+def timestamp_folder(dir: str,
+                     meastype: str) -> str:
     result = time.localtime(time.time())
     output = str(result.tm_year)
     if len(str(result.tm_mon)) < 2:
