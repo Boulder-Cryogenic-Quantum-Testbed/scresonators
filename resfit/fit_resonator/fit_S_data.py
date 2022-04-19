@@ -1384,6 +1384,7 @@ def fit_resonator(filename: str,
                   background_array: np.ndarray = None,
                   plot_extra = False,
                   preprocess_method = "linear"):
+  
     """Function to fit resonator data
 
     Args:
@@ -1428,6 +1429,7 @@ def fit_resonator(filename: str,
     #make a folder to put all output in
     result = time.localtime(time.time())
     output = str(result.tm_year)
+    output = str(Method.method) + '_' + output
     if len(str(result.tm_mon)) < 2:
         output = output + '0' + str(result.tm_mon)
     else:
@@ -1701,7 +1703,7 @@ def fit_resonator(filename: str,
         except:
             print(">Failed to plot CPZM fit for data")
             quit()
-
+            
     fig.savefig(name_plot(filename,str(Method.method),output_path))
     return output_params,conf_array,fig,error,init
 
