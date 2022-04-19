@@ -23,3 +23,4 @@ os.mkdir(output_path)
 for i in CENTERF:
     OUTPUTFILE = output_path + '/' + SAMPLEID+'_ressearch'+'_'+str(i)+'GHz'
     PNA.get_data(i, SPAN, TEMP, AVERAGES, POWER, EDELAY, IFBAND, POINTS, OUTPUTFILE)
+    
