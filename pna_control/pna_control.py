@@ -168,7 +168,7 @@ def timestamp_folder(dir: str, meastype: str) -> str:
     output = output.replace('.','p')
     
     if dir != None:
-        output_path = dir + '/' + output + '/'
+        output_path = os.path.join(dir,output)
     else:
         output_path = output + '/'
     count=2
