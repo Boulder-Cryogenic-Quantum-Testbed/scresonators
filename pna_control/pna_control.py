@@ -152,7 +152,7 @@ def name_datafile(outputfile: str,
 
     return filename
     
-def timestamp_folder(dir: str = None, meastype: str) -> str:
+def timestamp_folder(dir: str = None, meastype: str='powersweep') -> str:
     """Create a filename and directory structure to annotate the scan.
 
         Takes a root directory, appends scan type and timestamp.
