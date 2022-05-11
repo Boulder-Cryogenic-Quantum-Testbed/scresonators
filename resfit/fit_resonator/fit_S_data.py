@@ -593,7 +593,7 @@ def PlotFit(x,
     else:
         resonance = 1 + 1j*0
     ax.plot(np.real(resonance),np.imag(resonance),'*',color = 'red',label =
-            'resonance',markersize=18)
+            'resonance',markersize=10)
     ax3.plot(params[2],np.log10(np.abs(resonance))*20,'*',color = 'red',label =
             'resonance',markersize=msize1)
     ax4.plot(params[2],np.angle(resonance),'*',color = 'red',label =
