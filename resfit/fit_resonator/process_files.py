@@ -270,7 +270,9 @@ def convert_params(Method,params):
     return Qe,Qi
 
 ###########################################################
-def Plot_sweep_S21(x,y,z,figurename,plotrange = [0,0],xlabel = 'Power (dbm)',different_length = False,cmap = None,Log10= True):
+def Plot_sweep_S21(x,y,z,figurename,plotrange = [0,0],xlabel = 'Power
+        (dbm)',different_length = False,cmap = None,Log10= True,
+        fsize=16):
     ## plot sweep temperature/bias/time vs frequency vs S21 (db)
     if cmap ==None:
         cmap = plt.get_cmap('jet')
@@ -305,7 +307,7 @@ def Plot_sweep_S21(x,y,z,figurename,plotrange = [0,0],xlabel = 'Power (dbm)',dif
         z = 10**(z/20)
 
     plt.close(figurename)
-    fig = plt.figure(figurename,figsize = [12,8])
+    fig = plt.figure(figurename, figsize = [12,8])
 
     xbins = len(x)
     ybins = len(y)
@@ -314,10 +316,10 @@ def Plot_sweep_S21(x,y,z,figurename,plotrange = [0,0],xlabel = 'Power (dbm)',dif
         plt.pcolormesh(xi,yi,z,cmap=cmap,vmin=plotrange[0], vmax=plotrange[1])
     else:
         plt.pcolormesh(xi,yi,z,cmap = cmap)
-    plt.xlabel(xlabel,fontsize=16)
-    plt.ylabel('frequency (GHz)',fontsize=16)
+    plt.xlabel(xlabel,fontsize=fsize)
+    plt.ylabel('Frequency (GHz)',fontsize=fsize)
     cb = plt.colorbar()
-    cb.set_label(r"$S_{21}$ $(db)$",fontsize=16)
+    cb.set_label(r"$S_{21}$ $[dB]$",fontsize=fsize)
     plt.show()
     return fig
 
@@ -532,7 +534,7 @@ def Plot_iDCM_INV(dic,list_resonators,method,base = "INV"):
              'ytick.labelsize':18,
              'lines.markersize' : 7,
              'lines.linewidth' : 4,
-             'font.size': 15.0 }
+             'font.size': 18.0 }
         pylab.rcParams.update(params)
         y = y[np.where(abs(y)<3500)]
         ax.plot(np.real(y),np.imag(y),'o',color = 'k',label = 'raw',markersize = 2)

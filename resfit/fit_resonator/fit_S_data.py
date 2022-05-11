@@ -30,15 +30,15 @@ from scipy.interpolate import interp1d
 import fit_resonator.resonator as res
 import fit_resonator.fit_functions as ff
 
-params = {'legend.fontsize': 10,
+params = {'legend.fontsize': 20,
           'figure.figsize': (10, 8),
-         'axes.labelsize': 18,
-         'axes.titlesize':18,
-         'xtick.labelsize':18,
-         'ytick.labelsize':18,
+         'axes.labelsize': 20,
+         'axes.titlesize':20,
+         'xtick.labelsize':20,
+         'ytick.labelsize':20,
          'lines.markersize' : 1,
          'lines.linewidth' : 2,
-         'font.size': 15.0 }
+         'font.size': 20 }
 pylab.rcParams.update(params)
 
 np.set_printoptions(precision=4,suppress=True)
@@ -401,8 +401,13 @@ def PlotFit(x,
             conf_array,
             extract_factor = None,
             title = "Fit",
-            manual_params = None):
-    """Plots data and outputs fit parameters to a file
+            manual_params = None,
+            dfac : int = 10,
+            msizes : list = [12, 7],
+            xstr : str = 'Frequency [GHz]',
+            fsize : float = 16.):
+    """
+    Plots data and outputs fit parameters to a file
 
     Args:
         x: cropped frequency data
@@ -415,7 +420,8 @@ def PlotFit(x,
         intercept2: intercept of normalization line for phase
         params: parameters generated from fit function
         Method: Method class instance
-        func: function used to generate data for plotting (DCM/DCM REFLECTION/INV/PHI/CPZM)
+        func: function used to generate data for plotting 
+              (DCM/DCM REFLECTION/INV/PHI/CPZM)
         error: error from Monte Carlo Fit function
         figurename: name the plot should have
         x_c: center x coordinate for fit circle
@@ -426,6 +432,10 @@ def PlotFit(x,
         extract_factor: contains starting and ending frequency values
         title: title the plot will have
         manual_params: user input manual initial guess parameters for fit
+        dfac : decimation factor on the plotting of points in the resonance
+               circle Im S21 vs. Re S21
+        xstr : x-axis string label
+        fsize : fontsize for axes numbers and labels
 
     Returns:
         plot output to file
@@ -452,6 +462,9 @@ def PlotFit(x,
     ax4 = plt.subplot(gs[3:4,4:6])
     #IQ plot
     ax = plt.subplot(gs[2:6,0:4])
+
+    # Marker sizes
+    msize1, msize2 = msizes
 
     #add title
     if len(title) > 77:
@@ -487,14 +500,18 @@ def PlotFit(x,
             '\n' + r'$\phi$ = '+'%s' % float('{0:.5g}'.format(manual_params[3]))+' radians'
         plt.gcf().text(0.1, 0.7, textstr, fontsize=15)
     else:
-        plt.gcf().text(0.05, 0.85, "No manually input parameters", fontsize=15)
+        pass
+        # plt.gcf().text(0.05, 0.85, "No manually input parameters", fontsize=15)
 
     if isinstance(extract_factor, list) == True:
         x_fit_full = np.linspace(x.min(),x.max(),5000)
         y_fit_full = func(x_fit_full,*params)
 
-        x_fit = np.linspace(extract_factor[0],extract_factor[1],5000)
-        y_fit = func(x_fit,*params)
+        # x_fit = np.linspace(extract_factor[0], extract_factor[1], 5000)
+        # y_fit = func(x_fit, *params)
+
+        x_fit = np.copy(x_fit_full)
+        y_fit = np.copy(y_fit_full)
 
     if func == ff.cavity_inverse:
         ax1.set_ylabel('Mag[S21]')
@@ -507,47 +524,63 @@ def PlotFit(x,
         ax3.set_ylabel('Mag[S21]')
         ax4.set_ylabel('Ang[S21]')
 
-    ax1.plot(x_initial,np.log10(np.abs(y_initial))*20,'bo',label = 'raw data',color = 'black')
-    ax1.plot(x,x*slope2+intercept2,'g-',label = 'normalize line',color = 'orange',linewidth = 1.5)
+    ax1.plot(x_initial[0::dfac],
+            np.log10(np.abs(y_initial[0::dfac]))*20,'ko',
+            label = 'raw data', fillstyle='none',
+            markersize=msize2)
+    ax1.plot(x,x*slope2+intercept2,'--', color='tab:gray',
+             label = 'normalize line', linewidth = 2)
     ax1.set_xlim(left=x[0], right=x[-1])
-    ax1.set_xlabel('frequency (GHz)')
+    ax1.set_xlabel(xstr)
     for tick in ax1.xaxis.get_major_ticks():
-        tick.label.set_fontsize(12)
+        tick.label.set_fontsize(fsize)
 
-    ax2.plot(x_initial,np.angle(y_initial),'bo',label = 'raw data',color = 'black')
-    ax2.plot(x,x*slope+intercept,'g-',label = 'normalize line',color = 'orange',linewidth = 1.5)
+    ax2.plot(x_initial[0::dfac], np.angle(y_initial[0::dfac]), 'ko', 
+            label = 'raw data', markersize=msize2, fillstyle='none')
+    ax2.plot(x, x*slope+intercept,'--', color='tab:gray',
+            label = 'normalize line', linewidth = 2)
     ax2.set_xlim(left=x[0], right=x[-1])
-    ax2.set_xlabel('frequency (GHz)')
+    ax2.set_xlabel(xstr)
     for tick in ax2.xaxis.get_major_ticks():
-        tick.label.set_fontsize(12)
+        tick.label.set_fontsize(fsize)
 
-    ax3.plot(x,np.log10(np.abs(y))*20,'bo',label = 'normalized data')
+    # Decimate the x and y-data
+    x = x[0::dfac]
+    y = y[0::dfac]
+
+    ax3.plot(x,np.log10(np.abs(y))*20,'bo',label = 'normalized data',
+            fillstyle='none', markersize=msize2)
     #ax3.plot(x_fit_full,np.log10(np.abs(y_fit_full))*20,'g--',label = 'fit past 3dB from resonance',color = 'lightgreen', alpha=0.7)
-    ax3.plot(x_fit,np.log10(np.abs(y_fit))*20,'g-',label = 'fit function')
+    ax3.plot(x_fit, np.log10(np.abs(y_fit))*20,'r-',
+            lw = 3, label = 'fit function')
     ax3.set_xlim(left=x[0], right=x[-1])
-    ax3.set_xlabel('frequency (GHz)')
+    ax3.set_xlabel(xstr)
     for tick in ax3.xaxis.get_major_ticks():
-        tick.label.set_fontsize(12)
+        tick.label.set_fontsize(fsize)
 
-    ax4.plot(x,np.angle(y),'bo',label = 'normalized data')
+    ax4.plot(x,np.angle(y),'bo', label = 'normalized data', markersize=msize2)
     #ax4.plot(x_fit_full,np.angle(y_fit_full),'g--',label = 'fit past 3dB from resonance',color = 'lightgreen', alpha=0.7)
-    ax4.plot(x_fit,np.angle(y_fit),'g-',label = 'fit function')
+    ax4.plot(x_fit,np.angle(y_fit),'r-',label = 'fit function', lw=3)
     ax4.set_xlim(left=x[0], right=x[-1])
-    ax4.set_xlabel('frequency (GHz)')
+    ax4.set_xlabel(xstr)
     for tick in ax4.xaxis.get_major_ticks():
-        tick.label.set_fontsize(12)
+        tick.label.set_fontsize(fsize)
 
 
-    line2 = ax.plot(np.real(y_fit),np.imag(y_fit),'g-',label = 'fit function',linewidth = 6)
-    line1 = ax.plot(np.real(y),np.imag(y),'bo',label = 'normalized data',markersize = 2)
+    line1 = ax.plot(np.real(y),np.imag(y),'bo',
+            label = 'normalized data', markersize=msize2, fillstyle='none')
+    line2 = ax.plot(np.real(y_fit),np.imag(y_fit),'r-',label = 'fit function',
+            linewidth = 3)
     #ax.plot(np.real(y_fit_full),np.imag(y_fit_full),'--',color = 'lightgreen',label = 'fit past 3dB from resonance',linewidth = 4.5, alpha=0.7)
     if x_c ==0 and y_c ==0 and radius == 0:
         pass
     else:
-        plt.plot(x_c,y_c,'g-',markersize = 5,color=(0, 0.8, 0.8),label = 'initial guess circle')
-        circle = Circle((x_c, y_c), radius, facecolor='none',\
-                    edgecolor=(0, 0.8, 0.8), linewidth=3, alpha=0.5)
-        ax.add_patch(circle)
+        pass
+        # plt.plot(x_c,y_c,'g-',markersize = 5,color=(0, 0.8, 0.8),
+        #         label = 'initial guess circle')
+        # circle = Circle((x_c, y_c), radius, facecolor='none',\
+        #             edgecolor=(0, 0.8, 0.8), linewidth=3, alpha=0.5)
+        # ax.add_patch(circle)
     #plot resonance
     if func == ff.cavity_inverse:
         resonance = (1 + params[0]/params[1]*np.exp(1j*params[3])/(1 + 1j*2*params[0]*(params[2]-params[2])/params[2]))
@@ -559,10 +592,12 @@ def PlotFit(x,
         resonance = 1/(1 + params[1] +1j*params[3])
     else:
         resonance = 1 + 1j*0
-    ax.plot(np.real(resonance),np.imag(resonance),'*',color = 'red',label = 'resonance',markersize = 7)
-    ax3.plot(params[2],np.log10(np.abs(resonance))*20,'*',color = 'red',label = 'resonance',markersize = 7)
-    ax4.plot(params[2],np.angle(resonance),'*',color = 'red',label = 'resonance',markersize = 7)
-
+    ax.plot(np.real(resonance),np.imag(resonance),'*',color = 'red',label =
+            'resonance',markersize=10)
+    ax3.plot(params[2],np.log10(np.abs(resonance))*20,'*',color = 'red',label =
+            'resonance',markersize=msize1)
+    ax4.plot(params[2],np.angle(resonance),'*',color = 'red',label =
+            'resonance',markersize=msize1)
 
     plt.axis('square')
     plt.ylabel('Im[S21]')
@@ -571,7 +606,7 @@ def PlotFit(x,
          plt.ylabel('Im[$S_{21}^{-1}$]')
          plt.xlabel("Re[$S_{21}^{-1}$]")
     leg = plt.legend()
-    ax1.legend(fontsize=8)
+    # ax1.legend(fontsize=8)
 
 # get the individual lines inside legend and set line width
     for line in leg.get_lines():
@@ -852,7 +887,7 @@ class VNASweep:
     linear_amps = attr.ib(type=np.ndarray)
 
     @classmethod
-    def from_file(cls, file):
+    def from_file(cls, file, fscale=1e9):
         if (file[-1:]=='p' and file[-4:-2]=='.s'):
             """Load data from .snp file."""
             try:
@@ -959,10 +994,11 @@ class VNASweep:
             """Load data from other type of file."""
             try:
                 data = np.loadtxt(file, delimiter=',')
-            except:
+            except Exception as ex:
+                print(f'Exception:\n{ex}')
                 print("User data file not found.")
                 quit()
-            freqs = data.T[0] / 10**9
+            freqs = data.T[0] / fscale # 10**9
             amps = data.T[1]
             phases = data.T[2]*np.pi/180
             linear_amps = 10**(amps/20)
@@ -1184,9 +1220,8 @@ def normalize(f_data, z_data, delay, a, alpha):
         point at (1, 0) (does not correct for rotation phi of circle around
         off-resonant point).
         """
-        z_norm = (z_data / a) * np.exp(
-            1j*(-alpha)
-        )
+        z_norm = (z_data / a) * np.exp( 1j*(-alpha) )
+
         '''z_norm = z_data / a * np.exp(
             1j*(-alpha + 2.*np.pi*delay*f_data)
         )'''
@@ -1233,6 +1268,9 @@ def preprocess_circle(xdata: np.ndarray, ydata: np.ndarray, output_path: str, pl
     """
     Data Preprocessing. Use Probst method to get rid of cable delay and normalize phase/magnitude of S21 by circle fit
     """
+    # # Unwrap the phase
+    # phase = np.unwrap(np.angle(ydata))
+    # ydata = np.abs(ydata) * np.exp(1j * phase)
 
     if plot_extra:
         plot(np.real(ydata),np.imag(ydata),"Normalize_1",output_path)
@@ -1383,7 +1421,8 @@ def fit_resonator(filename: str,
                   background: str = None,
                   background_array: np.ndarray = None,
                   plot_extra = False,
-                  preprocess_method = "linear"):
+                  preprocess_method = "linear",
+                  fscale : float = 1e9):
     """Function to fit resonator data
 
     Args:
@@ -1407,7 +1446,7 @@ def fit_resonator(filename: str,
     #read in data from file
     if dir != None:
         filepath = dir+'/'+filename
-        data = VNASweep.from_file(filepath)
+        data = VNASweep.from_file(filepath, fscale=fscale)
     elif data_array.any():
         data = VNASweep.from_columns(freqs=data_array.T[0], amps=data_array.T[1], phases=data_array.T[2])
     else:
@@ -1461,7 +1500,7 @@ def fit_resonator(filename: str,
         else:
             print("Directory for background file not speficied")
             quit()
-        databg = VNASweep.from_file(filepath)
+        databg = VNASweep.from_file(filepath, fscale=fscale)
         ydata = background_removal(databg, linear_amps, phases,output_path)
     elif background_array != None:
         databg = VNASweep.from_columns(freqs=background_array.T[0], amps=background_array.T[1], phases=background_array.T[2])
@@ -1470,6 +1509,11 @@ def fit_resonator(filename: str,
         ydata, slope, intercept, slope2, intercept2 = preprocess_linear(xdata, ydata, normalize, output_path, plot_extra)
     elif preprocess_method == "circle":
         ydata = preprocess_circle(xdata, ydata, output_path, plot_extra)
+    else:
+        pass
+    print(f'preprocess_method: {preprocess_method}')
+    print(f'fscale: {fscale:g}')
+
     #a copy of data before modification for plotting
     y_raw = ydata
     x_raw = xdata
@@ -1658,7 +1702,8 @@ def fit_resonator(filename: str,
 
     #plot fit
     if Method.method == 'DCM':
-        title = 'DCM fit for ' + filename
+        # title = 'DCM fit for ' + filename
+        title = 'Diameter Correction Method Fit' # + filename
         figurename =" DCM with Monte Carlo Fit and Raw data\nPower: " + filename
         fig = PlotFit(x_raw,y_raw,x_initial,y_initial,slope,intercept,slope2,intercept2,output_params,Method,ff.cavity_DCM,error,figurename,x_c,y_c,r,output_path,conf_array,extract_factor, \
         title = title, manual_params = Method.manual_init)
@@ -1702,7 +1747,9 @@ def fit_resonator(filename: str,
             print(">Failed to plot CPZM fit for data")
             quit()
 
-    fig.savefig(name_plot(filename,str(Method.method),output_path))
+    fig.savefig(name_plot(filename, str(Method.method), output_path),
+                format='pdf')
+
     return output_params,conf_array,fig,error,init
 
 
@@ -1731,7 +1778,7 @@ def plot(x,
     #plot a red point to represent something if it applies (resonance or off resonance for example)
     if p_x!=None and p_y!=None:
         ax.plot(p_x,p_y,'*',color = 'red',markersize = 5)
-    fig.savefig(output_path+name+'.png')
+    fig.savefig(output_path+name+'.pdf', format='pdf')
 
 
 def plot2(x,y,x2,y2,name,output_path):
@@ -1741,7 +1788,7 @@ def plot2(x,y,x2,y2,name,output_path):
     ax = plt.subplot(gs[0:2,0:2]) ## plot
     ax.plot(x,y,'bo',label = 'raw data',markersize = 3)
     ax.plot(x2,y2,'bo',label = 'raw data',markersize = 3, color = 'red')
-    fig.savefig(output_path+name+'.png')
+    fig.savefig(output_path+name+'.pdf', format='pdf')
 
 def name_folder(dir,strmethod):
     result = time.localtime(time.time())
@@ -1765,8 +1812,8 @@ def name_folder(dir,strmethod):
         count = count+1
     return output_path
 
-def name_plot(filename,strmethod,output_path):
+def name_plot(filename, strmethod, output_path, format='.pdf'):
     if filename.endswith('.csv'):
         filename = filename[:-4]
     filename = filename.replace('.','p')
-    return output_path+strmethod+'_'+filename+'.png'
+    return output_path+strmethod+'_'+filename+format
