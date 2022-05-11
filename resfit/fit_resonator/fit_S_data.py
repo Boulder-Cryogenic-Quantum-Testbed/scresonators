@@ -1421,8 +1421,10 @@ def fit_resonator(filename: str,
                   background: str = None,
                   background_array: np.ndarray = None,
                   plot_extra = False,
+
                   preprocess_method = "linear",
                   fscale : float = 1e9):
+
     """Function to fit resonator data
 
     Args:
@@ -1467,6 +1469,7 @@ def fit_resonator(filename: str,
     #make a folder to put all output in
     result = time.localtime(time.time())
     output = str(result.tm_year)
+    output = str(Method.method) + '_' + output
     if len(str(result.tm_mon)) < 2:
         output = output + '0' + str(result.tm_mon)
     else:
