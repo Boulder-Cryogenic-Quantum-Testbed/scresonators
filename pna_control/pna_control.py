@@ -13,10 +13,19 @@ import numpy as np
 import pyvisa
 import os
 from os import path
-import time
 
-def pna_setup(pna, points: int, centerf: float, span: float, ifband: float,
-        power: float, edelay: float, averages: int, sparam : str = 'S12'):
+import time
+import pandas as pd
+
+def pna_setup(pna,
+              points: int, 
+              centerf: float,
+              span: float,
+              ifband: float,
+              power: float,
+              edelay: float,
+              averages: int,
+              sparam : str = 'S12'):
     '''
     set parameters for the PNA for the sweep (number of points, center
     frequency, span of frequencies, IF bandwidth, power, electrical delay and
@@ -72,18 +81,26 @@ def read_data(pna, points, outputfile, power, temp):
     mag = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #open output file and put data points into the file
-    file = open(outputfile[0:-4]+'_'+str(power)+'dB'+'_'+f'{temp:.0f}'+'mK'+'.csv',"w")
+    filename = name_datafile(outputfile, power, temp)
+    file = open(filename+'.csv',"w")
+
     count = 0
     for i in freq:
         file.write(str(i)+','+str(mag[count])+','+str(phase[count])+'\n')
         count = count + 1
     file.close()
 
-def getdata(centerf: float, span: float, temp: float, averages: int = 100,
-        power: float = -30, edelay: float = 40, ifband: float = 5,
-        points: int = 201, outputfile: str = "results.csv",
-        instr_addr : str = 'GPIB::16::INSTR',
-        sparam : str = 'S12'):
+def get_data(centerf: float, 
+            span: float, 
+            temp: float, 
+            averages: int = 100, 
+            power: float = -30, 
+            edelay: float = 40, 
+            ifband: float = 5, 
+            points: int = 201, 
+            outputfile: str = "results.csv",
+            instr_addr : str = 'GPIB::16::INSTR',
+            sparam : str = 'S12'):
     '''
     function to get data and put it into a user specified file
     '''
@@ -121,18 +138,29 @@ def getdata(centerf: float, span: float, temp: float, averages: int = 100,
         if (keysight.query('STAT:OPER:AVER1:COND?')[1] != "0"):
             cnt += 1
             break;
+            
     keysight.query('*OPC?')
     keysight.write('*WAI')
     time.sleep(3.0)
     keysight.write('SYSTem:CHANnels:HOLD')
+
     read_data(keysight, points, outputfile, power, temp)
     keysight.write('SYSTem:CHANnels:RESume')
     keysight.write('OUTPut:STATe OFF')
 
-def powersweep(startpower: float, endpower: float, numsweeps: int, centerf:
-        float, span: float, temp: float, averages: float = 100,
-        edelay: float = 40, ifband: float = 5, points: int = 201,
-        outputfile: str = "results.csv", sparam : str = 'S12'):
+def power_sweep(startpower: float, 
+                endpower: float, 
+                numsweeps: int, 
+                centerf: float, 
+                span: float, 
+                temp: float, 
+                averages: float = 100, 
+                edelay: float = 40, 
+                ifband: float = 5, 
+                points: int = 201, 
+                outputfile: str = "results.csv",
+                meastype: str = None,
+                sparam : str = 'S12'):
     '''
     run a power sweep for specified power range with a certain number of sweeps
     '''
@@ -143,20 +171,12 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf:
     print(f'Measuring {sparam} ...')
 
     #create a new directory for the output to be put into
-    if (path.isdir(outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK')):
-        dircount = 1
-        while (True):
-            if (not path.isdir(outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK'+str(dircount))):
-                break;
-            dircount = dircount + 1
-        os.mkdir(outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK'+str(dircount))
-        outputfile = outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK'+str(dircount) + '/' + outputfile
-    else:
-        os.mkdir(outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK')
-        outputfile = outputfile[0:-4]+'_'+'_'+f'{temp:.0f}'+'mK' + '/' + outputfile
+    directory_name = timestamp_folder(os.getcwd(),meastype)
+    os.mkdir(directory_name)
+    outputfile = directory_name + '/' + outputfile
 
     #write an output file with conditions
-    file = open(outputfile[0:-4]+'_'+f'{temp:.0f}'+'mK_conditions'+'.csv',"w")
+    file = open(directory_name+'/'+'conditions.csv',"w")
     file.write('STARTPOWER: '+str(startpower)+' dB\n')
     file.write('ENDPOWER: '+str(endpower)+' dB\n')
     file.write('NUMSWEEPS: '+str(numsweeps)+'\n')
@@ -169,10 +189,54 @@ def powersweep(startpower: float, endpower: float, numsweeps: int, centerf:
     file.write('POINTS: '+str(points)+'\n')
     file.close()
 
-    #run each sweep while increasing averages for each power
+    #run each sweep
     for i in sweeps:
         print(f'{i} dBm, {averages//1} averages ...')
         getdata(centerf, span, temp, averages, i, edelay, ifband, points,
                 outputfile, sparam=sparam)
         averages = averages * ((10**(stepsize/10))**0.5)
     print('Power sweep completed.')
+
+
+def name_datafile(outputfile: str,
+                  power: float,
+                  temp: float) -> str:
+    # Check that the file does not have an extension, otherwise strip it
+    fsplit = outputfile.split('.')
+    if len(fsplit) > 1:
+      outputfile = fsplit[0]
+    # Use f-strings to make the formatting more compact
+    filename = f'{outputfile}_{power:.0f}dB_{temp:.0f}_mK.csv'
+    # filename = outputfile+'_'+str(power)+'dB'+'_'+str(temp)+'mK.csv'
+    filename = filename.replace('.','p')
+
+    return filename
+    
+def timestamp_folder(dir: str = None, meastype: str='powersweep') -> str:
+    """Create a filename and directory structure to annotate the scan.
+
+        Takes a root directory, appends scan type and timestamp.
+
+        Args:
+            dir: root directory for the scan
+            meastype: type of measurements, eg: 'powersweep' 
+
+        Returns:
+            Formatted path eg. dir/5p51414GHz_HPsweep_200713_12_18_04/ 
+    """
+    now = time.strftime("%y%m%d_%H_%M_%S", time.localtime())
+
+    output = meastype+ '_' + now
+    output = output.replace('.','p')
+    
+    if dir != None:
+        output_path = os.path.join(dir,output)
+    else:
+        output_path = output + '/'
+    count=2
+    path = output_path
+    while os.path.isdir(output_path):
+        output_path=path[0:-1]+'_'+ str(count) +'/'
+        count = count+1
+    return output_path
+
