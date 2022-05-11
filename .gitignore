@@ -118,6 +118,16 @@ venv.bak/
 # Vim files
 *.swp
 *.swo
+*.swn
+
+# Temperature log files
+*log*
+
+# PNA data files
+*M3D*
+*NYU*
+*RGREF*
+*csv
 
 
 # mypy
