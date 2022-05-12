@@ -3,9 +3,10 @@ Welcome to the measurement repostository of the Boulder Cryogenic Quantum Testbe
 
 ## Installation
 1. clone the repository into a folder of your choice with `git clone https://github.com/Boulder-Cryogenic-Quantum-Testbed/measurement.git`
-1. Install the dependencies, we ***strongly*** recommend using [virtual environments](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) for managing your dependences. To install dependencies run:
+2. Install the dependencies, we ***strongly*** recommend using [virtual environments](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) for managing your dependences. To install dependencies run:
   `pip install -r requirements.txt`
-  
+3. If you are running on Windows, install Microsoft Visual Studio before using the library
+ 
 ## Using the library
 
 Here's an example using some of the data hosted on this repository. Hosted
