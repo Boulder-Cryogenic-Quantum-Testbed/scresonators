@@ -1,4 +1,4 @@
-import resfit.fit_resonator.fit_S_data as fsd
+import fit_resonator.fit_S_data as fsd
 import numpy as np
 import pytest
 
