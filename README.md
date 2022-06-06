@@ -15,9 +15,9 @@ This particular example code is meant to be run in the measurement directory.
 
 ```python
 import numpy as np
-import resfit.fit_resonator.fit_functions as ff
-import resfit.fit_resonator.fit_S_data as fsd
-import resfit.fit_resonator.resonator as res
+import fit_resonator.fit_functions as ff
+import fit_resonator.fit_S_data as fsd
+import fit_resonator.resonator as res
 
 url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/cryores/test_data/AWR/AWR_Data.csv'
 

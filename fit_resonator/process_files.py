@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import scipy as sp
 import inflect
 import os
 import fnmatch
@@ -8,8 +9,9 @@ from datetime import datetime
 from matplotlib.gridspec import GridSpec
 import re
 import matplotlib.pylab as pylab
-from .fit_S_data import Fit_Resonator,Cavity_DCM,Cavity_inverse
-from .resonator import resonator,Fit_Method
+from .fit_S_data import fit_resonator
+from .fit_functions import cavity_DCM, cavity_inverse
+from .resonator import Resonator, FitMethod
 import ast
 params = {'legend.fontsize': 18,
           'figure.figsize': (10, 8),
@@ -54,7 +56,7 @@ def List_resonators(dic,delay):
         if (y1data == 0).all():
             os.remove(filepath)
             break
-        Resonators_array.append(resonator(\
+        Resonators_array.append(Resonator(\
         xdata, y1data, y2data, power, delay, name = name, date = date_time,bias = bias))
     return Resonators_array
 
@@ -70,7 +72,7 @@ def MultiFit(dic,list_resonators,method,fit = 'coarse'):
     manual_init = method.manual_init
     for k in list_resonators:
         print("Current fitting index " + str(i))
-        params,fig,chi,init = Fit_Resonator(k,method)
+        params,fig,chi,init = fit_resonator(k,method)
         filepath = path + '\\'+method.method+'_'+k.name+".jpg"
         k.load_params(method.method,params,chi)
         fig.savefig(filepath)
@@ -98,7 +100,7 @@ def MultiFit(dic,list_resonators,method,fit = 'coarse'):
         elif k== 0:
             method.manual_init= [k for k in Params_array[1]]
         print(method.manual_init)
-        params,fig,chi,init = Fit_Resonator(list_resonators[k],method)
+        params,fig,chi,init = fit_resonator(list_resonators[k],method)
         if chi < chi_array[k]:
             print(list_resonators[k].name+' changes the fitting\n chi: ' + str(chi_array[k])+' to '+str(chi))
             filepath = path + '\\' +method.method+'_'+list_resonators[k].name+"_second.jpg"
@@ -121,7 +123,7 @@ def MultiFit(dic,list_resonators,method,fit = 'coarse'):
                 df = k.INVparams.fc*factor/k.INVparams.Q
                 fc = k.INVparams.fc
             method.extract_factor = [fc-df/2,fc + df/2]
-            params,fig,chi,init = Fit_Resonator(k,method)
+            params,fig,chi,init = fit_resonator(k,method)
             print("Current finer fitting index " + str(i))
             filepath = path  +'\\Fine_'+method.method+'_'+k.name+".jpg"
             k.reload_params(method.method,params,chi)
@@ -202,7 +204,7 @@ def Result_dataframe(dic,list_resonators,Method = None):
 ########################################################################
                     #      Set Temperature DataFram       ##
 def temp_log(filepath):
-    data = np.loadtxt(dic_temp+'\\'+fr,dtype='str')
+    data = np.loadtxt(filepath,dtype='str')
     xx = data.T[0].tolist()
     yy = data.T[1].tolist()
     date_time = [datetime.strptime(a+' ' +b,"%Y-%m-%d %H:%M:%S") for a, b in zip(xx, yy)]
@@ -231,7 +233,7 @@ def temp_log(filepath):
     df_temp['R_10mK'] = pd.Series(R_10mK)
 
     # Save DataFrame
-    df_temp.to_pickle(dic_temp+'/'+fr.split('.dat')[0]+'.pkl')
+    df_temp.to_pickle(filepath.split('.dat')[0]+'.pkl')
 
     return df_temp
 #
@@ -270,8 +272,7 @@ def convert_params(Method,params):
     return Qe,Qi
 
 ###########################################################
-def Plot_sweep_S21(x,y,z,figurename,plotrange = [0,0],xlabel = 'Power
-        (dbm)',different_length = False,cmap = None,Log10= True,
+def Plot_sweep_S21(x,y,z,figurename,plotrange = [0,0],xlabel = 'Power(dbm)',different_length = False,cmap = None,Log10= True,
         fsize=16):
     ## plot sweep temperature/bias/time vs frequency vs S21 (db)
     if cmap ==None:
@@ -358,7 +359,7 @@ def read_method(dic):
         df = df.reset_index()
         if k == 'DCM':
             i = i+1
-            Method1 = Fit_Method('DCM')
+            Method1 = FitMethod('DCM')
             delay = df[k][0]
             if pd.notna(df[k][1]):
                 Method1.extract_factor = df[k][1]
@@ -383,7 +384,7 @@ def read_method(dic):
 
         if k == 'INV':
             i = i+1
-            Method2 = Fit_Method('INV')
+            Method2 = FitMethod('INV')
             delay = df[k][0]
             if pd.notna(df[k][1]):
                 Method2.extract_factor = df[k][1]
@@ -461,17 +462,17 @@ def Plot_iDCM_INV(dic,list_resonators,method,base = "INV"):
         x_fit = np.linspace(extract_factor[0],extract_factor[1],5000)
         if base == "INV":
             y = 1/k.S21
-            DCM_y_fit2 = 1/Cavity_DCM(x_fit2,*DCM_params)
-            INV_y_fit2 = Cavity_inverse(x_fit2,*INV_params)
-            DCM_y_fit = 1/Cavity_DCM(x_fit,*DCM_params)
-            INV_y_fit = Cavity_inverse(x_fit,*INV_params)
+            DCM_y_fit2 = 1/cavity_DCM(x_fit2,*DCM_params)
+            INV_y_fit2 = cavity_inverse(x_fit2,*INV_params)
+            DCM_y_fit = 1/cavity_DCM(x_fit,*DCM_params)
+            INV_y_fit = cavity_inverse(x_fit,*INV_params)
 
         elif base == 'DCM':
             y = k.S21
-            DCM_y_fit2 = Cavity_DCM(x_fit2,*DCM_params)
-            INV_y_fit2 = 1/Cavity_inverse(x_fit2,*INV_params)
-            DCM_y_fit = Cavity_DCM(x_fit,*DCM_params)
-            INV_y_fit = 1/Cavity_inverse(x_fit,*INV_params)
+            DCM_y_fit2 = cavity_DCM(x_fit2,*DCM_params)
+            INV_y_fit2 = 1/cavity_inverse(x_fit2,*INV_params)
+            DCM_y_fit = cavity_DCM(x_fit,*DCM_params)
+            INV_y_fit = 1/cavity_inverse(x_fit,*INV_params)
 
         fig = plt.figure(figsize=(15, 10))
         gs = GridSpec(3,3)
