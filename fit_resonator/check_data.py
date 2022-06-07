@@ -118,4 +118,4 @@ def parse(frequency, magnitude, phase, filepath=None, file_flag=False):
             file.close()
         else:
             # Return changes as output
-            return np.zeros(frequency), magnitude, phase
+            return frequency, magnitude, phase
