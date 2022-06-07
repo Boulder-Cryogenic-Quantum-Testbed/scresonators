@@ -1,16 +1,10 @@
 import numpy as np
 import os
 
-changes_made = False
-filepath = ''
-delim = ","
-
 
 def file(filename):
     # read in file
-    global filepath
-    filepath = filename
-    file = open(filepath, 'r')
+    file = open(filename, 'r')
 
     line = file.readline()
     while len(line) < 2:
@@ -29,7 +23,7 @@ def file(filename):
     delimiter = ","
     if len(newline) == 2:
         if newline[0] == newline[1]:  # if delimited by something else besides commas
-            if newline[0] == delim:
+            if newline[0] == ",":
                 correct_format = True
             else:
                 print("File is delimited by: '" + newline[0] + "'")
@@ -67,20 +61,20 @@ def file(filename):
     # detect if numbers in columns follow specified format
     print("Detecting if column numbers are of correct format:")
 
-    data = np.genfromtxt(filepath, delimiter=delimiter)
+    data = np.genfromtxt(filename, delimiter=delimiter)
     frequency = data.T[0]
     magnitude = data.T[1]
     phase = data.T[2]
 
-    parse(frequency, magnitude, phase)
+    parse(frequency, magnitude, phase, filename, True)
 
 
 def raw(freq, mag, phase):
     parse(freq, mag, phase)
 
 
-def parse(frequency, magnitude, phase):
-    global changes_made
+def parse(frequency, magnitude, phase, filepath=None, file_flag=False):
+    changes_made = False
     if len(frequency) < 2:
         print("Only one line found for data. Please include more than one line.")
 
@@ -112,14 +106,16 @@ def parse(frequency, magnitude, phase):
             break
 
     if changes_made:
-        # write changes to new file
-        filename, extension = os.path.splitext(filepath)
-        file = open(filename + "_edited" + extension, "w")
-        count = 0
-        for f in frequency:
-            file.write(str(f) + ',' + str(magnitude[count]) + ',' + str(phase[count]) + '\n')
-            count = count + 1
-        print("Output corrected file to " + filename + "_edited" + extension)
-        file.close()
-    elif delim == ",":
-        print("No changes made")
+        if file_flag:
+            # write changes to new file
+            filename, extension = os.path.splitext(filepath)
+            file = open(filename + "_edited" + extension, "w")
+            count = 0
+            for f in frequency:
+                file.write(str(f) + ',' + str(magnitude[count]) + ',' + str(phase[count]) + '\n')
+                count = count + 1
+            print("Output corrected file to " + filename + "_edited" + extension)
+            file.close()
+        else:
+            # Return changes as output
+            return np.zeros(frequency), magnitude, phase
