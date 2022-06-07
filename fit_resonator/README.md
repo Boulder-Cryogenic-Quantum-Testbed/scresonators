@@ -170,11 +170,22 @@ A simple script to detect if the user's data file is of the correct format.
 
 To use, simply change the path variables dir to directory with file, and filename to the name of the file to be checked.
 
-This code will check for:
+To use, import the module:
 
+`import fit_resonator.check_data as cd`
+
+Then run the method corresponding to your data form as a file, or raw data as arrays/array-likes:
+
+`cd.file(path_to_data_file)`
+
+`cd.raw(frequency, magnitude, phase)`
+
+This code will check data files for:
 * Header (not currently part of standard format)
 * Correct number of columns
 * Correct delimiter (currently set to ',')
+
+Files and raw data for:
 * Containing more than 1 line of data
 * Frequency in GHz (determined by checking if frequency is above 10^8 in magnitude)
 * Phase in radians (determined by checking if phase less/greater than 2pi)
