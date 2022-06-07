@@ -22,8 +22,8 @@ import scipy.optimize as spopt
 from scipy.interpolate import splrep, splev
 from scipy.ndimage.filters import gaussian_filter1d
 
-pathToParent = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #set a variable that equals the relative path of parent directory
-sys.path.append(pathToParent)#path to Fit_Cavity
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(ROOT_DIR) #path to Fit_Cavity
 
 from scipy.interpolate import interp1d
 
