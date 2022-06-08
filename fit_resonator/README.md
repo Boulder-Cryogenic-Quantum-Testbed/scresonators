@@ -21,7 +21,7 @@ Additionally, the code is able to fit reflection type geometry resonators with a
 1. PHI: J. Gao, "The Physics of Superconducting Microwave Resonators" Cal-tech Ph.D. thesis, May 2008
 
 ## Fitting Functions:
-![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/resfit/Fit_Equations.PNG)
+![alt text](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/fit_resonator/Fit_Equations.PNG)
 
 ## INPUT:
 The code takes in a file (currently accepts .snp .csv and .txt files). If the file is a .snp file it should follow the .snp format. If the file is a .csv or .txt it should contain 3 columns separated by commas where each line represents one point of data.
