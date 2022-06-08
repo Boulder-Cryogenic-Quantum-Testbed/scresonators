@@ -28,7 +28,7 @@ sys.path.append(ROOT_DIR) #path to Fit_Cavity
 from scipy.interpolate import interp1d
 
 import fit_resonator.resonator as res
-import fit_resonator.fit_functions as ff
+import fit_resonator.functions as ff
 
 params = {'legend.fontsize': 20,
           'figure.figsize': (10, 8),
@@ -1413,17 +1413,17 @@ def min_fit(params,xdata,ydata,Method):
     return fit_params, conf_array
 
 
-def fit_resonator(filename: str,
-                  Method,
-                  normalize: int,
-                  dir: str = None,
-                  data_array: np.ndarray = None,
-                  background: str = None,
-                  background_array: np.ndarray = None,
-                  plot_extra = False,
+def fit(filename: str,
+        Method,
+        normalize: int,
+        dir: str = None,
+        data_array: np.ndarray = None,
+        background: str = None,
+        background_array: np.ndarray = None,
+        plot_extra = False,
 
-                  preprocess_method = "linear",
-                  fscale : float = 1e9):
+        preprocess_method = "linear",
+        fscale : float = 1e9):
 
     """Function to fit resonator data
 

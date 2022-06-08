@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 pathToParent = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) #set a variable that equals the relative path of parent directory
 sys.path.append(pathToParent)#path to Fit_Cavity
 import fit_resonator.resonator as res
-import fit_resonator.fit_S_data as fsd
+import fit_resonator.Sdata as fsd
 np.set_printoptions(precision=4,suppress=True)# display numbers with 4 sig. figures (digits)
 
                          ## Code Starts Here ##
@@ -39,7 +39,7 @@ except:
 normalize = 10
 
 ### Fit Resonator function without background removal ###
-params,conf_array,fig1,chi1,init1 = fsd.fit_resonator(filename = filename,Method = Method,normalize = normalize,dir = dir)
+params,conf_array,fig1,chi1,init1 = fsd.fit(filename = filename, Method = Method, normalize = normalize, dir = dir)
 
 ### Fit Resonator function with background removal ###
 #background_file = 'example_background.csv'

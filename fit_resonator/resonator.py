@@ -3,7 +3,7 @@ import datetime
 import numpy as np
 from matplotlib import pyplot as plt
 
-import fit_resonator.fit_functions as ff
+import fit_resonator.functions as ff
 
 
 class Resonator: # object is defined in init below

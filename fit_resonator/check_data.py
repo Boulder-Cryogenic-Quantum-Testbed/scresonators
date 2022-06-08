@@ -3,6 +3,14 @@ import os
 
 
 def file(filename):
+    """Check data from a file
+
+
+    Args:
+        arg1 (str): Relative path to your data file
+    """
+
+
     # read in file
     file = open(filename, 'r')
 
