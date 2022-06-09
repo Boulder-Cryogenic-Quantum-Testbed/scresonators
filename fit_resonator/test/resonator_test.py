@@ -1,7 +1,7 @@
 # Lint as: python3
 import numpy as np
 
-import fit_resonator.fit_functions as ff
+import fit_resonator.functions as ff
 
 from fit_resonator import resonator
 """Tests for analysis."""

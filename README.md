@@ -15,8 +15,8 @@ This particular example code is meant to be run in the measurement directory.
 
 ```python
 import numpy as np
-import fit_resonator.fit_functions as ff
-import fit_resonator.fit_S_data as fsd
+import fit_resonator.functions as ff
+import fit_resonator.Sdata as fsd
 import fit_resonator.resonator as res
 
 url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/cryores/test_data/AWR/AWR_Data.csv'
@@ -30,11 +30,11 @@ MC_iteration = 10
 MC_rounds = 1e3
 MC_fix = ['w1']
 manual_init = None
-method = res.FitMethod(fit_type, MC_iteration, MC_rounds=MC_rounds,\
-            MC_fix=MC_fix, manual_init=manual_init, MC_step_const=0.3)
+method = res.FitMethod(fit_type, MC_iteration, MC_rounds=MC_rounds,
+                       MC_fix=MC_fix, manual_init=manual_init, MC_step_const=0.3)
 
 # Fit the data:
-fsd.fit_resonator("output test", method, normalize = 10, data_array = raw)
+fsd.fit("output test", method, normalize=10, data_array=raw)
 ```
 
 A more in depth example is given in the resfit folder.
