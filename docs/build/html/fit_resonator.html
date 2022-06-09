@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>fit_resonator package &mdash; quares 0.5 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> quares
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">fit_resonator package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-fit_resonator.Sdata">fit_resonator.Sdata module</a></li>
+<li><a class="reference internal" href="#module-fit_resonator.check_data">fit_resonator.check_data module</a></li>
+<li><a class="reference internal" href="#fit-resonator-fit-multiple-module">fit_resonator.fit_multiple module</a></li>
+<li><a class="reference internal" href="#module-fit_resonator.functions">fit_resonator.functions module</a></li>
+<li><a class="reference internal" href="#module-fit_resonator.resonator">fit_resonator.resonator module</a></li>
+<li><a class="reference internal" href="#module-fit_resonator">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">quares</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>fit_resonator package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/fit_resonator.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="fit-resonator-package">
+<h1>fit_resonator package<a class="headerlink" href="#fit-resonator-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-fit_resonator.Sdata">
+<span id="fit-resonator-sdata-module"></span><h2>fit_resonator.Sdata module<a class="headerlink" href="#module-fit_resonator.Sdata" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.ComplexData">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">ComplexData</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">complex_s21</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.ComplexData" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Container for normalized data</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.PlotFit">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">PlotFit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_initial</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slope</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intercept</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">slope2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intercept2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">func</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">figurename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_c</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radius</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">conf_array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extract_factor</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Fit'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_params</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dfac</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">10</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">msizes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[12,</span> <span class="pre">7]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xstr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'Frequency</span> <span class="pre">[GHz]'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fsize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">16.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.PlotFit" title="Permalink to this definition"></a></dt>
+<dd><p>Plots data and outputs fit parameters to a file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – cropped frequency data</p></li>
+<li><p><strong>y</strong> – cropped S21 data after normalization</p></li>
+<li><p><strong>x_initial</strong> – original frequency data before normalization</p></li>
+<li><p><strong>y_initial</strong> – original S21 data before normalization</p></li>
+<li><p><strong>slope</strong> – slope of the normalization line for magnitude</p></li>
+<li><p><strong>intercept</strong> – intercept of normalization line for magnitude</p></li>
+<li><p><strong>slope2</strong> – slope of the normalization line for phase</p></li>
+<li><p><strong>intercept2</strong> – intercept of normalization line for phase</p></li>
+<li><p><strong>params</strong> – parameters generated from fit function</p></li>
+<li><p><strong>Method</strong> – Method class instance</p></li>
+<li><p><strong>func</strong> – function used to generate data for plotting
+(DCM/DCM REFLECTION/INV/PHI/CPZM)</p></li>
+<li><p><strong>error</strong> – error from Monte Carlo Fit function</p></li>
+<li><p><strong>figurename</strong> – name the plot should have</p></li>
+<li><p><strong>x_c</strong> – center x coordinate for fit circle</p></li>
+<li><p><strong>y_c</strong> – center y coordinate for fit circle</p></li>
+<li><p><strong>radius</strong> – radius of fit circle</p></li>
+<li><p><strong>output_path</strong> – file path where the plots will be saved</p></li>
+<li><p><strong>conf_array</strong> – array with 95% confidence interval values</p></li>
+<li><p><strong>extract_factor</strong> – contains starting and ending frequency values</p></li>
+<li><p><strong>title</strong> – title the plot will have</p></li>
+<li><p><strong>manual_params</strong> – user input manual initial guess parameters for fit</p></li>
+<li><p><strong>dfac</strong> – decimation factor on the plotting of points in the resonance
+circle Im S21 vs. Re S21</p></li>
+<li><p><strong>xstr</strong> – x-axis string label</p></li>
+<li><p><strong>fsize</strong> – fontsize for axes numbers and labels</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>plot output to file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.VNASweep">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">VNASweep</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freqs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">linear_amps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.VNASweep" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A container to hold data from a vna frequency sweep.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.VNASweep.from_columns">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freqs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">amps</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phases</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.VNASweep.from_columns" title="Permalink to this definition"></a></dt>
+<dd><p>Load data from columns provided individually.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.VNASweep.from_file">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fscale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1000000000.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.VNASweep.from_file" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.background_removal">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">background_removal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">databg</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#fit_resonator.Sdata.VNASweep" title="fit_resonator.Sdata.VNASweep"><span class="pre">VNASweep</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">linear_amps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phases</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.background_removal" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.calibrate">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.calibrate" title="Permalink to this definition"></a></dt>
+<dd><p>Finds the parameters for normalization of the scattering data. See
+Sij of port classes for explanation of parameters.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.convert_params">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">convert_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">from_method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.convert_params" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.extract_near_res">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">extract_near_res</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x_raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_raw</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">f_res</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kappa</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">extract_factor</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.extract_near_res" title="Permalink to this definition"></a></dt>
+<dd><p>Extracts portions of spectrum of kappa within resonance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x_raw</strong> – X-values of spectrum to extract from.</p></li>
+<li><p><strong>y_raw</strong> – Y-values of spectrum to extract from.</p></li>
+<li><p><strong>f_res</strong> – Resonant frequency about which to extract data.</p></li>
+<li><p><strong>kappa</strong> – Width about f_res to extract.</p></li>
+<li><p><strong>extract_factor</strong> – Multiplier for kappa.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Extracted spectrum kappa about f_res.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.find_circle">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">find_circle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.find_circle" title="Permalink to this definition"></a></dt>
+<dd><p>Given a set of x,y data return a circle that fits data using LeastSquares Circle Fit Randy Bullock (2017)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – Array of x position of data in complex plane (real)</p></li>
+<li><p><strong>y</strong> – Array of y position of data in complex plane (imaginary)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>x (matrix1) and y (matrix2) center coordinates of the circle, and the radius of the circle “R”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.find_initial_guess">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">find_initial_guess</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_extra</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.find_initial_guess" title="Permalink to this definition"></a></dt>
+<dd><p>Determines an initial guess for the parameters</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> – frequency data</p></li>
+<li><p><strong>y1</strong> – real part of transmission data</p></li>
+<li><p><strong>y2</strong> – imaginary part of transmission data</p></li>
+<li><p><strong>Method</strong> – method class</p></li>
+<li><p><strong>output_path</strong> – place to output any plots generated</p></li>
+<li><p><strong>plot_extra</strong> – boolean that determines if extra plots will be output</p></li>
+</ul>
+</dd>
+</dl>
+<p>Returns: initial guess for parameters, x coordinate for center of fit circle, y coordinate for center of fit circle, radius of fit circle</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.find_nearest">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">find_nearest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">array</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.find_nearest" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.fit">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Method</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dir</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">background_array</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_extra</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">preprocess_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'linear'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fscale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000000000.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.fit" title="Permalink to this definition"></a></dt>
+<dd><p>Function to fit resonator data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> – name of the file to be fit</p></li>
+<li><p><strong>Method</strong> – instance of Method class</p></li>
+<li><p><strong>normalize</strong> – number of points on either side to create linear function for normalization process</p></li>
+<li><p><strong>dir</strong> – directory where data to be fit is contained</p></li>
+<li><p><strong>data_array</strong> – optional way to read in data if the user already has an array of data in memory they want to fit</p></li>
+<li><p><strong>background</strong> – file name for optional background removal file</p></li>
+<li><p><strong>background_array</strong> – optional way to read in background removal data if the user already has an array of data in memory they want to use</p></li>
+<li><p><strong>plot_extra</strong> – boolean to determine if code should output additional plots to show normalization process and other steps</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>final minimized parameter values
+95% confidence interval values for those parameters
+main figure output by the plotting function
+error of Monte Carlo Fit
+initial guess parameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.fit_delay">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">fit_delay</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xdata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ydata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.fit_delay" title="Permalink to this definition"></a></dt>
+<dd><p>Finds the cable delay by repeatedly centering the “circle” and fitting
+the slope of the phase response.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.fit_phase">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">fit_phase</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">guesses</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.fit_phase" title="Permalink to this definition"></a></dt>
+<dd><p>Fits the phase response of a strongly overcoupled (Qi &gt;&gt; Qc) resonator
+in reflection which corresponds to a circle centered around the origin
+(cf‌. phase_centered()).</p>
+<p>inputs:
+- z_data: Scattering data of which the phase should be fit. Data must be</p>
+<blockquote>
+<div><p>distributed around origin (“circle-like”).</p>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="simple">
+<dt>guesses (opt.): If not given, initial guesses for the fit parameters</dt><dd><p>will be determined. If given, should contain useful
+guesses for fit parameters as a tuple (fr, Ql, delay)</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>outputs:
+- fr: Resonance frequency
+- Ql: Loaded quality factor
+- theta: Offset phase
+- delay: Time delay between output and input signal leading to linearly</p>
+<blockquote>
+<div><p>frequency dependent phase shift</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.get_header">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">get_header</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">line</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.get_header" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.min_fit">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">min_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xdata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ydata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.min_fit" title="Permalink to this definition"></a></dt>
+<dd><p>Minimizes parameter values for the given function and transmission data</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>params</strong> – guess for correct values of the fit parameters</p></li>
+<li><p><strong>xdata</strong> – array of frequency data points</p></li>
+<li><p><strong>ydata</strong> – array of S21 data points</p></li>
+<li><p><strong>Method</strong> – instance of Method class</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>minimized parameter values, 95% confidence intervals for those parameter values</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.monte_carlo_fit">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">monte_carlo_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xdata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ydata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parameter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.monte_carlo_fit" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.name_folder">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">name_folder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strmethod</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.name_folder" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.name_plot">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">name_plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">strmethod</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.pdf'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.name_plot" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.normalize">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">normalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">z_data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delay</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">a</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.normalize" title="Permalink to this definition"></a></dt>
+<dd><p>Transforms scattering data into canonical position with off-resonant
+point at (1, 0) (does not correct for rotation phi of circle around
+off-resonant point).</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.periodic_boundary">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">periodic_boundary</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">angle</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.periodic_boundary" title="Permalink to this definition"></a></dt>
+<dd><p>Maps arbitrary angle to interval [-np.pi, np.pi)</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.phase_centered">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">phase_centered</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">f</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Ql</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">theta</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">delay</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.phase_centered" title="Permalink to this definition"></a></dt>
+<dd><p>Yields the phase response of a strongly overcoupled (Qi &gt;&gt; Qc) resonator
+in reflection which corresponds to a circle centered around the origin.
+Additionally, a linear background slope is accounted for if needed.</p>
+<p>inputs:
+- fr: Resonance frequency
+- Ql: Loaded quality factor (and since Qi &gt;&gt; Qc also Ql = Qc)
+- theta: Offset phase
+- delay (opt.): Time delay between output and input signal leading to</p>
+<blockquote>
+<div><p>linearly frequency dependent phase shift</p>
+</div></blockquote>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.phase_dist">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">phase_dist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">angle</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.phase_dist" title="Permalink to this definition"></a></dt>
+<dd><p>Maps angle [-2pi, +2pi] to phase distance on circle [0, pi]</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.plot">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">plot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y_c</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_y</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.plot" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.plot2">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">plot2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.plot2" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.preprocess_circle">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">preprocess_circle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xdata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ydata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_extra</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.preprocess_circle" title="Permalink to this definition"></a></dt>
+<dd><p>Data Preprocessing. Use Probst method to get rid of cable delay and normalize phase/magnitude of S21 by circle fit</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.Sdata.preprocess_linear">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.Sdata.</span></span><span class="sig-name descname"><span class="pre">preprocess_linear</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xdata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ydata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_extra</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.Sdata.preprocess_linear" title="Permalink to this definition"></a></dt>
+<dd><p>Data Preprocessing. Get rid of cable delay and normalize phase/magnitude of S21 by linear fit of normalize # of endpoints</p>
+</dd></dl>
+
+</section>
+<section id="module-fit_resonator.check_data">
+<span id="fit-resonator-check-data-module"></span><h2>fit_resonator.check_data module<a class="headerlink" href="#module-fit_resonator.check_data" title="Permalink to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.check_data.file">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.check_data.</span></span><span class="sig-name descname"><span class="pre">file</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.check_data.file" title="Permalink to this definition"></a></dt>
+<dd><p>Check data from a file</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>arg1</strong> (<em>str</em>) – Relative path to your data file</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.check_data.parse">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.check_data.</span></span><span class="sig-name descname"><span class="pre">parse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequency</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">magnitude</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">filepath</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_flag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.check_data.parse" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.check_data.raw">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.check_data.</span></span><span class="sig-name descname"><span class="pre">raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freq</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phase</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.check_data.raw" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="fit-resonator-fit-multiple-module">
+<h2>fit_resonator.fit_multiple module<a class="headerlink" href="#fit-resonator-fit-multiple-module" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-fit_resonator.functions">
+<span id="fit-resonator-functions-module"></span><h2>fit_resonator.functions module<a class="headerlink" href="#module-fit_resonator.functions" title="Permalink to this heading"></a></h2>
+<p>Analytic fit functions</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.cavity_CPZM">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">cavity_CPZM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Qi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Qic</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Qia</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.cavity_CPZM" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.cavity_DCM">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">cavity_DCM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Qc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.cavity_DCM" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.cavity_DCM_REFLECTION">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">cavity_DCM_REFLECTION</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Qc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.cavity_DCM_REFLECTION" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.cavity_inverse">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">cavity_inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Qi</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Qc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">phi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.cavity_inverse" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.fit_raw_compare">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">fit_raw_compare</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">y</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.fit_raw_compare" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.min_one_Cavity_CPZM">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">min_one_Cavity_CPZM</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.min_one_Cavity_CPZM" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.min_one_Cavity_DCM_REFLECTION">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">min_one_Cavity_DCM_REFLECTION</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.min_one_Cavity_DCM_REFLECTION" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.min_one_Cavity_dip">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">min_one_Cavity_dip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.min_one_Cavity_dip" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.min_one_Cavity_inverse">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">min_one_Cavity_inverse</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameter</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.min_one_Cavity_inverse" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.one_cavity_peak_abs">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">one_cavity_peak_abs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Qc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.one_cavity_peak_abs" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="fit_resonator.functions.one_cavity_peak_abs_REFLECTION">
+<span class="sig-prename descclassname"><span class="pre">fit_resonator.functions.</span></span><span class="sig-name descname"><span class="pre">one_cavity_peak_abs_REFLECTION</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Qc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">w1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.functions.one_cavity_peak_abs_REFLECTION" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</section>
+<section id="module-fit_resonator.resonator">
+<span id="fit-resonator-resonator-module"></span><h2>fit_resonator.resonator module<a class="headerlink" href="#module-fit_resonator.resonator" title="Permalink to this heading"></a></h2>
+<p>Adapted from &#64;mullinski and &#64;hung93</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="fit_resonator.resonator.CPZMparams">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fit_resonator.resonator.</span></span><span class="sig-name descname"><span class="pre">CPZMparams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.CPZMparams" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fit_resonator.resonator.DCMparams">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fit_resonator.resonator.</span></span><span class="sig-name descname"><span class="pre">DCMparams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.DCMparams" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fit_resonator.resonator.FitMethod">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fit_resonator.resonator.</span></span><span class="sig-name descname"><span class="pre">FitMethod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MC_iteration</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MC_rounds</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MC_weight</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'no'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MC_weightvalue</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MC_fix</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">[]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">MC_step_const</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.6</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manual_init</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">vary</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.FitMethod" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl>
+<dt>method: str</dt><dd><blockquote>
+<div><p>“DCM” or ‘INV’ or ‘CPZM’</p>
+</div></blockquote>
+<dl class="simple">
+<dt>fitting range:</dt><dd><p>number -&gt;  number * FW2M (Full width at half twice min). if not =1, changes the FW2M fitting range
+list -&gt; from list[0] to list[1]
+‘all’ -&gt; all</p>
+</dd>
+</dl>
+</dd>
+<dt>MC_iteration: int</dt><dd><p>Number of iteration of 1) least square fit + 2) Monte Carlo</p>
+</dd>
+<dt>MC_rounds: int</dt><dd><p>in each MC iteration, number of rounds of randomly choose parameter</p>
+</dd>
+<dt>MC_weigh: str</dt><dd><p>‘no’ or ‘yes’, weight the extract_factor fitting range, yes uses 1/<a href="#id1"><span class="problematic" id="id2">|S21|</span></a> weight, which we call iDCM</p>
+</dd>
+<dt>MC_weightvalue: int</dt><dd><p>multiplication factor for weighing, such as 2 for twice the 1/<a href="#id3"><span class="problematic" id="id4">|S21|</span></a> weight.</p>
+</dd>
+<dt>MC_fix: list of str</dt><dd><p>‘Amp’,’w1’,’theta’,’phi’,’Qc’, ‘Q’ for DCM, ‘Qi’ for INV</p>
+</dd>
+<dt>MC_step_const: int</dt><dd><p>randomly choose number in range MC_step_const*[-0.5~0.5]
+for fitting. Exp(0.5)=1.6, and this is used for Qi,… . However, the res. frequency, theta, amplitude are usually fixed during Monte Carlo.</p>
+</dd>
+<dt>find_circle: bool</dt><dd><p>true=&gt; find initial guess from circle (better) or false if find from linewidth</p>
+</dd>
+<dt>manual_init: None or list of 6 float number</dt><dd><p>manual input initial guesses
+DCM: [amplitude, Q, Qc, freq, phi, theta]
+INV: [amplitude, Qi, Qc, freq, phi, theta]</p>
+</dd>
+<dt>vary: None or list of 6 booleans</dt><dd><p>vary parameter in least square fit (which parameters change = true)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="fit_resonator.resonator.FitMethod.change_method">
+<span class="sig-name descname"><span class="pre">change_method</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.FitMethod.change_method" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fit_resonator.resonator.INVparams">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fit_resonator.resonator.</span></span><span class="sig-name descname"><span class="pre">INVparams</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">params</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chi</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.INVparams" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="fit_resonator.resonator.Resonator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">fit_resonator.resonator.</span></span><span class="sig-name descname"><span class="pre">Resonator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">S21</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">date</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">datetime</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">temp</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bias</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.Resonator" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Object for representing a resonator fit.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>freq</strong> – list of frequencies (units of GHz).</p></li>
+<li><p><strong>S21</strong> – complex S21 for each frequency.</p></li>
+<li><p><strong>name</strong> (<em>optional</em>) – name of scan.</p></li>
+<li><p><strong>date</strong> (<em>optional</em>) – date of scan.</p></li>
+<li><p><strong>temp</strong> (<em>optional</em>) – temperature of scan (in Kelvin).</p></li>
+<li><p><strong>bias</strong> (<em>optional</em>) – bias present during scan (in volts?).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="fit_resonator.resonator.Resonator.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.Resonator.fit" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fit_resonator.resonator.Resonator.load_params">
+<span class="sig-name descname"><span class="pre">load_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.Resonator.load_params" title="Permalink to this definition"></a></dt>
+<dd><p>Loads model parameters for a corresponding fit technique.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> – One of DCM, PHI, DCM REFLECTION, INV, CPZM. Described
+in the readme.</p></li>
+<li><p><strong>params</strong> – model fit parameters.</p></li>
+<li><p><strong>chi</strong> – TODO(mutus) desicribe this argument. What is this?</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fit_resonator.resonator.Resonator.power_calibrate">
+<span class="sig-name descname"><span class="pre">power_calibrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">p</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.Resonator.power_calibrate" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="fit_resonator.resonator.Resonator.reload_params">
+<span class="sig-name descname"><span class="pre">reload_params</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chi</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">any</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#fit_resonator.resonator.Resonator.reload_params" title="Permalink to this definition"></a></dt>
+<dd><p>Reloads model parameters for a corresponding fit technique.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> – One of DCM, PHI, DCM REFLECTION, INV, CPZM. Described
+in the readme.</p></li>
+<li><p><strong>params</strong> – model fit parameters.</p></li>
+<li><p><strong>chi</strong> – TODO(mutus) desicribe this argument. What is this?</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-fit_resonator">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-fit_resonator" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, placeholder.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

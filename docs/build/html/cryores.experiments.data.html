@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cryores.experiments.data package &mdash; quares 0.5 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> quares
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">cryores.experiments.data package</a><ul>
+<li><a class="reference internal" href="#submodules">Submodules</a></li>
+<li><a class="reference internal" href="#module-cryores.experiments.data.base">cryores.experiments.data.base module</a></li>
+<li><a class="reference internal" href="#module-cryores.experiments.data.csv_json">cryores.experiments.data.csv_json module</a></li>
+<li><a class="reference internal" href="#module-cryores.experiments.data.simple">cryores.experiments.data.simple module</a></li>
+<li><a class="reference internal" href="#module-cryores.experiments.data">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">quares</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li>cryores.experiments.data package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/cryores.experiments.data.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="cryores-experiments-data-package">
+<h1>cryores.experiments.data package<a class="headerlink" href="#cryores-experiments-data-package" title="Permalink to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this heading"></a></h2>
+</section>
+<section id="module-cryores.experiments.data.base">
+<span id="cryores-experiments-data-base-module"></span><h2>cryores.experiments.data.base module<a class="headerlink" href="#module-cryores.experiments.data.base" title="Permalink to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="cryores.experiments.data.base.Dataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cryores.experiments.data.base.</span></span><span class="sig-name descname"><span class="pre">Dataset</span></span><a class="headerlink" href="#cryores.experiments.data.base.Dataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>Collection of tabular data and key-value parameters.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="cryores.experiments.data.base.Dataset.add_data">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">add_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#cryores.experiments.data.base.Dataset.add_data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cryores.experiments.data.base.Dataset.load">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cryores.experiments.data.base.Dataset.load" title="Permalink to this definition"></a></dt>
+<dd><p>Create a Dataset from one or more files.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cryores.experiments.data.base.Dataset.save">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cryores.experiments.data.base.Dataset.save" title="Permalink to this definition"></a></dt>
+<dd><p>Save the dataset to the given path with the prefix name.</p>
+<p>The name should not include any file extension, as this dataset may
+be represented by more than one file.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-cryores.experiments.data.csv_json">
+<span id="cryores-experiments-data-csv-json-module"></span><h2>cryores.experiments.data.csv_json module<a class="headerlink" href="#module-cryores.experiments.data.csv_json" title="Permalink to this heading"></a></h2>
+<p>Dataset implementation using CSV for table data and JSON for metadata.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="cryores.experiments.data.csv_json.CsvJsonDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cryores.experiments.data.csv_json.</span></span><span class="sig-name descname"><span class="pre">CsvJsonDataset</span></span><a class="headerlink" href="#cryores.experiments.data.csv_json.CsvJsonDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cryores.experiments.data.base.Dataset" title="cryores.experiments.data.base.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a></p>
+<p>Save Pandas DataFrame and JSON-compatible dictionaries as CSV and JSON.</p>
+<p>Every dataset will be specified by a name and have a corresponding .csv
+and .json file.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="cryores.experiments.data.csv_json.CsvJsonDataset.add_data">
+<span class="sig-name descname"><span class="pre">add_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#cryores.experiments.data.csv_json.CsvJsonDataset.add_data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cryores.experiments.data.csv_json.CsvJsonDataset.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cryores.experiments.data.csv_json.CsvJsonDataset.load" title="Permalink to this definition"></a></dt>
+<dd><p>Create a Dataset from one or more files.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cryores.experiments.data.csv_json.CsvJsonDataset.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cryores.experiments.data.csv_json.CsvJsonDataset.save" title="Permalink to this definition"></a></dt>
+<dd><p>Save the dataset to the given path with the prefix name.</p>
+<p>The name should not include any file extension, as this dataset may
+be represented by more than one file.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-cryores.experiments.data.simple">
+<span id="cryores-experiments-data-simple-module"></span><h2>cryores.experiments.data.simple module<a class="headerlink" href="#module-cryores.experiments.data.simple" title="Permalink to this heading"></a></h2>
+<p>Simple in-memory dataset. Use for testing only.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="cryores.experiments.data.simple.SimpleDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">cryores.experiments.data.simple.</span></span><span class="sig-name descname"><span class="pre">SimpleDataset</span></span><a class="headerlink" href="#cryores.experiments.data.simple.SimpleDataset" title="Permalink to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#cryores.experiments.data.base.Dataset" title="cryores.experiments.data.base.Dataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></a></p>
+<p>Store Pandas DataFrame and metadata in memory.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="cryores.experiments.data.simple.SimpleDataset.add_data">
+<span class="sig-name descname"><span class="pre">add_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#cryores.experiments.data.simple.SimpleDataset.add_data" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cryores.experiments.data.simple.SimpleDataset.load">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cryores.experiments.data.simple.SimpleDataset.load" title="Permalink to this definition"></a></dt>
+<dd><p>Create a Dataset from one or more files.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="cryores.experiments.data.simple.SimpleDataset.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#cryores.experiments.data.simple.SimpleDataset.save" title="Permalink to this definition"></a></dt>
+<dd><p>Do nothing.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-cryores.experiments.data">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-cryores.experiments.data" title="Permalink to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, placeholder.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
