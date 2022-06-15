@@ -1,8 +1,8 @@
-# measurement
-Welcome to the measurement repostository of the Boulder Cryogenic Quantum Testbed! This is a library for measuring the loss in superconducting resonators. 
+# scresonators
+Welcome to the scresonators repository of the Boulder Cryogenic Quantum Testbed! This is a library for measuring the loss in superconducting resonators. 
 
 ## Installation
-1. clone the repository into a folder of your choice with `git clone https://github.com/Boulder-Cryogenic-Quantum-Testbed/measurement.git`
+1. clone the repository into a folder of your choice with `git clone https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators.git`
 2. Install the dependencies, we ***strongly*** recommend using [virtual environments](https://packaging.python.org/guides/installing-using-pip-and-virtual-environments/) for managing your dependences. To install dependencies run:
   `pip install -r requirements.txt`
 3. If you are running on Windows, install Microsoft Visual Studio before using the library
@@ -12,7 +12,7 @@ Welcome to the measurement repostository of the Boulder Cryogenic Quantum Testbe
 Here's an example using some of the data hosted on this repository. Hosted
 datasets from groups around the world can be found [here](/cryores/test_data).
 
-This particular example code is meant to be run in the measurement directory.
+This particular example code is meant to be run in the root directory.
 
 ```python
 import numpy as np
@@ -20,7 +20,7 @@ import fit_resonator.functions as ff
 import fit_resonator.Sdata as fsd
 import fit_resonator.resonator as res
 
-url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/cryores/test_data/AWR/AWR_Data.csv'
+url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/master/cryores/test_data/AWR/AWR_Data.csv'
 
 # Load the raw data:
 raw = np.loadtxt(url, delimiter=',')
@@ -38,11 +38,11 @@ method = res.FitMethod(fit_type, MC_iteration, MC_rounds=MC_rounds,
 fsd.fit("output test", method, normalize=10, data_array=raw)
 ```
 
-A more in depth example is given in the resfit folder.
+Ane in depth description is given in the fit_resonators folder.
 
 
 ## Code Organization
 
-All code should live in the `resfit` namespace. This ensures easy integration
+Until the module is officially distributed, all code should live in the `fit_resonator` namespace. This ensures easy integration
 with other Python packages, and avoids name collisions; everything is referred
-to as e.g. `resfit.experiments` rather than just `experiments`.
+to as e.g. `fit_resonator.experiments` rather than just `experiments`.
