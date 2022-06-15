@@ -20,7 +20,7 @@ import fit_resonator.functions as ff
 import fit_resonator.Sdata as fsd
 import fit_resonator.resonator as res
 
-url = 'https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/blob/master/cryores/test_data/AWR/AWR_Data.csv'
+url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/master/cryores/test_data/AWR/AWR_Data.csv'
 
 # Load the raw data:
 raw = np.loadtxt(url, delimiter=',')
