@@ -56,19 +56,19 @@ class Resonator: # object is defined in init below
             if method == 'DCM':
                 self.method.append("DCM")
                 self.DCMparams = DCMparams(params, chi)
-                self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
+                self.compare = ff.fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'PHI':
                 self.method.append("PHI")
                 self.DCMparams= DCMparams(params, chi)
-                self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
+                self.compare = ff.fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             if method == 'DCM REFLECTION':
                 self.method.append("DCM REFLECTION")
                 self.DCMparams= DCMparams(params, chi)
-                self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
+                self.compare = ff.fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'INV':
                 self.method.append("INV")
                 self.INVparams = INVparams(params, chi)
-                self.compare = fit_raw_compare(self.freq,self.S21,self.INVparams.all,'INV')
+                self.compare = ff.fit_raw_compare(self.freq,self.S21,self.INVparams.all,'INV')
             elif method == 'CPZM':
                 self.method.append("CPZM")
                 self.CPZMparams = CPZMparams(params, chi)
@@ -116,11 +116,11 @@ class Resonator: # object is defined in init below
             self.fc = params[3]
             if method == 'DCM REFLECTION':
                 self.DCMparams= DCMparams(params, chi)
-                self.compare = fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
+                self.compare = ff.fit_raw_compare(self.freq,self.S21,self.DCMparams.all,'DCM')
             elif method == 'INV':
 
                 self.INVparams = INVparams(params, chi)
-                self.compare = fit_raw_compare(self.freq,self.S21,self.INVparams.all,'INV')
+                self.compare = ff.fit_raw_compare(self.freq,self.S21,self.INVparams.all,'INV')
             elif method == 'CPZM':
                 self.method.append("CPZM")
                 self.CPZMparams = CPZMparams(params, chi)
@@ -173,23 +173,23 @@ class Resonator: # object is defined in init below
             method_default.manual_init = kwargs.pop("INV_init_guess")
 
         #run Fit_Resonator with data from self and method just created for INV
-        params_INV,fig_INV,chi_INV,init_INV = Fit_Resonator(self,method_default)
+        params_INV,fig_INV,chi_INV,init_INV = Resonator(self,method_default)
 
         #Do the same thing again with DCM this time
-        init_DCM = convert_params('INV',params_INV)
+        init_DCM = self.reload_params('INV',params_INV)
         method_default.change_method("DCM")
         if 'DCM_init_guess' in kwargs.keys():
             method_default.manual_init = kwargs.pop("DCM_init_guess")
         else:
             method_default.manual_init = None
-        params_DCM,fig_DCM,chi_DCM,init_DCM = Fit_Resonator(self,method_default)
-        init_INV = convert_params('DCM',params_DCM)
+        params_DCM,fig_DCM,chi_DCM,init_DCM = Resonator(self,method_default)
+        init_INV = self.convert_params('DCM',params_DCM)
         method_default.manual_init = init_DCM
-        params_DCM2,fig_DCM2,chi_DCM2,init_DCM2 = Fit_Resonator(self,method_default)
+        params_DCM2,fig_DCM2,chi_DCM2,init_DCM2 = Resonator(self,method_default)
 
         method_default.change_method("INV")
         method_default.manual_init = init_INV
-        params_INV2,fig_INV2,chi_INV2,init_INV2 = Fit_Resonator(self,method_default)
+        params_INV2,fig_INV2,chi_INV2,init_INV2 = Resonator(self,method_default)
         plt.close('all')
         if chi_DCM > chi_DCM2:
             DCM_list = [params_DCM2,fig_DCM2]

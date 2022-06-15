@@ -5,9 +5,11 @@ import os
 def file(filename):
     """Check data from a file
 
-
     Args:
-        arg1 (str): Relative path to your data file
+        filename (str): Relative path to your data file
+
+    Returns:
+        None
     """
 
 
@@ -78,6 +80,18 @@ def file(filename):
 
 
 def raw(freq, mag, phase):
+    """Check raw data
+
+    Args:
+        freq (array or array-like): Monotonically increasing frequency (GHz)
+        mag (array or array-like): Magnitude of S21 (dB) log mag
+        phase (array or array-like): Phase of S21 (radians)
+
+    Returns:
+        None if no changes made
+        (freq, mag, phase) tuple if changes from raw are made
+    """
+
     parse(freq, mag, phase)
 
 
