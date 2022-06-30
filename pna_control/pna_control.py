@@ -99,7 +99,9 @@ def get_data(centerf: float,
             ifband: float = 5, 
             points: int = 201, 
             outputfile: str = "results.csv",
-            instr_addr : str = 'GPIB::16::INSTR',
+            # instr_addr : str = 'GPIB::16::INSTR',
+            # instr_addr : str = 'TCPIP0::69.254.35.52::islip0::INSTR1',
+            instr_addr : str = 'TCPIP0::K-N5222B-21927::hislip0,4880::INSTR',
             sparam : str = 'S12'):
     '''
     function to get data and put it into a user specified file
@@ -159,8 +161,9 @@ def power_sweep(startpower: float,
                 ifband: float = 5, 
                 points: int = 201, 
                 outputfile: str = "results.csv",
-                meastype: str = None,
-                sparam : str = 'S12'):
+                meastype: str = 'powersweep',
+                sparam : str = 'S12',
+                adaptive_averaging : bool = True):
     '''
     run a power sweep for specified power range with a certain number of sweeps
     '''
@@ -171,7 +174,7 @@ def power_sweep(startpower: float,
     print(f'Measuring {sparam} ...')
 
     #create a new directory for the output to be put into
-    directory_name = timestamp_folder(os.getcwd(),meastype)
+    directory_name = timestamp_folder(os.getcwd(), meastype)
     os.mkdir(directory_name)
     outputfile = directory_name + '/' + outputfile
 
@@ -192,9 +195,10 @@ def power_sweep(startpower: float,
     #run each sweep
     for i in sweeps:
         print(f'{i} dBm, {averages//1} averages ...')
-        getdata(centerf, span, temp, averages, i, edelay, ifband, points,
+        get_data(centerf, span, temp, averages, i, edelay, ifband, points,
                 outputfile, sparam=sparam)
-        averages = averages * ((10**(stepsize/10))**0.5)
+        if adaptive_averaging: 
+            averages = averages * ((10**(stepsize/10))**0.5)
     print('Power sweep completed.')
 
 
