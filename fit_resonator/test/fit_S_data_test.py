@@ -68,4 +68,8 @@ def test_extract_near_res():
         f_res = 3.55
         fsd.extract_near_res(freqs, amps, f_res, kappa)
 
+def test_data_input():
+    filepath = 'PATH TO DATA'
+    data = fsd.VNASweep.from_file(filepath)
+    None
 
