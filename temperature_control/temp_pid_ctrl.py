@@ -57,8 +57,9 @@ class JanisCtrl(object):
 
         # Set as True to start the PID controller, then set to False to allow
         # for updates to the PID values from the previous temperature set point
-        self.is_pid_init = True
-        self.pid_values  = None
+        self.is_pid_init  = True
+        self.pid_values   = None
+        self.bypass_janis = False
 
         # Default thermalization time
         self.therm_time  = 300. # Wait extra 5 minutes to thermalize [s]
@@ -80,9 +81,12 @@ class JanisCtrl(object):
             setattr(self, k, v)
 
         # Create socket connection to the Janus Gas Handling System
-        if self.init_socket:
+        print(f'self.bypass_janis: {self.bypass_janis}')
+        if self.init_socket and (not self.bypass_janis):
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((self.TCP_IP, self.TCP_PORT))
+        elif self.bypass_janis:
+            self.socket = None
         else:
             self.socket = None
 
@@ -494,13 +498,15 @@ class JanisCtrl(object):
         fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}\n')
     
 
-    def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP'):
+    def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP',
+                    adaptive_averaging=True):
         """
         Performs a PNA measurement
         """
         # Get the temperature from the temperature controller
         temp = Tset * 1e3 #mk
         sampleid = f'{prefix}_{self.dstr}' 
+        pstr = f'{prefix}_{int(self.vna_startpower)}_{int(self.vna_endpower)}dBm'
 
         # Preparing to measure frequencies, powers
         powers = np.linspace(self.vna_startpower, self.vna_endpower,
@@ -516,10 +522,12 @@ class JanisCtrl(object):
         # four characters and removes them when manipulating strings and
         # directories
         outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz.csv'
-        PNA.powersweep(self.vna_startpower, self.vna_endpower,
+        PNA.power_sweep(self.vna_startpower, self.vna_endpower,
                 self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
                 self.vna_averages, self.vna_edelay, self.vna_ifband,
-                self.vna_points, outputfile, sparam=self.sparam)
+                self.vna_points, outputfile, sparam=self.sparam, 
+                meastype=pstr,
+                adaptive_averaging=adaptive_averaging)
 
         out[idx] = 0
 
@@ -738,92 +746,25 @@ if __name__ == '__main__':
     Jctrl = JanisCtrl(Tstart, Tstop, dT,
             sample_time=sample_time, T_eps=T_eps,
             therm_time=therm_time,
-            init_socket=True)
+            # init_socket=True, bypass_janis=True)
+            init_socket=True, bypass_janis=False)
 
-    # Setup for the VNA controller
-    Jctrl.sparam = 'S12'
-    Jctrl.vna_edelay = 76.983 #ns
-    Jctrl.vna_ifband = 1.0 # kHz
-    # 1SP InP
-    # Jctrl.vna_centerf = 7.58967
-    # 2SP InP
-    # Jctrl.vna_centerf = 8.01385
-    # # Mines 3D #1, bare
-    # Jctrl.vna_centerf = 9.23069
-    # Jctrl.vna_span = 0.75 # MHz
-    # Jctrl.vna_edelay = 77.62 #ns
-    # Mines 3D #2, bare
-    Jctrl.vna_centerf = 4.22383
-    Jctrl.vna_span = 0.2 # MHz
-    Jctrl.vna_edelay = 60.93 #ns
-    # # NYU 2D Al on InP
-    # Jctrl.vna_edelay = 76.635 #ns
-    # Jctrl.vna_centerf = 7.7182
-    # Jctrl.vna_span = 15 # MHz
+    # Mines 3D #3, bare
+    Jctrl.vna_centerf = 8.0214305
+    Jctrl.vna_span = 0.5 # MHz
+    Jctrl.vna_edelay = 0.969 #ns
+
     Jctrl.vna_points = 1001
 
     # Temperature sweep settings
     Jctrl.sparam = 'S12'
 
     # First sweep, int power
-    Jctrl.vna_averages = 10000
-    Jctrl.vna_ifband = 1.0 #khz
-    Jctrl.vna_numsweeps = 2 
-    Jctrl.vna_startpower = -95
-    Jctrl.vna_endpower = -95
-
-    # Second sweep, intermediate power
-    # Jctrl.vna_averages = 3
-    # Jctrl.vna_ifband = 10 #khz
-    # Jctrl.vna_numsweeps = 3
-    # Jctrl.vna_startpower = -5
-    # Jctrl.vna_endpower = -15
-    # Jctrl.vna_centerf = 4.224
-    # Jctrl.vna_span = 1000. # MHz
-    # Jctrl.vna_points = 32001
-
-    # # Third sweep, low power
-    # Jctrl.vna_averages = 1000
-    # Jctrl.vna_ifband = 0.05 #khz
-    # Jctrl.vna_numsweeps = 4
-    # Jctrl.vna_startpower = -80
-    # Jctrl.vna_endpower = -95
-
-    # # Fast test sweep, low power
-    # Jctrl.vna_averages = 3
-    # Jctrl.vna_ifband = 1 #khz
-    # Jctrl.vna_numsweeps = 2 
-    # Jctrl.vna_startpower = -30
-    # Jctrl.vna_endpower = -35
-
-    # # High power sweep
-    # Jctrl.vna_averages = 10
-    # Jctrl.vna_ifband = 1.0 #khz
-    # Jctrl.vna_numsweeps = 7
-    # Jctrl.vna_startpower = -35
-    # Jctrl.vna_endpower = -5
-
-    # # Intermediate power sweep #2
-    # Jctrl.vna_averages = 100
-    # Jctrl.vna_ifband = 1.0 #khz
-    # Jctrl.vna_numsweeps = 8
-    # Jctrl.vna_startpower = -50
-    # Jctrl.vna_endpower = -85
-
-    # # Low power sweep #1
-    # Jctrl.vna_averages = 1500
-    # Jctrl.vna_ifband = 0.150 #khz
-    # Jctrl.vna_numsweeps = 2
-    # Jctrl.vna_startpower = -90
-    # Jctrl.vna_endpower = -95
-
-    # # Low power sweep
-    # Jctrl.vna_edelay = 78.056
-    # Jctrl.vna_averages = 2000 
-    # Jctrl.vna_ifband = 0.1 #khz
-    # Jctrl.vna_numsweeps = 2 
-    # Jctrl.vna_startpower = -90
-    # Jctrl.vna_endpower = -95
+    Jctrl.vna_averages = 300
+    Jctrl.vna_ifband = 0.5 #khz
+    Jctrl.vna_numsweeps = 3
+    Jctrl.vna_startpower = -70
+    Jctrl.vna_endpower = -80
 
     Jctrl.print_class_members()
 
@@ -837,25 +778,11 @@ if __name__ == '__main__':
     Jctrl.read_pressure('all')
 
     # Mines 3D cavity 9.2 GHz with, without InP
-    # sample_name = 'M3D6_02_WITH_2SP_INP'
-    # sample_name = 'M3D6_02_BARE'
+    sample_name = 'M3D6_02_WITH_2SP_INP'
+    out = {}
+    Jctrl.pna_process('meas', T, out, prefix=sample_name,
+                    adaptive_averaging=True)
 
-    # # Mines 3D cavity 7.6 GHz with, without InP
-    sample_name = 'M3D6_03_BARE'
-    # # NYU 2D resonator, Al on InP
-    # sample_name = 'NYU2D_AL_INP'
-
-    # # Rigetti Reference Wafer 1, Die 1
-    sample_name = 'RGREF01_01'
-    # out = {}
-    # Jctrl.pna_process('meas', T, out, prefix=sample_name)
-
-    # Rigetti Reference Wafer 1, Die 1 -- all resonators
-    # multiple_resonator_driver(Jctrl)
-
-    # sample_name = 'M3D6_02_WITH_2SP_INP'
-    # sample_name = 'M3D6_02_BARE'
-    # sample_name = 'M3D6_03_BARE'
     # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'
     # Jctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
