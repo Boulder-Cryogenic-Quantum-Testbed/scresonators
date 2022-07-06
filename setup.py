@@ -29,14 +29,14 @@ setup(
     # There are some restrictions on what makes a valid project name
     # specification here:
     # https://packaging.python.org/specifications/core-metadata/#name
-    name="scresonatorsTEST",  # Required
+    name="scresonators-fit",  # Required
     # Versions should comply with PEP 440:
     # https://www.python.org/dev/peps/pep-0440/
     #
     # For a discussion on single-sourcing the version across setup.py and the
     # project code, see
     # https://packaging.python.org/guides/single-sourcing-package-version/
-    version="2.0.0",  # Required
+    version="0.5.0",  # Required
     # This is a one-line description or tagline of what your project does. This
     # corresponds to the "Summary" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#summary
@@ -65,7 +65,7 @@ setup(
     #
     # This field corresponds to the "Home-Page" metadata field:
     # https://packaging.python.org/specifications/core-metadata/#home-page-optional
-    url="https://github.com/nickkprice/scresonators",  # Optional
+    url="https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators",  # Optional
     # This should be your name or the name of the organization which owns the
     # project.
     author="Placeholder",  # Optional
@@ -102,7 +102,7 @@ setup(
     # Note that this is a list of additional keywords, separated
     # by commas, to be used to assist searching for the distribution in a
     # larger catalog.
-    keywords="sample, setuptools, development",  # Optional
+    keywords="scresonators, superconducting resonators, resonator fit",  # Optional
     # When your source code is in a subdirectory under the project root, e.g.
     # `src/`, it is necessary to specify the `package_dir` argument.
     #package_dir={"": "fit_resonator"},  # Optional
@@ -115,7 +115,7 @@ setup(
     #
     #   py_modules=["my_module"],
     #
-    packages=find_packages(include=["fit_resonator", "pna_control", "temperature_control"]),  # Required
+    packages=find_packages(include=["fit_resonator"]),  # Required
     # Specify which Python versions you support. In contrast to the
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. See
