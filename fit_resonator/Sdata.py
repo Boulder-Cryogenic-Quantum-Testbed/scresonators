@@ -991,7 +991,7 @@ class VNASweep(object):
             if isinstance(self.s_col, int):
                 data_rows[0] = self.s_col
                 data_rows[1] = self.c_col + 1
-            elif isinstance(self.s_col, (tuple,list, np.ndarray)):
+            elif isinstance(self.s_col, (tuple, list, np.ndarray)):
                 data_rows[0] = self.s_col[0]
                 data_rows[1] = self.s_col[1]
             elif isinstance(self.s_col, str):
@@ -1000,10 +1000,10 @@ class VNASweep(object):
                         measurements = metadata.rsplit('Measurements: ')[1].strip('.:\n').lower().split(', ')
                         idx = (measurements.index(self.s_col.lower()) * 2) + 1
                         data_rows[0] = idx
-                        data_rows[1] = idx+1
+                        data_rows[1] = idx + 1
                         break
             else:
-                print("Could not interpret which data columns to use")
+                print("Could not interpret which data columns to use, using default")
 
         freqs = np.array(float(row[0]))
         if data_format == "db":
@@ -1031,6 +1031,7 @@ class VNASweep(object):
                 linear_amps = np.append(linear_amps, float(row[data_rows[0]]))
                 phases = np.append(phases, float(row[data_rows[1]]))
                 line = file.readline().strip()
+
             phases = phases * np.pi / 180
             amps = np.log10(linear_amps) * 20
 
@@ -1488,7 +1489,7 @@ def min_fit(params, xdata, ydata, Method):
 def fit(filepath: str,
         Method,
         normalize: int,
-        measurement = None,
+        measurement=None,
         data_array: np.ndarray = None,
         background: str = None,
         background_array: np.ndarray = None,

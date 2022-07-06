@@ -70,12 +70,12 @@ def test_extract_near_res():
         fsd.extract_near_res(freqs, amps, f_res, kappa)
 
 def test_data_input():
-    filepath = ''
-    data = fsd.VNASweep.from_file(filepath, "S22")
+    filepath = 'C:/1work/Research/snp_examples/M3D6_WTH_2SP_INP_-35dBm_19mK_220706.s2p'
+    data = fsd.VNASweep.from_file(filepath, "S21")
     print(data)
 
 def test_data_fit():
-    filepath = ''
+    filepath = 'C:/1work/Research/snp_examples/M3D6_WTH_2SP_INP_-35dBm_19mK_220706.s2p'
     fit_type = 'DCM'
     MC_iteration = 10
     MC_rounds = 1e3
@@ -84,5 +84,5 @@ def test_data_fit():
     method = res.FitMethod(fit_type, MC_iteration, MC_rounds=MC_rounds, MC_fix=MC_fix, manual_init=manual_init, MC_step_const=0.3)
 
     # Fit the data:
-    fsd.fit(filepath, method, measurement="s21", normalize=10)
+    fsd.fit(filepath, method, measurement="s12", normalize=10)
 
