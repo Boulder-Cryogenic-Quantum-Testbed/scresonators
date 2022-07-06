@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import fit_resonator.functions as ff
 
 
-class Resonator: # object is defined in init below
+class Resonator:  # object is defined in init below
     """
     Object for representing a resonator fit.
 

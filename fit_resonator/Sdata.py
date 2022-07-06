@@ -591,12 +591,12 @@ def PlotFit(x,
     # plot resonance
     if func == ff.cavity_inverse:
         resonance = (1 + params[0] / params[1] * np.exp(1j * params[3]) / (
-                    1 + 1j * 2 * params[0] * (params[2] - params[2]) / params[2]))
+                1 + 1j * 2 * params[0] * (params[2] - params[2]) / params[2]))
     elif func == ff.cavity_DCM:
         resonance = 1 - params[0] / params[1] * np.exp(1j * params[3])
     elif func == ff.cavity_DCM_REFLECTION:
         resonance = (1 - 2 * params[0] / params[1] * np.exp(1j * params[3]) / (
-                    1 + 1j * (params[2] - params[2]) / params[2] * 2 * params[0]))
+                1 + 1j * (params[2] - params[2]) / params[2] * 2 * params[0]))
     elif func == ff.cavity_CPZM:
         resonance = 1 / (1 + params[1] + 1j * params[3])
     else:
@@ -662,12 +662,12 @@ def PlotFit(x,
                     Qi = params[0]
                 if conf_array[1] > 10 ** -10 and conf_array[1] != float('inf'):
                     Qc = (params[0] * params[1] ** -1) - (params[0] * params[1] ** -1) % (
-                                10 ** int(np.log10(conf_array[1]) - 1))
+                            10 ** int(np.log10(conf_array[1]) - 1))
                 else:
                     Qc = (params[0] * params[1] ** -1)
                 if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
                     Qa = (params[0] * params[3] ** -1) - (params[0] * params[3] ** -1) % (
-                                10 ** int(np.log10(conf_array[2]) - 1))
+                            10 ** int(np.log10(conf_array[2]) - 1))
                 else:
                     Qa = (params[0] * params[3] ** -1)
                 if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
@@ -707,8 +707,8 @@ def PlotFit(x,
                         Qc = params[1]
                     if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
                         Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) - (
-                                    1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) % (
-                                            10 ** int(np.log10(conf_array[3]) - 1))
+                                1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) % (
+                                        10 ** int(np.log10(conf_array[3]) - 1))
                     else:
                         Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3]))))
                     if conf_array[4] > 10 ** -10 and conf_array[4] != float('inf'):
@@ -747,8 +747,8 @@ def PlotFit(x,
                         Qc = params[1]
                     if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
                         Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) - (
-                                    1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) % (
-                                            10 ** int(np.log10(conf_array[3]) - 1))
+                                1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) % (
+                                        10 ** int(np.log10(conf_array[3]) - 1))
                     else:
                         Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3]))))
                     if conf_array[4] > 10 ** -10 and conf_array[4] != float('inf'):
@@ -894,172 +894,176 @@ def monte_carlo_fit(xdata=None, ydata=None, parameter=None, Method=None):
     return parameter, stop_MC, error
 
 
-def get_header(line: str):
-    if (line.strip()[0:1] != '#'):
-        print("Header not found in file.")
-        quit()
-    line = line[2:]
-    if line[0:2].lower() == 'hz':
-        frequency_units = line[0:2].lower()
-        line = line[3:]
-    elif line[0:3].lower() == 'khz':
-        frequency_units = line[0:3].lower()
-        line = line[4:]
-    elif line[0:3].lower() == 'mhz':
-        frequency_units = line[0:3].lower()
-        line = line[4:]
-    elif line[0:3].lower() == 'ghz':
-        frequency_units = line[0:3].lower()
-        line = line[4:]
-    else:
-        print('Frequency units not found')
-        quit()
-    if line[0:1].lower() != 's':
-        print('Data is not an S parameter measurement')
-        quit()
-    line = line[2:]
-
-    if line[0:2].lower() == 'db':
-        data_format = line[0:2].lower()
-        line = line[3:]
-    elif line[0:2].lower() == 'ma':
-        data_format = line[0:2].lower()
-        line = line[3:]
-    elif line[0:2].lower() == 'ri':
-        data_format = line[0:2].lower()
-        line = line[3:]
-    else:
-        print('Data format not found')
-        quit()
-    return frequency_units, data_format
-
-
 @attr.s
-class VNASweep:
+class VNASweep(object):
     """A container to hold data from a vna frequency sweep."""
+
     freqs = attr.ib(type=np.ndarray)
     amps = attr.ib(type=np.ndarray)
     phases = attr.ib(type=np.ndarray)
     linear_amps = attr.ib(type=np.ndarray)
+    s_col = None
 
     @classmethod
-    def from_file(cls, file, fscale=1e9):
-        if file[-1:] == 'p' and file[-4:-2] == '.s':
-            """Load data from .snp file."""
+    def from_file(cls, filepath, data_column=None, fscale=1e9):
+        if data_column is not None:
+            cls.s_col = data_column
+        filename, extension = os.path.splitext(filepath)
+        if extension.startswith('.s') and extension.endswith('p'):
             try:
-                snp = open(file, 'r')
-            except:
-                print("User data file not found.")
-                quit()
-
-            """Read in header for file"""
-            line = snp.readline()
-            while line:
-                if (line.strip()[0:1] == '#'):
-                    break
-                line = snp.readline()
-            frequency_units, data_format = get_header(line)
-
-            """Read in data segment"""
-            line = snp.readline().strip()
-            while line:
-                if line[0:1] == '!':
-                    line = snp.readline().strip()
-                    continue
-                else:
-                    break
-
-            row = line.split()
-            if row == []:
-                print("Data not found in file.")
-                quit()
-
-            if data_format == "db":
-                freqs = np.array(float(row[0]))
-                amps = np.array(float(row[1]))
-                phases = np.array(float(row[2]))
-                line = snp.readline().strip()
-
-                while line:
-                    if row[0:1] == '!':
-                        line = snp.readline().strip()
-                        continue
-
-                    row = line.split()
-                    freqs = np.append(freqs, float(row[0]))
-                    amps = np.append(amps, float(row[1]))
-                    phases = np.append(phases, float(row[2]))
-                    line = snp.readline().strip()
-                phases = phases * np.pi / 180
-                linear_amps = 10 ** (amps / 20)
-
-            elif data_format == "ma":
-                freqs = np.array(float(row[0]))
-                linear_amps = np.array(float(row[1]))
-                phases = np.array(float(row[2]))
-                line = snp.readline().strip()
-
-                while line:
-                    if row[0:1] == '!':
-                        line = snp.readline().strip()
-                        continue
-
-                    row = line.split()
-                    freqs = np.append(freqs, float(row[0]))
-                    linear_amps = np.append(linear_amps, float(row[1]))
-                    phases = np.append(phases, float(row[2]))
-                    line = snp.readline().strip()
-                phases = phases * np.pi / 180
-                amps = np.log10(linear_amps) * 20
-
-            elif data_format == "ri":
-                freqs = np.array(float(row[0]))
-                real = np.array(float(row[1]))
-                imaginary = np.array(float(row[2]))
-                line = snp.readline().strip()
-
-                while line:
-                    if row[0:1] == '!':
-                        line = snp.readline().strip()
-                        continue
-
-                    row = line.split()
-                    freqs = np.append(freqs, float(row[0]))
-                    real = np.append(real, float(row[1]))
-                    imaginary = np.append(imaginary, float(row[2]))
-                    line = snp.readline().strip()
-                linear_amps = np.absolute(real + imaginary)
-                phases = np.angle(real + 1j * imaginary, deg=True)
-                amps = np.log10(linear_amps) * 20
-
-            else:
-                print("Data type in file not supported. Please use DB, MA, or RI.")
-                quit()
-
-            if frequency_units == "hz":
-                freqs = freqs / 10 ** 9
-            elif frequency_units == "khz":
-                freqs = freqs / 10 ** 6
-            elif frequency_units == "mhz":
-                freqs = freqs / 10 ** 3
-            elif frequency_units != "ghz":
-                print(
-                    "Units for the frequency not found. Please include units for frequency in the header of the file.")
+                snp_file = open(filepath, 'r')
+            except OSError as e:
+                print(f'ERROR {e} when opening file')
+                print(f'Data file: {filepath} could not be found/read')
+            file, inline, options, frequency_units, data_format = cls.header_parse(cls, file=snp_file)
+            freqs, amps, phases, linear_amps = cls.data_parse(cls, inline, frequency_units, data_format, file, options)
             return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
-
-        else:
-            """Load data from other type of file."""
+        elif 'txt' in extension or 'csv' in extension:
             try:
-                data = np.loadtxt(file, delimiter=',')
-            except Exception as ex:
-                print(f'Exception:\n{ex}')
-                print("User data file not found.")
-                quit()
-            freqs = data.T[0] / fscale  # 10**9
+                txt_file = open(filepath, 'r')
+                file, line, options, frequency_units, data_format = cls.header_parse(cls, file=txt_file)
+                data_lines = []
+                while line:
+                    if 'END' in line:
+                        break
+                    data_lines.append(line)
+                    line = file.readline().strip()
+                data = np.loadtxt(data_lines, delimiter=',')
+            except Exception as e:
+                print(f'Exception: **{e}** encountered when attempting to load data file as .txt/.csv')
+                print(f'Are you using a comma as your delimiter?')
+            freqs = data.T[0] / fscale
             amps = data.T[1]
             phases = data.T[2] * np.pi / 180
             linear_amps = 10 ** (amps / 20)
             return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
+
+    def header_parse(self, file):
+        data_format = None
+        frequency_units = None
+        comment_line = ['!']
+        option_line = ['#']
+        metadata = ['s21', 's11', 's12', 's22']
+        dformats = ['db', 'ma', 'ri']
+        nums = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.']
+
+        options = []
+        inline = file.readline()
+        while any(comment in inline.lower() for comment in comment_line) \
+                or any(option_lead in inline for option_lead in option_line) \
+                or not any(number in inline.lower()[0] for number in nums):
+            if any(option_lead in inline.lower() for option_lead in option_line) \
+                    or any(dformat in inline.lower() for dformat in dformats) \
+                    or any(measure in inline.lower() for measure in metadata):
+                options.append(inline)
+
+            inline = file.readline()
+
+        for val in options:
+            if 'db' in val.lower():
+                data_format = 'db'
+            elif 'ma' in val.lower():
+                data_format = 'ma'
+            elif 'ri' in val.lower():
+                data_format = 'ri'
+
+            if 'hz' in val.lower():
+                frequency_units = 'hz'
+            elif 'khz' in val.lower():
+                frequency_units = 'khz'
+            elif 'mhz' in val.lower():
+                frequency_units = 'mhz'
+            elif 'ghz' in val.lower():
+                frequency_units = 'ghz'
+
+        return file, inline, options, frequency_units, data_format
+
+    def data_parse(self, line, frequency_units, data_format, file, options):
+        row = line.split()
+        data_rows = [1, 2]
+        if len(row) == 0:
+            print("Data not found in file.")
+            quit()
+
+        if len(row) > 3:
+            # If too many rows, use info from header to pull correct column
+            # s_col has potential focus column
+            if isinstance(self.s_col, int):
+                data_rows[0] = self.s_col
+                data_rows[1] = self.c_col + 1
+            elif isinstance(self.s_col, (tuple, list, np.ndarray)):
+                data_rows[0] = self.s_col[0]
+                data_rows[1] = self.s_col[1]
+            elif isinstance(self.s_col, str):
+                for metadata in options:
+                    if 'Measurements: ' in metadata:
+                        measurements = metadata.rsplit('Measurements: ')[1].strip('.:\n').lower().split(', ')
+                        idx = (measurements.index(self.s_col.lower()) * 2) + 1
+                        data_rows[0] = idx
+                        data_rows[1] = idx + 1
+                        break
+            else:
+                print("Could not interpret which data columns to use, using default")
+
+        freqs = np.array(float(row[0]))
+        if data_format == "db":
+            amps = np.array(float(row[data_rows[0]]))
+            phases = np.array(float(row[data_rows[1]]))
+            line = file.readline().strip()
+
+            while line:
+                row = line.split()
+                freqs = np.append(freqs, float(row[0]))
+                amps = np.append(amps, float(row[data_rows[0]]))
+                phases = np.append(phases, float(row[data_rows[1]]))
+                line = file.readline().strip()
+            phases = phases * np.pi / 180
+            linear_amps = 10 ** (amps / 20)
+
+        elif data_format == "ma":
+            linear_amps = np.array(float(row[data_rows[0]]))
+            phases = np.array(float(row[data_rows[1]]))
+            line = file.readline().strip()
+
+            while line:
+                row = line.split()
+                freqs = np.append(freqs, float(row[0]))
+                linear_amps = np.append(linear_amps, float(row[data_rows[0]]))
+                phases = np.append(phases, float(row[data_rows[1]]))
+                line = file.readline().strip()
+
+            phases = phases * np.pi / 180
+            amps = np.log10(linear_amps) * 20
+
+        elif data_format == "ri":
+            real = np.array(float(row[data_rows[0]]))
+            imaginary = np.array(float(row[data_rows[1]]))
+            line = file.readline().strip()
+
+            while line:
+                row = line.split()
+                freqs = np.append(freqs, float(row[0]))
+                real = np.append(real, float(row[data_rows[0]]))
+                imaginary = np.append(imaginary, float(row[data_rows[1]]))
+                line = file.readline().strip()
+            linear_amps = np.absolute(real + imaginary)
+            phases = np.angle(real + 1j * imaginary, deg=True)
+            amps = np.log10(linear_amps) * 20
+
+        else:
+            print("Data type in file not supported. Please use DB, MA, or RI.")
+            quit()
+
+        if frequency_units == "hz":
+            freqs = freqs / 10 ** 9
+        elif frequency_units == "khz":
+            freqs = freqs / 10 ** 6
+        elif frequency_units == "mhz":
+            freqs = freqs / 10 ** 3
+        elif frequency_units != "ghz":
+            print(
+                "Units for the frequency not found. Please include units for frequency in the header of the file.")
+        return freqs, amps, phases, linear_amps
 
     @classmethod
     def from_columns(cls, freqs, amps, phases):
@@ -1482,10 +1486,10 @@ def min_fit(params, xdata, ydata, Method):
     return fit_params, conf_array
 
 
-def fit(filename: str,
+def fit(filepath: str,
         Method,
         normalize: int,
-        dir: str = None,
+        measurement=None,
         data_array: np.ndarray = None,
         background: str = None,
         background_array: np.ndarray = None,
@@ -1513,9 +1517,15 @@ def fit(filename: str,
     """
 
     # read in data from file
-    if dir is not None:
-        filepath = dir + '/' + filename
-        data = VNASweep.from_file(filepath, fscale=fscale)
+    if filepath is not None:
+        os_path = os.path.split(filepath)
+        dir = os_path[0]
+        filename = os_path[1]
+        if measurement is None:
+            data = VNASweep.from_file(filepath, fscale=fscale)
+        data = VNASweep.from_file(filepath, measurement, fscale=fscale)
+    elif type(data_array) is VNASweep:
+        data = data_array
     elif data_array.any():
         data = VNASweep.from_columns(freqs=data_array.T[0], amps=data_array.T[1], phases=data_array.T[2])
     else:
