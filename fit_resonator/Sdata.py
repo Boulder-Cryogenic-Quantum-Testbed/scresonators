@@ -1521,6 +1521,9 @@ def fit(filepath: str,
         os_path = os.path.split(filepath)
         dir = os_path[0]
         filename = os_path[1]
+        if dir == '':
+            dir = ROOT_DIR
+    if data_array is None:
         if measurement is None:
             data = VNASweep.from_file(filepath, fscale=fscale)
         data = VNASweep.from_file(filepath, measurement, fscale=fscale)
