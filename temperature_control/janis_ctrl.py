@@ -535,7 +535,7 @@ class JanisCtrl(object):
     
 
     def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP',
-                    adaptive_averaging=True):
+                    adaptive_averaging=True, cal_set=None, setup_only=False):
         """
         Performs a PNA measurement
         """
@@ -563,7 +563,9 @@ class JanisCtrl(object):
                 self.vna_averages, self.vna_edelay, self.vna_ifband,
                 self.vna_points, outputfile, sparam=self.sparam, 
                 meastype=pstr,
-                adaptive_averaging=adaptive_averaging)
+                adaptive_averaging=adaptive_averaging,
+                cal_set=cal_set,
+                setup_only=setup_only)
 
         out[idx] = 0
 
@@ -795,6 +797,7 @@ if __name__ == '__main__':
 
     # Temperature sweep settings
     Jctrl.sparam = 'S12'
+    cal_set = 'CryoCal_2SP_INP_8p02G_20220712'
 
     # First sweep, int power
     Jctrl.vna_averages = 5000
@@ -820,7 +823,8 @@ if __name__ == '__main__':
     sample_name = 'M3D6_02_WITH_2SP_INP'
     out = {}
     Jctrl.pna_process('meas', T, out, prefix=sample_name,
-                    adaptive_averaging=True)
+                    adaptive_averaging=True,
+                    cal_set=cal_set)
 
     # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'

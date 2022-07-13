@@ -25,28 +25,57 @@ def pna_setup(pna,
               power: float,
               edelay: float,
               averages: int,
-              sparam : str = 'S12'):
+              sparam : str = 'S12', 
+              cal_set : str = None):
     '''
     set parameters for the PNA for the sweep (number of points, center
     frequency, span of frequencies, IF bandwidth, power, electrical delay and
     number of averages)
+
+    XXX: Do not change this order:
+
+    1.  Define a measurement
+    2.  Turn on display
+    3.  Set the number of points
+    4.  Set the center frequency, span
+    5.  Turn on sweep time AUTO
+    6.  Set the electrical delay
+    7.  Turn on interpolation
+    8.  Set the calibration
+    9.  Set the power
+    10. Turn on averaging
+    11. Set the IF bandwidth
+
     '''
 
     #initial setup for measurement
-    if (pna.query('CALC:PAR:CAT:EXT?') != f'"Meas,{sparam}"\n'):
-        pna.write(f'CALCulate1:PARameter:DEFine:EXT \'Meas\',{sparam}')
-        pna.write('DISPlay:WINDow1:STATE ON')
-        pna.write('DISPlay:WINDow1:TRACe1:FEED \'Meas\'')
-        pna.write('DISPlay:WINDow1:TRACe2:FEED \'Meas\'')
+    if (pna.query('CALC:PAR:CAT:EXT?') == f'"Meas,{sparam}"\n'):
+        pna.write(f'CALCulate1:PARameter:DELete:EXT \'Meas\',{sparam}')
+    pna.write(f'CALCulate1:PARameter:DEFine:EXT \'Meas\',{sparam}')
+    # pna.write(f'CALCulate1:MEASure:PARameter {sparam}')
+
     #set parameters for sweep
+    pna.write('DISPlay:WINDow1:STATE ON')
+    # pna.write('DISPlay:WINDow1:TRACe1:FEED \'Meas\'')
+    # pna.write('DISPlay:WINDow1:TRACe2:FEED \'Meas\'')
+
     pna.write(f'SENSe1:SWEep:POINts {points}')
     pna.write(f'SENSe1:FREQuency:CENTer {centerf}GHZ')
     pna.write(f'SENSe1:FREQuency:SPAN {span}MHZ')
-    pna.write(f'SENSe1:BANDwidth {ifband}KHZ')
+
     pna.write(f'SENSe1:SWEep:TIME:AUTO ON')
-    pna.write(f'SOUR:POW1 {power}')
     pna.write(f'CALCulate1:CORRection:EDELay:TIME {edelay}NS')
+
+    if cal_set:
+        pna.write(f'CALCulate1:CORRection:TYPE \'Full 2 Port(1,2)\'')
+        pna.write('SENSe1:CORRection:INTerpolate:state ON')
+        cal_cmd = f'SENS:CORR:CSET:ACT \'{cal_set}\',1'
+        print(f'cal_cmd: {cal_cmd}')
+        pna.write(cal_cmd)
+
+    pna.write(f'SOUR:POW1 {power}')
     pna.write('SENSe1:AVERage:STATe ON')
+    pna.write(f'SENSe1:BANDwidth {ifband}KHZ')
 
     #ensure at least 10 averages are taken
     #if(averages < 10):
@@ -102,7 +131,9 @@ def get_data(centerf: float,
             # instr_addr : str = 'GPIB::16::INSTR',
             # instr_addr : str = 'TCPIP0::69.254.35.52::islip0::INSTR1',
             instr_addr : str = 'TCPIP0::K-N5222B-21927::hislip0,4880::INSTR',
-            sparam : str = 'S12'):
+            sparam : str = 'S12',
+            cal_set : str = None,
+            setup_only : bool = False):
     '''
     function to get data and put it into a user specified file
     '''
@@ -110,6 +141,7 @@ def get_data(centerf: float,
     #set up the PNA to measure s21 for the specific instrument GPIB0::16::INSTR
     rm = pyvisa.ResourceManager()
     GPIB_addr = 'GPIB0::16::INSTR'
+
 
     # handle failure to open the GPIB resource #this is an issue when connecting
     # to the PNA-X from newyork rather than ontario
@@ -123,7 +155,10 @@ def get_data(centerf: float,
         # keysight = rm.open_resource(instr_addr)
 
     pna_setup(keysight, points, centerf, span, ifband, power, edelay, averages,
-              sparam=sparam)
+              sparam=sparam, cal_set=cal_set)
+
+    if setup_only:
+        return
 
     #start taking data for S21
     keysight.write('INITiate:CONTinuous ON')
@@ -163,7 +198,9 @@ def power_sweep(startpower: float,
                 outputfile: str = "results.csv",
                 meastype: str = 'powersweep',
                 sparam : str = 'S12',
-                adaptive_averaging : bool = True):
+                adaptive_averaging : bool = True,
+                cal_set : str = None,
+                setup_only : bool = False):
     '''
     run a power sweep for specified power range with a certain number of sweeps
     '''
@@ -180,23 +217,24 @@ def power_sweep(startpower: float,
 
     #write an output file with conditions
     file = open(directory_name+'/'+'conditions.csv',"w")
-    file.write('STARTPOWER: '+str(startpower)+' dB\n')
-    file.write('ENDPOWER: '+str(endpower)+' dB\n')
-    file.write('NUMSWEEPS: '+str(numsweeps)+'\n')
-    file.write('CENTERF: '+str(centerf)+' GHz\n')
-    file.write('SPAN: '+str(span)+' MHz\n')
-    file.write('TEMP: '+f'{temp:.3f}'+' mK\n')
-    file.write('STARTING AVERAGES: '+str(averages)+'\n')
-    file.write('EDELAY: '+str(edelay)+' ns\n')
-    file.write('IFBAND: '+str(ifband)+' kHz\n')
-    file.write('POINTS: '+str(points)+'\n')
-    file.close()
+    if not setup_only:
+        file.write('STARTPOWER: '+str(startpower)+' dB\n')
+        file.write('ENDPOWER: '+str(endpower)+' dB\n')
+        file.write('NUMSWEEPS: '+str(numsweeps)+'\n')
+        file.write('CENTERF: '+str(centerf)+' GHz\n')
+        file.write('SPAN: '+str(span)+' MHz\n')
+        file.write('TEMP: '+f'{temp:.3f}'+' mK\n')
+        file.write('STARTING AVERAGES: '+str(averages)+'\n')
+        file.write('EDELAY: '+str(edelay)+' ns\n')
+        file.write('IFBAND: '+str(ifband)+' kHz\n')
+        file.write('POINTS: '+str(points)+'\n')
+        file.close()
 
     #run each sweep
     for i in sweeps:
         print(f'{i} dBm, {averages//1} averages ...')
         get_data(centerf, span, temp, averages, i, edelay, ifband, points,
-                outputfile, sparam=sparam)
+                outputfile, sparam=sparam, cal_set=cal_set, setup_only=setup_only)
         if adaptive_averaging: 
             averages = averages * ((10**(stepsize/10))**0.5)
     print('Power sweep completed.')

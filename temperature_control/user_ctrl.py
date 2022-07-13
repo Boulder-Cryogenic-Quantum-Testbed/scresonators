@@ -31,22 +31,25 @@ Jctrl = JanisCtrl(Tstart, Tstop, dT,
 Change these settings for each power sweep
 """
 # Set the PNA inputs for the power sweep
-Jctrl.vna_centerf = 6.23698 # GHz
-Jctrl.vna_centerf = 8.02143 # GHz
+# Jctrl.vna_centerf = 6.23698 # GHz
+Jctrl.vna_centerf = 8.0214305 # GHz
 Jctrl.vna_span = 0.5 # MHz
-Jctrl.vna_edelay = 0.923 #ns
+Jctrl.vna_edelay = 0.9773 #ns
 Jctrl.vna_points = 1001
 Jctrl.sparam = 'S12'
-Jctrl.vna_ifband = 0.1 #khz
-Jctrl.vna_startpower = -88 # dBm
-Jctrl.vna_endpower = -89 # dBm
-Jctrl.vna_numsweeps = 2
-time_per_sweep = 10.
+Jctrl.vna_ifband = 1 #khz
+Jctrl.vna_startpower = -25 # dBm
+Jctrl.vna_endpower = -75 # dBm
+Jctrl.vna_numsweeps = 11 
+# Jctrl.vna_startpower = -89 # dBm
+# Jctrl.vna_endpower = -89 # dBm
+# Jctrl.vna_numsweeps = 2
+time_per_sweep = Jctrl.vna_points / (1e3 * Jctrl.vna_ifband)
 powers = np.linspace(Jctrl.vna_startpower,
                     Jctrl.vna_endpower,
                     Jctrl.vna_numsweeps)
 print(f'powers: {powers}')
-total_time_hr = 24.
+total_time_hr = 6.
 Navg_adaptive = Jctrl.estimate_init_adaptive_averages(
                     time_per_sweep, 
                     powers,
@@ -54,8 +57,11 @@ Navg_adaptive = Jctrl.estimate_init_adaptive_averages(
 print(f'Number of averages: {Navg_adaptive}')
 # Jctrl.vna_averages = 1000
 Jctrl.vna_averages = Navg_adaptive
+
 # sample_name = 'RGSI002_A1g7_6p23698_GHz'
-sample_name = 'M3D6_02_WITH_2SP_INP'
+sample_name = 'M3D6_02_WITH_2SP_INP_CRYOCAL'
+cal_set = 'CryoCal_2SP_INP_8p02G_20220712'
+# cal_set = None
 
 # Print the JanisCtrl class members
 Jctrl.print_class_members()
@@ -81,10 +87,11 @@ Jctrl.read_pressure('all')
 ##       step in the power sweep -- ~1.7 for dp = 5 dBm
 out = {}
 Jctrl.pna_process('meas', T, out, prefix=sample_name,
-                adaptive_averaging=adaptive_averaging)
+                  adaptive_averaging=adaptive_averaging,
+                  cal_set=cal_set, setup_only=False)
 
 """
-Temperature sweep, comment out the pna_process above
+# Temperature sweep, comment out the pna_process above
 """
 # Jctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
 
