@@ -34,7 +34,7 @@ Change these settings for each power sweep
 # Jctrl.vna_centerf = 6.23698 # GHz
 Jctrl.vna_centerf = 8.0214305 # GHz
 Jctrl.vna_span = 0.5 # MHz
-Jctrl.vna_edelay = 0.9773 #ns
+Jctrl.vna_edelay = 1.027 #ns
 Jctrl.vna_points = 1001
 Jctrl.sparam = 'S12'
 Jctrl.vna_ifband = 1 #khz
@@ -59,8 +59,8 @@ print(f'Number of averages: {Navg_adaptive}')
 Jctrl.vna_averages = Navg_adaptive
 
 # sample_name = 'RGSI002_A1g7_6p23698_GHz'
+cal_set = 'CryoCal_20220713'
 sample_name = 'M3D6_02_WITH_2SP_INP_CRYOCAL'
-cal_set = 'CryoCal_2SP_INP_8p02G_20220712'
 # cal_set = None
 
 # Print the JanisCtrl class members

@@ -49,15 +49,15 @@ def pna_setup(pna,
     '''
 
     #initial setup for measurement
-    if (pna.query('CALC:PAR:CAT:EXT?') == f'"Meas,{sparam}"\n'):
+    if (pna.query('CALC1:PAR:CAT:EXT?') == f'"Meas,{sparam}"\n'):
         pna.write(f'CALCulate1:PARameter:DELete:EXT \'Meas\',{sparam}')
     pna.write(f'CALCulate1:PARameter:DEFine:EXT \'Meas\',{sparam}')
     # pna.write(f'CALCulate1:MEASure:PARameter {sparam}')
 
     #set parameters for sweep
     pna.write('DISPlay:WINDow1:STATE ON')
-    # pna.write('DISPlay:WINDow1:TRACe1:FEED \'Meas\'')
-    # pna.write('DISPlay:WINDow1:TRACe2:FEED \'Meas\'')
+    pna.write('DISPlay:WINDow1:TRACe1:FEED \'Meas\'')
+    pna.write('DISPlay:WINDow1:TRACe2:FEED \'Meas\'')
 
     pna.write(f'SENSe1:SWEep:POINts {points}')
     pna.write(f'SENSe1:FREQuency:CENTer {centerf}GHZ')
@@ -69,11 +69,12 @@ def pna_setup(pna,
     if cal_set:
         pna.write(f'CALCulate1:CORRection:TYPE \'Full 2 Port(1,2)\'')
         pna.write('SENSe1:CORRection:INTerpolate:state ON')
-        cal_cmd = f'SENS:CORR:CSET:ACT \'{cal_set}\',1'
-        print(f'cal_cmd: {cal_cmd}')
+        cal_cmd = f'SENS1:CORR:CSET:ACT \'{cal_set}\',1'
+        # cal_cmd = f'SENS:CORR:CSET:ACT \'{cal_set}\',0'
+        # print(f'cal_cmd: {cal_cmd}')
         pna.write(cal_cmd)
 
-    pna.write(f'SOUR:POW1 {power}')
+    pna.write(f'SOUR1:POW1 {power}')
     pna.write('SENSe1:AVERage:STATe ON')
     pna.write(f'SENSe1:BANDwidth {ifband}KHZ')
 
