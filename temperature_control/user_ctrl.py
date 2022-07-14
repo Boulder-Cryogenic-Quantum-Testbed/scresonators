@@ -49,11 +49,11 @@ powers = np.linspace(Jctrl.vna_startpower,
                     Jctrl.vna_endpower,
                     Jctrl.vna_numsweeps)
 print(f'powers: {powers}')
-total_time_hr = 6.
+total_time_hr = 0.25 
 Navg_adaptive = Jctrl.estimate_init_adaptive_averages(
-                    time_per_sweep, 
-                    powers,
-                    total_time_hr)
+                  time_per_sweep, 
+                  powers,
+                  total_time_hr)
 print(f'Number of averages: {Navg_adaptive}')
 # Jctrl.vna_averages = 1000
 Jctrl.vna_averages = Navg_adaptive

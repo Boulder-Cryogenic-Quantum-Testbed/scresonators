@@ -48,16 +48,21 @@ def pna_setup(pna,
 
     '''
 
-    #initial setup for measurement
-    if (pna.query('CALC1:PAR:CAT:EXT?') == f'"Meas,{sparam}"\n'):
-        pna.write(f'CALCulate1:PARameter:DELete:EXT \'Meas\',{sparam}')
-    pna.write(f'CALCulate1:PARameter:DEFine:EXT \'Meas\',{sparam}')
-    # pna.write(f'CALCulate1:MEASure:PARameter {sparam}')
+    # Initial setup for measurement
+    ## Query the exisiting measurements
+    measurements = pna.query('CALC1:PAR:CAT:EXTended?')
+
+    ## If any measurements exist, delete them all
+    if measurements != 'NO CATALOG':
+        pna.write(f'CALCulate1:PARameter:DELete:ALL')
+    pna.write(f'CALCulate1:MEASure1:DEFine \"{sparam}\"')
+    pna.write(f'CALCulate1:MEASure2:DEFine \"{sparam}\"')
 
     #set parameters for sweep
-    pna.write('DISPlay:WINDow1:STATE ON')
-    pna.write('DISPlay:WINDow1:TRACe1:FEED \'Meas\'')
-    pna.write('DISPlay:WINDow1:TRACe2:FEED \'Meas\'')
+    pna.write('DISPlay:WINDow1 ON')
+    pna.write('DISPlay:MEAS1:FEED 1')
+    pna.write('DISPlay:WINDow2 ON')
+    pna.write('DISPlay:MEAS2:FEED 2')
 
     pna.write(f'SENSe1:SWEep:POINts {points}')
     pna.write(f'SENSe1:FREQuency:CENTer {centerf}GHZ')
@@ -164,7 +169,7 @@ def get_data(centerf: float,
     #start taking data for S21
     keysight.write('INITiate:CONTinuous ON')
     keysight.write('OUTPut:STATe ON')
-    keysight.write('CALCulate1:PARameter:SELect \'Meas\'')
+    # keysight.write('CALCulate1:PARameter:SELect \'M1\'')
     keysight.write('FORMat ASCII')
 
     #wait until the averages are done being taken then read in the data
@@ -217,18 +222,20 @@ def power_sweep(startpower: float,
     outputfile = directory_name + '/' + outputfile
 
     #write an output file with conditions
-    file = open(directory_name+'/'+'conditions.csv',"w")
-    if not setup_only:
-        file.write('STARTPOWER: '+str(startpower)+' dB\n')
-        file.write('ENDPOWER: '+str(endpower)+' dB\n')
-        file.write('NUMSWEEPS: '+str(numsweeps)+'\n')
-        file.write('CENTERF: '+str(centerf)+' GHz\n')
-        file.write('SPAN: '+str(span)+' MHz\n')
-        file.write('TEMP: '+f'{temp:.3f}'+' mK\n')
-        file.write('STARTING AVERAGES: '+str(averages)+'\n')
-        file.write('EDELAY: '+str(edelay)+' ns\n')
-        file.write('IFBAND: '+str(ifband)+' kHz\n')
-        file.write('POINTS: '+str(points)+'\n')
+    with open(directory_name+'/'+'conditions.csv',"w") as file:
+        file.write('# Parameter, Value, Units\n')
+        file.write(f'SPARAM, {sparam}, \n')
+        file.write(f'CALSET, {cal_set}, \n')
+        file.write(f'STARTPOWER, {startpower}, dB\n')
+        file.write(f'ENDPOWER, {endpower}, dB\n')
+        file.write(f'NUMSWEEPS, {numsweeps}, \n')
+        file.write(f'CENTERF, {centerf}, GHz\n')
+        file.write(f'SPAN, {span}, MHz\n')
+        file.write(f'TEMP, {temp:.3f}, mK\n')
+        file.write(f'STARTING AVERAGES, {averages}\n')
+        file.write(f'EDELAY, {edelay}, ns\n')
+        file.write(f'IFBAND, {ifband}, kHz\n')
+        file.write(f'POINTS, {points}, \n')
         file.close()
 
     #run each sweep
