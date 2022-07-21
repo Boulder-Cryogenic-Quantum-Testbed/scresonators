@@ -1528,12 +1528,18 @@ def min_fit(params, xdata, ydata, Method):
     return fit_params, conf_array
 
 
+<<<<<<< HEAD
 def fit(resonator):
+=======
+def fit(reson):
+
+>>>>>>> 23a4b73 (Resonator rewrite)
     """Function to fit resonator data
 
     Args:
         Resonator class object
 
+<<<<<<< HEAD
     Returns:
         final minimized parameter values
         95% confidence interval values for those parameters
@@ -1541,6 +1547,26 @@ def fit(resonator):
         error of Monte Carlo Fit
         initial guess parameters
     """
+=======
+Returns:
+    final minimized parameter values
+    95% confidence interval values for those parameters
+    main figure output by the plotting function
+    error of Monte Carlo Fit
+    initial guess parameters
+"""
+
+    filepath = reson.filepath
+    Method = reson.method_class
+    normalize = reson.normalize
+    measurement = reson.measurement
+    data_array = reson.data
+    background = reson.background
+    background_array = reson.background_array
+    plot_extra = reson.plot_extra
+    preprocess_method = reson.preprocess_method
+    fscale = reson.fscale
+>>>>>>> 23a4b73 (Resonator rewrite)
 
     filepath = resonator.filepath
     Method = resonator.method_class
