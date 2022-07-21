@@ -22,8 +22,6 @@ import scipy.optimize as spopt
 from scipy.interpolate import splrep, splev
 from scipy.ndimage.filters import gaussian_filter1d
 from scipy.interpolate import interp1d
-
-import fit_resonator.resonator as res
 import fit_resonator.functions as ff
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -980,7 +978,7 @@ class VNASweep(object):
 
     def data_parse(self, line, frequency_units, data_format, file, options):
         row = line.split()
-        data_rows = [1, 2]
+        data_rows = [3, 4]
         if len(row) == 0:
             print("Data not found in file.")
             quit()
@@ -1486,35 +1484,31 @@ def min_fit(params, xdata, ydata, Method):
     return fit_params, conf_array
 
 
-def fit(filepath: str,
-        Method,
-        normalize: int,
-        measurement=None,
-        data_array: np.ndarray = None,
-        background: str = None,
-        background_array: np.ndarray = None,
-        plot_extra=False,
-        preprocess_method="linear",
-        fscale: float = 1e9):
+def fit(reson):
+
     """Function to fit resonator data
 
     Args:
-        filename: name of the file to be fit
-        Method: instance of Method class
-        normalize: number of points on either side to create linear function for normalization process
-        dir: directory where data to be fit is contained
-        data_array: optional way to read in data if the user already has an array of data in memory they want to fit
-        background: file name for optional background removal file
-        background_array: optional way to read in background removal data if the user already has an array of data in memory they want to use
-        plot_extra: boolean to determine if code should output additional plots to show normalization process and other steps
+        Resonator class object
 
-    Returns:
-        final minimized parameter values
-        95% confidence interval values for those parameters
-        main figure output by the plotting function
-        error of Monte Carlo Fit
-        initial guess parameters
-    """
+Returns:
+    final minimized parameter values
+    95% confidence interval values for those parameters
+    main figure output by the plotting function
+    error of Monte Carlo Fit
+    initial guess parameters
+"""
+
+    filepath = reson.filepath
+    Method = reson.method_class
+    normalize = reson.normalize
+    measurement = reson.measurement
+    data_array = reson.data
+    background = reson.background
+    background_array = reson.background_array
+    plot_extra = reson.plot_extra
+    preprocess_method = reson.preprocess_method
+    fscale = reson.fscale
 
     # read in data from file
     if filepath is not None:
@@ -1523,6 +1517,9 @@ def fit(filepath: str,
         filename = os_path[1]
         if dir == '':
             dir = ROOT_DIR
+    else:
+        dir = ROOT_DIR
+        filename = 'scresonators'
     if data_array is None:
         if measurement is None:
             data = VNASweep.from_file(filepath, fscale=fscale)
