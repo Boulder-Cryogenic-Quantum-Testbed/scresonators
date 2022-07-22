@@ -10,24 +10,16 @@ import fit_resonator.Sdata as fs
 
 class FitMethod(object):
     """
-<<<<<<< HEAD
     Container for data related to fitting method
     Args:
         method: str
             "DCM" or 'INV' or 'CPZM'
 
             fitting range:
-=======
-    method: str
-            "DCM" or 'INV' or 'CPZM'
-
-        fitting range:
->>>>>>> 23a4b73 (Resonator rewrite)
                     number ->  number * FW2M (Full width at half twice min). if not =1, changes the FW2M fitting range
                     list -> from list[0] to list[1]
                     'all' -> all
 
-<<<<<<< HEAD
         MC_iteration: int
                   Number of iteration of 1) least square fit + 2) Monte Carlo
 
@@ -56,36 +48,6 @@ class FitMethod(object):
                  INV: [amplitude, Qi, Qc, freq, phi, theta]
         vary: None or list of 6 booleans
             vary parameter in least square fit (which parameters change = true)
-=======
-    MC_iteration: int
-                  Number of iteration of 1) least square fit + 2) Monte Carlo
-
-    MC_rounds: int
-               in each MC iteration, number of rounds of randomly choose parameter
-
-    MC_weigh: str
-               'no' or 'yes', weight the extract_factor fitting range, yes uses 1/|S21| weight, which we call iDCM
-
-    MC_weightvalue: int
-                    multiplication factor for weighing, such as 2 for twice the 1/|S21| weight.
-
-    MC_fix: list of str
-            'Amp','w1','theta','phi','Qc', 'Q' for DCM, 'Qi' for INV
-
-    MC_step_const: int
-                  randomly choose number in range MC_step_const*[-0.5~0.5]
-                  for fitting. Exp(0.5)=1.6, and this is used for Qi,... . However, the res. frequency, theta, amplitude are usually fixed during Monte Carlo.
-
-    find_circle: bool
-                 true=> find initial guess from circle (better) or false if find from linewidth
-
-    manual_init: None or list of 6 float number
-                 manual input initial guesses
-                 DCM: [amplitude, Q, Qc, freq, phi, theta]
-                 INV: [amplitude, Qi, Qc, freq, phi, theta]
-    vary: None or list of 6 booleans
-          vary parameter in least square fit (which parameters change = true)
->>>>>>> 23a4b73 (Resonator rewrite)
 """
 
     def __init__(self,
@@ -145,8 +107,6 @@ class FitMethod(object):
 
 
 @attr.define(init=True)
-<<<<<<< HEAD
-<<<<<<< HEAD
 class Resonator:  # Object is auto-initialized with @attr annotation
     """
     Object for representing a resonator fit.
@@ -158,29 +118,6 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         data (optional): If you have your raw data in a 3 column array-like as [Frequency, Amps, Phases]
         measurement (optional): *For SNP or other files with more than 3 columns* Tuple, list, or ndarray of target indexes. e.g. measurement = [2,3]
             OR string value of target measurement. e.g. measurement="S21"
-=======
-class Resonator:  # object is defined in init below
-=======
-class Resonator:  # Object is auto-initialized with @attr annotation
->>>>>>> d65bf35 (Resonator doc cleanup)
-    """
-    Object for representing a resonator fit.
-    Usage of keywords for arguments will ensure desired output.
-    All data relevant to fit to be held in an instance of this object.
-
-    Args:
-<<<<<<< HEAD
-        filepath (optional): path to file you wish to fit
-        data (optional): 3 column array holding your data as [Frequency, Amps, Phases]
-        measurement (optional): *For SNP files with more than 3 columns* Tuple, list, ndarray of target indexes.
-            Or string value of target measurement. e.g. measurement="S21"
->>>>>>> 23a4b73 (Resonator rewrite)
-=======
-        filepath (optional): path to data file you wish to fit
-        data (optional): If you have your raw data in a 3 column array-like as [Frequency, Amps, Phases]
-        measurement (optional): *For SNP or other files with more than 3 columns* Tuple, list, or ndarray of target indexes. e.g. measurement = [2,3]
-            OR string value of target measurement. e.g. measurement="S21"
->>>>>>> d65bf35 (Resonator doc cleanup)
         name (optional): name of scan.
         date (optional): date of scan.
         temp (optional): temperature of scan (in Kelvin).
@@ -202,13 +139,8 @@ class Resonator:  # Object is auto-initialized with @attr annotation
     normalize: int = 10
     background: str = None
     background_array: np.ndarray = None
-<<<<<<< HEAD
     plot_extra: bool = False
     preprocess_method: str = "linear"
-=======
-    plot_extra = False
-    preprocess_method = "linear"
->>>>>>> 23a4b73 (Resonator rewrite)
     fscale: float = 1e9
 
     # Store non-VNASweep forms of data passed in class construction as VNASweep objects.
@@ -219,17 +151,12 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         if self.data is not None and not isinstance(self.data, fs.VNASweep):
             self.from_columns(self.data.T[0], self.data.T[1], self.data.T[2])
 
-<<<<<<< HEAD
     def from_columns(self, freqs, amps=None, phases=None):
         # Allows for user to pass array variable alone
         if freqs is not None and amps is None and phases is None:
             self.data = fs.VNASweep.from_columns(freqs.T[0], freqs.T[1], freqs.T[2])
         else:
             self.data = fs.VNASweep.from_columns(freqs, amps, phases)
-=======
-    def from_columns(self, freqs, amps, phases):
-        self.data = fs.VNASweep.from_columns(freqs, amps, phases)
->>>>>>> 23a4b73 (Resonator rewrite)
 
     def from_file(self, filepath=None, measurement=None, fscale=1e9):
         if self.filepath is None and filepath is not None:
@@ -247,14 +174,13 @@ class Resonator:  # Object is auto-initialized with @attr annotation
                    MC_fix=[],
                    MC_step_const=0.6,
                    manual_init=None,
-                   vary=None):
+                   vary=None,
+                   preprocess_method:str = "linear"):
+        if self.preprocess_method is not preprocess_method:
+            self.preprocess_method = preprocess_method
         self.method_class = FitMethod(method, MC_iteration, MC_rounds, MC_weight, MC_weightvalue, MC_fix, MC_step_const,
-                                      manual_init, vary)
+                                      manual_init, vary, preprocess_method)
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 23a4b73 (Resonator rewrite)
     def fit(self):
         fs.fit(self)
 
@@ -372,11 +298,7 @@ class DCMparams(object):  # DCM fitting results
     params: np.ndarray
     chi: float
 
-<<<<<<< HEAD
     def __attrs_post_init__(self, params, chi):
-=======
-    def __post_init__(self, params, chi):
->>>>>>> 23a4b73 (Resonator rewrite)
         self.Qc = params[2]
         self.Q = params[1]
         Qc = params[2] * np.exp(1j * params[4])
@@ -396,11 +318,7 @@ class INVparams(object):  # INV fitting results
     params: np.ndarray
     chi: float
 
-<<<<<<< HEAD
     def __attrs_post_init__(self, params, chi):
-=======
-    def __post_init__(self, params, chi):
->>>>>>> 23a4b73 (Resonator rewrite)
         self.Qc = params[2]
         self.Qi = params[1]
         Q = 1 / (params[1] ** -1 + params[2] ** -1)
@@ -418,11 +336,7 @@ class CPZMparams(object):
     params: np.ndarray
     chi: float
 
-<<<<<<< HEAD
     def __attrs_post_init__(self, params, chi):
-=======
-    def __post_init__(self, params, chi):
->>>>>>> 23a4b73 (Resonator rewrite)
         self.Qc = params[2]
         self.Qi = params[1]
         self.Qa = params[4]
