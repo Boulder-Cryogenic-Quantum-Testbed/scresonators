@@ -11,42 +11,44 @@ import fit_resonator.Sdata as fs
 
 class FitMethod(object):
     """
-    method: str
+    Container for data related to fitting method
+    Args:
+        method: str
             "DCM" or 'INV' or 'CPZM'
 
-        fitting range:
+            fitting range:
                     number ->  number * FW2M (Full width at half twice min). if not =1, changes the FW2M fitting range
                     list -> from list[0] to list[1]
                     'all' -> all
 
-    MC_iteration: int
+        MC_iteration: int
                   Number of iteration of 1) least square fit + 2) Monte Carlo
 
-    MC_rounds: int
+        MC_rounds: int
                in each MC iteration, number of rounds of randomly choose parameter
 
-    MC_weigh: str
+        MC_weigh: str
                'no' or 'yes', weight the extract_factor fitting range, yes uses 1/|S21| weight, which we call iDCM
 
-    MC_weightvalue: int
+        MC_weightvalue: int
                     multiplication factor for weighing, such as 2 for twice the 1/|S21| weight.
 
-    MC_fix: list of str
+        MC_fix: list of str
             'Amp','w1','theta','phi','Qc', 'Q' for DCM, 'Qi' for INV
 
-    MC_step_const: int
+        MC_step_const: int
                   randomly choose number in range MC_step_const*[-0.5~0.5]
                   for fitting. Exp(0.5)=1.6, and this is used for Qi,... . However, the res. frequency, theta, amplitude are usually fixed during Monte Carlo.
 
-    find_circle: bool
+        find_circle: bool
                  true=> find initial guess from circle (better) or false if find from linewidth
 
-    manual_init: None or list of 6 float number
+        manual_init: None or list of 6 float number
                  manual input initial guesses
                  DCM: [amplitude, Q, Qc, freq, phi, theta]
                  INV: [amplitude, Qi, Qc, freq, phi, theta]
-    vary: None or list of 6 booleans
-          vary parameter in least square fit (which parameters change = true)
+        vary: None or list of 6 booleans
+            vary parameter in least square fit (which parameters change = true)
 """
 
     def __init__(self,
@@ -138,8 +140,8 @@ class Resonator:  # Object is auto-initialized with @attr annotation
     normalize: int = 10
     background: str = None
     background_array: np.ndarray = None
-    plot_extra = False
-    preprocess_method = "linear"
+    plot_extra: bool = False
+    preprocess_method: str = "linear"
     fscale: float = 1e9
 
     # Store non-VNASweep forms of data passed in class construction as VNASweep objects.
@@ -150,8 +152,12 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         if self.data is not None and not isinstance(self.data, fs.VNASweep):
             self.from_columns(self.data.T[0], self.data.T[1], self.data.T[2])
 
-    def from_columns(self, freqs, amps, phases):
-        self.data = fs.VNASweep.from_columns(freqs, amps, phases)
+    def from_columns(self, freqs, amps=None, phases=None):
+        # Allows for user to pass array variable alone
+        if freqs is not None and amps is None and phases is None:
+            self.data = fs.VNASweep.from_columns(freqs.T[0], freqs.T[1], freqs.T[2])
+        else:
+            self.data = fs.VNASweep.from_columns(freqs, amps, phases)
 
     def from_file(self, filepath=None, measurement=None, fscale=1e9):
         if self.filepath is None and filepath is not None:
@@ -172,7 +178,6 @@ class Resonator:  # Object is auto-initialized with @attr annotation
                    vary=None):
         self.method_class = FitMethod(method, MC_iteration, MC_rounds, MC_weight, MC_weightvalue, MC_fix, MC_step_const,
                                       manual_init, vary)
-
 
     def fit(self):
         fs.fit(self)

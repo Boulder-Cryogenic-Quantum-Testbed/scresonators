@@ -1418,6 +1418,7 @@ def min_fit(params, xdata, ydata, Method):
     try:
         if Method.method == 'DCM' or Method.method == 'PHI' or Method.method == 'DCM REFLECTION':
             ci = lmfit.conf_interval(minner, result, p_names=['Q', 'Qc', 'phi', 'w1'], sigmas=[2])
+
             # confidence interval for Q
             Q_conf = max(np.abs(ci['Q'][1][1] - ci['Q'][0][1]), np.abs(ci['Q'][1][1] - ci['Q'][2][1]))
             # confidence interval for Qi
@@ -1478,26 +1479,26 @@ def min_fit(params, xdata, ydata, Method):
             w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
             # Array of confidence intervals
             conf_array = [Qi_conf, Qc_conf, Qa_conf, w1_conf]
-    except:
+    except Exception as e:
+        print(e)
         print(">Failed to find confidence intervals for least squares fit")
         conf_array = [0, 0, 0, 0, 0, 0]
     return fit_params, conf_array
 
 
 def fit(reson):
-
     """Function to fit resonator data
 
     Args:
         Resonator class object
 
-Returns:
-    final minimized parameter values
-    95% confidence interval values for those parameters
-    main figure output by the plotting function
-    error of Monte Carlo Fit
-    initial guess parameters
-"""
+    Returns:
+        final minimized parameter values
+        95% confidence interval values for those parameters
+        main figure output by the plotting function
+        error of Monte Carlo Fit
+        initial guess parameters
+    """
 
     filepath = reson.filepath
     Method = reson.method_class
@@ -1537,10 +1538,11 @@ Returns:
         xdata = data.freqs
         linear_amps = data.linear_amps
         phases = np.unwrap(data.phases)
-
         ydata = np.multiply(linear_amps, np.exp(1j * phases))
-    except:
-        print("Data not able to be read from VNASweep class")
+
+    except Exception as e:
+        print(f'Exception: {e}')
+        print("When trying to read data from VNASweep class")
         quit()
 
     # make a folder to put all output in
@@ -1666,10 +1668,10 @@ Returns:
                 print(manual_init)
                 print(">Manual input wrong format, please follow the correct format of 4 parameters in an array")
                 quit()
-        except Exception as exp:
-            print(">Expection caught: ", exp)
-            print(">Loaded manual_init: ", manual_init)
-            print(">Problem loading manually initialized parameters, please make sure parameters are all numbers")
+        except Exception as e:
+            print(f'Excepction {e}')
+            print(f'Loaded manual_init: {manual_init}')
+            print("Problem loading manually initialized parameters, please make sure parameters are all numbers")
             quit()
     else:
         # generate initial guess parameters from data when user does not manually initialze guess
@@ -1684,10 +1686,11 @@ Returns:
 
     # Extract data near resonate frequency to fit
     xdata, ydata = extract_near_res(x_raw, y_raw, freq, kappa,
-                                    extract_factor=1)  # xdata is new set of data to be fit, within extract_factor times the bandwidth, ydata is S21 data to match indices with xdata
+                                    extract_factor=1)  # xdata is new set of data to be fit, within extract_factor
+    # times the bandwidth, ydata is S21 data to match indices with xdata
 
     if Method.method == 'INV':
-        ydata = ydata ** -1  ## Inverse S21
+        ydata = ydata ** -1  # Inverse S21
 
     # Step Two. Fit Both Re and Im data
     # create a set of Parameters
@@ -1707,7 +1710,8 @@ Returns:
             params.add('Qa', value=init[3], vary=change_Qa, min=-init[3] * 1.1, max=init[3] * 1.1)
         else:
             params.add('phi', value=init[3], vary=change_phi, min=-np.pi, max=np.pi)
-    except:
+    except Exception as e:
+        print(f'Exception {e}')
         print(">Failed to define parameters, please make sure parameters are of correct format")
         quit()
 
