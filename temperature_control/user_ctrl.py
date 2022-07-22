@@ -39,8 +39,8 @@ Jctrl.vna_points = 1001
 Jctrl.sparam = 'S12'
 Jctrl.vna_ifband = 1 #khz
 Jctrl.vna_startpower = -25 # dBm
-Jctrl.vna_endpower = -75 # dBm
-Jctrl.vna_numsweeps = 11 
+Jctrl.vna_endpower = -95 # dBm
+Jctrl.vna_numsweeps = 15
 # Jctrl.vna_startpower = -89 # dBm
 # Jctrl.vna_endpower = -89 # dBm
 # Jctrl.vna_numsweeps = 2
@@ -49,7 +49,7 @@ powers = np.linspace(Jctrl.vna_startpower,
                     Jctrl.vna_endpower,
                     Jctrl.vna_numsweeps)
 print(f'powers: {powers}')
-total_time_hr = 0.25 
+total_time_hr = 48.
 Navg_adaptive = Jctrl.estimate_init_adaptive_averages(
                   time_per_sweep, 
                   powers,
@@ -59,8 +59,10 @@ print(f'Number of averages: {Navg_adaptive}')
 Jctrl.vna_averages = Navg_adaptive
 
 # sample_name = 'RGSI002_A1g7_6p23698_GHz'
-cal_set = 'CryoCal_20220713'
+cal_set = 'CryoCal_202207155'
+cal_set = None
 sample_name = 'M3D6_02_WITH_2SP_INP_CRYOCAL'
+sample_name = 'M3D6_02_WITH_2SP_INP'
 # cal_set = None
 
 # Print the JanisCtrl class members

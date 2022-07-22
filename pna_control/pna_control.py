@@ -153,6 +153,9 @@ def get_data(centerf: float,
     # to the PNA-X from newyork rather than ontario
     try:
         keysight = rm.open_resource(instr_addr)
+
+        ## Attempt to fix the timeout error in averaging command
+        keysight.timeout = None
         # keysight = rm.open_resource('GPIB0::16::INSTR')
     except Exception as ex:
         print(f'\n----------\nException:\n{ex}\n----------\n')
