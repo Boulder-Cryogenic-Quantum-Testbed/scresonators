@@ -106,16 +106,17 @@ class FitMethod(object):
 
 
 @attr.define(init=True)
-class Resonator:  # object is defined in init below
+class Resonator:  # Object is auto-initialized with @attr annotation
     """
     Object for representing a resonator fit.
-    Usage of keywords for arguments will ensure desired output
+    Usage of keywords for arguments will ensure desired output.
+    All data relevant to fit to be held in an instance of this object.
 
     Args:
-        filepath (optional): path to file you wish to fit
-        data (optional): 3 column array holding your data as [Frequency, Amps, Phases]
-        measurement (optional): *For SNP files with more than 3 columns* Tuple, list, ndarray of target indexes.
-            Or string value of target measurement. e.g. measurement="S21"
+        filepath (optional): path to data file you wish to fit
+        data (optional): If you have your raw data in a 3 column array-like as [Frequency, Amps, Phases]
+        measurement (optional): *For SNP or other files with more than 3 columns* Tuple, list, or ndarray of target indexes. e.g. measurement = [2,3]
+            OR string value of target measurement. e.g. measurement="S21"
         name (optional): name of scan.
         date (optional): date of scan.
         temp (optional): temperature of scan (in Kelvin).
