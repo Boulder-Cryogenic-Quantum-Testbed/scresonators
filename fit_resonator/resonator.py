@@ -296,7 +296,7 @@ class DCMparams(object):  # DCM fitting results
     params: np.ndarray
     chi: float
 
-    def __post_init__(self, params, chi):
+    def __attrs_post_init__(self, params, chi):
         self.Qc = params[2]
         self.Q = params[1]
         Qc = params[2] * np.exp(1j * params[4])
@@ -316,7 +316,7 @@ class INVparams(object):  # INV fitting results
     params: np.ndarray
     chi: float
 
-    def __post_init__(self, params, chi):
+    def __attrs_post_init__(self, params, chi):
         self.Qc = params[2]
         self.Qi = params[1]
         Q = 1 / (params[1] ** -1 + params[2] ** -1)
@@ -334,7 +334,7 @@ class CPZMparams(object):
     params: np.ndarray
     chi: float
 
-    def __post_init__(self, params, chi):
+    def __attrs_post_init__(self, params, chi):
         self.Qc = params[2]
         self.Qi = params[1]
         self.Qa = params[4]
