@@ -1416,67 +1416,109 @@ def min_fit(params, xdata, ydata, Method):
         conf_array = [0, 0, 0, 0, 0, 0]
         return fit_params, conf_array
     try:
+        p_names = []
+        for parameter in params:
+            if parameter not in Method.MC_fix:
+                p_names.append(parameter)
         if Method.method == 'DCM' or Method.method == 'PHI' or Method.method == 'DCM REFLECTION':
-            ci = lmfit.conf_interval(minner, result, p_names=['Q', 'Qc', 'phi', 'w1'], sigmas=[2])
+            ci = lmfit.conf_interval(minner, result, p_names=p_names, sigmas=[2])
 
             # confidence interval for Q
-            Q_conf = max(np.abs(ci['Q'][1][1] - ci['Q'][0][1]), np.abs(ci['Q'][1][1] - ci['Q'][2][1]))
-            # confidence interval for Qi
-            if Method.method == 'PHI':
-                Qi = ((ci['Q'][1][1]) ** -1 - np.abs(ci['Qc'][1][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-                Qi_neg = Qi - ((ci['Q'][0][1]) ** -1 - np.abs(ci['Qc'][2][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-                Qi_pos = Qi - ((ci['Q'][2][1]) ** -1 - np.abs(ci['Qc'][0][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+            if 'Q' in p_names:
+                Q_conf = max(np.abs(ci['Q'][1][1] - ci['Q'][0][1]), np.abs(ci['Q'][1][1] - ci['Q'][2][1]))
             else:
-                Qi = ((ci['Q'][1][1]) ** -1 - np.real(ci['Qc'][1][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-                Qi_neg = Qi - ((ci['Q'][0][1]) ** -1 - np.real(ci['Qc'][2][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-                Qi_pos = Qi - ((ci['Q'][2][1]) ** -1 - np.real(ci['Qc'][0][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-            Qi_conf = max(np.abs(Qi_neg), np.abs(Qi_pos))
+                Q_conf = 0
+            # confidence interval for Qi
+            if 'Q' in p_names and 'Qc' in p_names and 'Qi' not in Method.MC_fix:
+                if Method.method == 'PHI':
+                    Qi = ((ci['Q'][1][1]) ** -1 - np.abs(ci['Qc'][1][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                    Qi_neg = Qi - ((ci['Q'][0][1]) ** -1 - np.abs(ci['Qc'][2][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                    Qi_pos = Qi - ((ci['Q'][2][1]) ** -1 - np.abs(ci['Qc'][0][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                else:
+                    Qi = ((ci['Q'][1][1]) ** -1 - np.real(ci['Qc'][1][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                    Qi_neg = Qi - ((ci['Q'][0][1]) ** -1 - np.real(ci['Qc'][2][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                    Qi_pos = Qi - ((ci['Q'][2][1]) ** -1 - np.real(ci['Qc'][0][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                Qi_conf = max(np.abs(Qi_neg), np.abs(Qi_pos))
+            else:
+                Qi_conf = 0
             # confidence interval for Qc
-            Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
-            # confidence interval for 1/Re[1/Qc]
-            Qc_Re = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][1][1])
-            Qc_Re_neg = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][0][1])
-            Qc_Re_pos = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][2][1])
-            Qc_Re_conf = max(np.abs(Qc_Re - Qc_Re_neg), np.abs(Qc_Re - Qc_Re_pos))
+            if 'Qc' in p_names:
+                Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
+                # confidence interval for 1/Re[1/Qc]
+                Qc_Re = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][1][1])
+                Qc_Re_neg = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][0][1])
+                Qc_Re_pos = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][2][1])
+                Qc_Re_conf = max(np.abs(Qc_Re - Qc_Re_neg), np.abs(Qc_Re - Qc_Re_pos))
+            else:
+                Qc_conf = 0
             # confidence interval for phi
-            phi_neg = ci['phi'][0][1]
-            phi_pos = ci['phi'][2][1]
-            phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+            if 'phi' in p_names:
+                phi_neg = ci['phi'][0][1]
+                phi_pos = ci['phi'][2][1]
+                phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+            else:
+                phi_conf = 0
             # confidence interval for resonance frequency
-            w1_neg = ci['w1'][0][1]
-            w1_pos = ci['w1'][2][1]
-            w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            if 'w1' in p_names:
+                w1_neg = ci['w1'][0][1]
+                w1_pos = ci['w1'][2][1]
+                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            else:
+                w1_conf = 0
             # Array of confidence intervals
             conf_array = [Q_conf, Qi_conf, Qc_conf, Qc_Re_conf, phi_conf, w1_conf]
         elif Method.method == 'INV':
-            ci = lmfit.conf_interval(minner, result, p_names=['Qi', 'Qc', 'phi', 'w1'], sigmas=[2])
+            ci = lmfit.conf_interval(minner, result, p_names=p_names, sigmas=[2])
             # confidence interval for Qi
-            Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+            if 'Qi' in p_names:
+                Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+            else:
+                Qi_conf = 0
             # confidence interval for Qc
-            Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
+            if 'Qc' in p_names:
+                Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
+            else:
+                Qc_conf = 0
             # confidence interval for phi
-            print(ci['phi'])
-            phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+            if 'phi' in p_names:
+                phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+            else:
+                phi_conf = 0
             # confidence interval for resonance frequency
-            w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            if 'w1' in p_names:
+                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            else:
+                w1_conf = 0
             # Array of confidence intervals
             conf_array = [Qi_conf, Qc_conf, phi_conf, w1_conf]
         else:
-            ci = lmfit.conf_interval(minner, result, p_names=['Qi', 'Qc', 'Qa', 'w1'], sigmas=[2])
+            ci = lmfit.conf_interval(minner, result, p_names=p_names, sigmas=[2])
             # confidence interval for Qi
-            Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+            if 'Qi' in p_names:
+                Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+            else:
+                Qi_conf = 0
             # confidence interval for Qc
-            Qc = ci['Qi'][1][1] / ci['Qc'][1][1]
-            Qc_neg = ci['Qi'][0][1] / ci['Qc'][0][1]
-            Qc_pos = ci['Qi'][2][1] / ci['Qc'][2][1]
-            Qc_conf = max(np.abs(Qc - Qc_neg), np.abs(Qc - Qc_neg))
+            if 'Qc' in p_names:
+                Qc = ci['Qi'][1][1] / ci['Qc'][1][1]
+                Qc_neg = ci['Qi'][0][1] / ci['Qc'][0][1]
+                Qc_pos = ci['Qi'][2][1] / ci['Qc'][2][1]
+                Qc_conf = max(np.abs(Qc - Qc_neg), np.abs(Qc - Qc_neg))
+            else:
+                Qc_conf = 0
             # confidence interval for Qa
-            Qa = ci['Qi'][1][1] / ci['Qa'][1][1]
-            Qa_neg = ci['Qi'][2][1] / ci['Qa'][2][1]
-            Qa_pos = ci['Qi'][0][1] / ci['Qa'][0][1]
-            Qa_conf = max(np.abs(Qa - Qa_neg), np.abs(Qa - Qa_neg))
+            if 'Qa' in p_names:
+                Qa = ci['Qi'][1][1] / ci['Qa'][1][1]
+                Qa_neg = ci['Qi'][2][1] / ci['Qa'][2][1]
+                Qa_pos = ci['Qi'][0][1] / ci['Qa'][0][1]
+                Qa_conf = max(np.abs(Qa - Qa_neg), np.abs(Qa - Qa_neg))
+            else:
+                Qa_conf = 0
             # confidence interval for resonance frequency
-            w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            if 'w1' in p_names:
+                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            else:
+                w1_conf = 0
             # Array of confidence intervals
             conf_array = [Qi_conf, Qc_conf, Qa_conf, w1_conf]
     except Exception as e:
