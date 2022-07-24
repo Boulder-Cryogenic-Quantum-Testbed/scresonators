@@ -1528,7 +1528,7 @@ def min_fit(params, xdata, ydata, Method):
     return fit_params, conf_array
 
 
-def fit(reson):
+def fit(resonator):
     """Function to fit resonator data
 
     Args:
@@ -1542,16 +1542,16 @@ def fit(reson):
         initial guess parameters
     """
 
-    filepath = reson.filepath
-    Method = reson.method_class
-    normalize = reson.normalize
-    measurement = reson.measurement
-    data_array = reson.data
-    background = reson.background
-    background_array = reson.background_array
-    plot_extra = reson.plot_extra
-    preprocess_method = reson.preprocess_method
-    fscale = reson.fscale
+    filepath = resonator.filepath
+    Method = resonator.method_class
+    normalize = resonator.normalize
+    measurement = resonator.measurement
+    data_array = resonator.data
+    background = resonator.background
+    background_array = resonator.background_array
+    plot_extra = resonator.plot_extra
+    preprocess_method = resonator.preprocess_method
+    fscale = resonator.fscale
 
     # read in data from file
     if filepath is not None:
