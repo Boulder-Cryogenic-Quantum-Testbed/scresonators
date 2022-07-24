@@ -2,24 +2,19 @@ import attr
 import numpy as np
 import lmfit
 import matplotlib.pyplot as plt
-import pandas as pd
 from matplotlib.gridspec import GridSpec
-import sympy as sym
 from scipy.optimize import curve_fit
 from matplotlib.patches import Circle
 from lmfit import Minimizer
 import inflect
 import matplotlib.pylab as pylab
-from scipy import optimize
 from scipy import stats
 import time
 import sys
 import os
-import skrf as rf
 
 import logging
 import scipy.optimize as spopt
-from scipy.interpolate import splrep, splev
 from scipy.ndimage.filters import gaussian_filter1d
 from scipy.interpolate import interp1d
 import fit_resonator.functions as ff
@@ -1850,7 +1845,7 @@ def fit(resonator):
         '''except:
             print(">Failed to plot DCM fit for data")
             quit()'''
-    if Method.method == 'PHI':
+    elif Method.method == 'PHI':
         try:
             title = 'PHI fit for ' + filename
             figurename = "PHI with Monte Carlo Fit and Raw data\nPower: " + filename
@@ -1861,7 +1856,7 @@ def fit(resonator):
         except:
             print(">Failed to plot PHI fit for data")
             quit()
-    if Method.method == 'DCM REFLECTION':
+    elif Method.method == 'DCM REFLECTION':
         try:
             title = 'DCM REFLECTION fit for ' + filename
             figurename = " DCM REFLECTION with Monte Carlo Fit and Raw data\nPower: " + filename

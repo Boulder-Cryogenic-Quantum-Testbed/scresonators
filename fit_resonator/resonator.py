@@ -3,7 +3,6 @@ import datetime
 import attrs
 import attr
 import numpy as np
-from matplotlib import pyplot as plt
 
 import fit_resonator.functions as ff
 import fit_resonator.Sdata as fs

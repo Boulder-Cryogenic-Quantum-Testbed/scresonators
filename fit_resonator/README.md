@@ -99,19 +99,16 @@ Must install pip module before installing pips for python 2. Once pip is install
 
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-## USER INPUT FILE
+## Using the code
 
-###### An example of the way the following is done is included in the example file (User_Example.py)
+###### An example of the way the following is done is included in the main README
 
 #### Section 1: Initial Setup
 
-###### The user will need to set the "dir" variable equal to the directory of folder containing user file. This can be done with the command:
-
-`dir = "your path to data folder here"`
-
-###### User will need to set the "filename" variable to the name of their file with:
-`filename = 'your name here.csv'`
+###### User will need to set a variable with the name of their file:
+`filename = 'your name here.csv/txt/snp'`
    >Note that code accepts both .txt and .csv file formats
+###### OR have a variable containing their raw data
 
 #### Section 2: Setting Fit Variables
 
@@ -150,19 +147,49 @@ MC_step_const: Range for the random parameter values chosen in MC fit. This scal
 
 #### Section 3: Fitting Data
 
-The user calls the Fit_Resonator function with:
+Import code library with:
+`import fit_resonator.resonator as scres`
 
-`params1,fig1,chi1,init1 = fsd.Fit_Resonator(filename = filename,Method = Method,normalize = normalize,dir = dir)`
+Initialize resonator object with:
+`my_resonator = scres.Resonator()`
 
-If the user wants to have the code remove their background, they need to include the path to their background removal file as well with:
+Initialize raw data or file into resonator object with:
+`my_resonator.from_columns(raw_data)`
+`my_resonator.from_file(filename)`
 
-`params1,fig1,chi1,init1 = Fit_Resonator(filename = filename,Method = Method,normalize = normalize,dir = dir,background = background_file)`
+You can also pass the data as a filename or data object when initializing your resonator object with:
+`my_resonator = scres.Resonator(filepath='PATH/TO/FILE')`
+`my_resonator = scres.Resonator(data=raw_data)`
 
-   >Here it is assumed that dir is the same directory for both the user's main data file and the background and can thus be used for both
+If you're using a snp file with more than three columns please specify to the resonator object which value to use with:
+`my_resonator.from_file('PATH/TO/FILE.snp', "S12")`
+`my_resonator = scres.Resontor(filepath='PATH/TO/FILE.snp', measurement="S12"`
+or with the index value(s)
+`my_resonator.from_file('PATH/TO/FILE.snp', [2,3])`
+`my_resonator = scres.Resontor(filepath='PATH/TO/FILE.snp', measurement=[2,3]`
+
+
+Define the parameters of your fitting method with:
+my_resonator.fit_method(method: str,
+MC_iteration=None,
+MC_rounds=100,
+MC_weight='no',
+MC_weightvalue=2,
+MC_fix=[],
+MC_step_const=0.6,
+manual_init=None):)
+
+Call the fitting function once resonator class hold all relevant information with:
+`params1,fig1,chi1,init1 = my_resonator.fit()`
+
+If the user wants to have the code remove their background, they need to include the path to their background removal file in resonator object initialization with:
+`my_resonator = scres.Resonator(background = background_file)`
 
 normalize: The number of points from the start/end of S21 data the user wants to use in the linear fit of S21 data for magnitude and phase for normalization, set with:
+`my_resonator = scres.Resonator(background = background_file)`
 
-`normalize = 10`
+Remember for these special initializations you can include as many as you need, just don't forget the keyword arguments!
+`my_resonator = scres.Resonator(background = background_file, normalize = 5, filepath = "PATH/TO/FILE, measurement = "S21"`
 
 ##Check Data:
 
