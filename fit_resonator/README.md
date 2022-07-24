@@ -107,6 +107,10 @@ Must install pip module before installing pips for python 2. Once pip is install
 Import code library with:
 `import fit_resonator.resonator as scres`
 ###### User will need to set a variable with the name of their file:
+
+###### User will need to set a variable with the name of their file:
+`filename = 'your name here.csv/txt/snp'`
+   >Note that code accepts both .txt and .csv file formats
 ###### OR have a variable containing their raw data
 
 #### Section 2: Setting Fit Variables
@@ -145,6 +149,27 @@ manual_init: Used to define initial guess variables
 MC_step_const: Range for the random parameter values chosen in MC fit. This scaling is exponential. The larger this number, the higher and lower the random values
 
 #### Section 3: Fitting Data
+
+Initialize resonator object with:
+`my_resonator = scres.Resonator()`
+
+Initialize raw data or file into resonator object with:
+`my_resonator.from_columns(raw_data)`
+`my_resonator.from_file(filename)`
+
+You can also pass the data as a filename or data object when initializing your resonator object with:
+`my_resonator = scres.Resonator(filepath='PATH/TO/FILE')`
+`my_resonator = scres.Resonator(data=raw_data)`
+
+If you're using a snp file with more than three columns please specify to the resonator object which value to use with:
+`my_resonator.from_file('PATH/TO/FILE.snp', "S12")`
+`my_resonator = scres.Resontor(filepath='PATH/TO/FILE.snp', measurement="S12"`
+or with the index value(s)
+`my_resonator.from_file('PATH/TO/FILE.snp', [2,3])`
+`my_resonator = scres.Resontor(filepath='PATH/TO/FILE.snp', measurement=[2,3]`
+
+Import code library with:
+`import fit_resonator.resonator as scres`
 
 Initialize resonator object with:
 `my_resonator = scres.Resonator()`
