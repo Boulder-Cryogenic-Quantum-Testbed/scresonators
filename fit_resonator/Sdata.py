@@ -2,28 +2,21 @@ import attr
 import numpy as np
 import lmfit
 import matplotlib.pyplot as plt
-import pandas as pd
 from matplotlib.gridspec import GridSpec
-import sympy as sym
 from scipy.optimize import curve_fit
 from matplotlib.patches import Circle
 from lmfit import Minimizer
 import inflect
 import matplotlib.pylab as pylab
-from scipy import optimize
 from scipy import stats
 import time
 import sys
 import os
-import skrf as rf
 
 import logging
 import scipy.optimize as spopt
-from scipy.interpolate import splrep, splev
 from scipy.ndimage.filters import gaussian_filter1d
 from scipy.interpolate import interp1d
-
-import fit_resonator.resonator as res
 import fit_resonator.functions as ff
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -980,7 +973,7 @@ class VNASweep(object):
 
     def data_parse(self, line, frequency_units, data_format, file, options):
         row = line.split()
-        data_rows = [1, 2]
+        data_rows = [3, 4]
         if len(row) == 0:
             print("Data not found in file.")
             quit()
@@ -1418,95 +1411,123 @@ def min_fit(params, xdata, ydata, Method):
         conf_array = [0, 0, 0, 0, 0, 0]
         return fit_params, conf_array
     try:
+        p_names = []
+        for parameter in params:
+            if parameter not in Method.MC_fix:
+                p_names.append(parameter)
         if Method.method == 'DCM' or Method.method == 'PHI' or Method.method == 'DCM REFLECTION':
-            ci = lmfit.conf_interval(minner, result, p_names=['Q', 'Qc', 'phi', 'w1'], sigmas=[2])
+            ci = lmfit.conf_interval(minner, result, p_names=p_names, sigmas=[2])
+
             # confidence interval for Q
-            Q_conf = max(np.abs(ci['Q'][1][1] - ci['Q'][0][1]), np.abs(ci['Q'][1][1] - ci['Q'][2][1]))
-            # confidence interval for Qi
-            if Method.method == 'PHI':
-                Qi = ((ci['Q'][1][1]) ** -1 - np.abs(ci['Qc'][1][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-                Qi_neg = Qi - ((ci['Q'][0][1]) ** -1 - np.abs(ci['Qc'][2][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-                Qi_pos = Qi - ((ci['Q'][2][1]) ** -1 - np.abs(ci['Qc'][0][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+            if 'Q' in p_names:
+                Q_conf = max(np.abs(ci['Q'][1][1] - ci['Q'][0][1]), np.abs(ci['Q'][1][1] - ci['Q'][2][1]))
             else:
-                Qi = ((ci['Q'][1][1]) ** -1 - np.real(ci['Qc'][1][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-                Qi_neg = Qi - ((ci['Q'][0][1]) ** -1 - np.real(ci['Qc'][2][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-                Qi_pos = Qi - ((ci['Q'][2][1]) ** -1 - np.real(ci['Qc'][0][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
-            Qi_conf = max(np.abs(Qi_neg), np.abs(Qi_pos))
+                Q_conf = 0
+            # confidence interval for Qi
+            if 'Q' in p_names and 'Qc' in p_names and 'Qi' not in Method.MC_fix:
+                if Method.method == 'PHI':
+                    Qi = ((ci['Q'][1][1]) ** -1 - np.abs(ci['Qc'][1][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                    Qi_neg = Qi - ((ci['Q'][0][1]) ** -1 - np.abs(ci['Qc'][2][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                    Qi_pos = Qi - ((ci['Q'][2][1]) ** -1 - np.abs(ci['Qc'][0][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                else:
+                    Qi = ((ci['Q'][1][1]) ** -1 - np.real(ci['Qc'][1][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                    Qi_neg = Qi - ((ci['Q'][0][1]) ** -1 - np.real(ci['Qc'][2][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                    Qi_pos = Qi - ((ci['Q'][2][1]) ** -1 - np.real(ci['Qc'][0][1] ** -1 * np.exp(1j * fit_params[3]))) ** -1
+                Qi_conf = max(np.abs(Qi_neg), np.abs(Qi_pos))
+            else:
+                Qi_conf = 0
             # confidence interval for Qc
-            Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
-            # confidence interval for 1/Re[1/Qc]
-            Qc_Re = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][1][1])
-            Qc_Re_neg = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][0][1])
-            Qc_Re_pos = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][2][1])
-            Qc_Re_conf = max(np.abs(Qc_Re - Qc_Re_neg), np.abs(Qc_Re - Qc_Re_pos))
+            if 'Qc' in p_names:
+                Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
+                # confidence interval for 1/Re[1/Qc]
+                Qc_Re = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][1][1])
+                Qc_Re_neg = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][0][1])
+                Qc_Re_pos = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][2][1])
+                Qc_Re_conf = max(np.abs(Qc_Re - Qc_Re_neg), np.abs(Qc_Re - Qc_Re_pos))
+            else:
+                Qc_conf = 0
             # confidence interval for phi
-            phi_neg = ci['phi'][0][1]
-            phi_pos = ci['phi'][2][1]
-            phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+            if 'phi' in p_names:
+                phi_neg = ci['phi'][0][1]
+                phi_pos = ci['phi'][2][1]
+                phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+            else:
+                phi_conf = 0
             # confidence interval for resonance frequency
-            w1_neg = ci['w1'][0][1]
-            w1_pos = ci['w1'][2][1]
-            w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            if 'w1' in p_names:
+                w1_neg = ci['w1'][0][1]
+                w1_pos = ci['w1'][2][1]
+                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            else:
+                w1_conf = 0
             # Array of confidence intervals
             conf_array = [Q_conf, Qi_conf, Qc_conf, Qc_Re_conf, phi_conf, w1_conf]
         elif Method.method == 'INV':
-            ci = lmfit.conf_interval(minner, result, p_names=['Qi', 'Qc', 'phi', 'w1'], sigmas=[2])
+            ci = lmfit.conf_interval(minner, result, p_names=p_names, sigmas=[2])
             # confidence interval for Qi
-            Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+            if 'Qi' in p_names:
+                Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+            else:
+                Qi_conf = 0
             # confidence interval for Qc
-            Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
+            if 'Qc' in p_names:
+                Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
+            else:
+                Qc_conf = 0
             # confidence interval for phi
-            print(ci['phi'])
-            phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+            if 'phi' in p_names:
+                phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+            else:
+                phi_conf = 0
             # confidence interval for resonance frequency
-            w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            if 'w1' in p_names:
+                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            else:
+                w1_conf = 0
             # Array of confidence intervals
             conf_array = [Qi_conf, Qc_conf, phi_conf, w1_conf]
         else:
-            ci = lmfit.conf_interval(minner, result, p_names=['Qi', 'Qc', 'Qa', 'w1'], sigmas=[2])
+            ci = lmfit.conf_interval(minner, result, p_names=p_names, sigmas=[2])
             # confidence interval for Qi
-            Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+            if 'Qi' in p_names:
+                Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+            else:
+                Qi_conf = 0
             # confidence interval for Qc
-            Qc = ci['Qi'][1][1] / ci['Qc'][1][1]
-            Qc_neg = ci['Qi'][0][1] / ci['Qc'][0][1]
-            Qc_pos = ci['Qi'][2][1] / ci['Qc'][2][1]
-            Qc_conf = max(np.abs(Qc - Qc_neg), np.abs(Qc - Qc_neg))
+            if 'Qc' in p_names:
+                Qc = ci['Qi'][1][1] / ci['Qc'][1][1]
+                Qc_neg = ci['Qi'][0][1] / ci['Qc'][0][1]
+                Qc_pos = ci['Qi'][2][1] / ci['Qc'][2][1]
+                Qc_conf = max(np.abs(Qc - Qc_neg), np.abs(Qc - Qc_neg))
+            else:
+                Qc_conf = 0
             # confidence interval for Qa
-            Qa = ci['Qi'][1][1] / ci['Qa'][1][1]
-            Qa_neg = ci['Qi'][2][1] / ci['Qa'][2][1]
-            Qa_pos = ci['Qi'][0][1] / ci['Qa'][0][1]
-            Qa_conf = max(np.abs(Qa - Qa_neg), np.abs(Qa - Qa_neg))
+            if 'Qa' in p_names:
+                Qa = ci['Qi'][1][1] / ci['Qa'][1][1]
+                Qa_neg = ci['Qi'][2][1] / ci['Qa'][2][1]
+                Qa_pos = ci['Qi'][0][1] / ci['Qa'][0][1]
+                Qa_conf = max(np.abs(Qa - Qa_neg), np.abs(Qa - Qa_neg))
+            else:
+                Qa_conf = 0
             # confidence interval for resonance frequency
-            w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            if 'w1' in p_names:
+                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+            else:
+                w1_conf = 0
             # Array of confidence intervals
             conf_array = [Qi_conf, Qc_conf, Qa_conf, w1_conf]
-    except:
+    except Exception as e:
+        print(e)
         print(">Failed to find confidence intervals for least squares fit")
         conf_array = [0, 0, 0, 0, 0, 0]
     return fit_params, conf_array
 
 
-def fit(filepath: str,
-        Method,
-        normalize: int,
-        measurement=None,
-        data_array: np.ndarray = None,
-        background: str = None,
-        background_array: np.ndarray = None,
-        plot_extra=False,
-        preprocess_method="linear",
-        fscale: float = 1e9):
+def fit(resonator):
     """Function to fit resonator data
 
     Args:
-        filename: name of the file to be fit
-        Method: instance of Method class
-        normalize: number of points on either side to create linear function for normalization process
-        dir: directory where data to be fit is contained
-        data_array: optional way to read in data if the user already has an array of data in memory they want to fit
-        background: file name for optional background removal file
-        background_array: optional way to read in background removal data if the user already has an array of data in memory they want to use
-        plot_extra: boolean to determine if code should output additional plots to show normalization process and other steps
+        Resonator class object
 
     Returns:
         final minimized parameter values
@@ -1516,6 +1537,17 @@ def fit(filepath: str,
         initial guess parameters
     """
 
+    filepath = resonator.filepath
+    Method = resonator.method_class
+    normalize = resonator.normalize
+    measurement = resonator.measurement
+    data_array = resonator.data
+    background = resonator.background
+    background_array = resonator.background_array
+    plot_extra = resonator.plot_extra
+    preprocess_method = resonator.preprocess_method
+    fscale = resonator.fscale
+
     # read in data from file
     if filepath is not None:
         os_path = os.path.split(filepath)
@@ -1523,6 +1555,9 @@ def fit(filepath: str,
         filename = os_path[1]
         if dir == '':
             dir = ROOT_DIR
+    else:
+        dir = ROOT_DIR
+        filename = 'scresonators'
     if data_array is None:
         if measurement is None:
             data = VNASweep.from_file(filepath, fscale=fscale)
@@ -1540,10 +1575,11 @@ def fit(filepath: str,
         xdata = data.freqs
         linear_amps = data.linear_amps
         phases = np.unwrap(data.phases)
-
         ydata = np.multiply(linear_amps, np.exp(1j * phases))
-    except:
-        print("Data not able to be read from VNASweep class")
+
+    except Exception as e:
+        print(f'Exception: {e}')
+        print("When trying to read data from VNASweep class")
         quit()
 
     # make a folder to put all output in
@@ -1669,10 +1705,10 @@ def fit(filepath: str,
                 print(manual_init)
                 print(">Manual input wrong format, please follow the correct format of 4 parameters in an array")
                 quit()
-        except Exception as exp:
-            print(">Expection caught: ", exp)
-            print(">Loaded manual_init: ", manual_init)
-            print(">Problem loading manually initialized parameters, please make sure parameters are all numbers")
+        except Exception as e:
+            print(f'Excepction {e}')
+            print(f'Loaded manual_init: {manual_init}')
+            print("Problem loading manually initialized parameters, please make sure parameters are all numbers")
             quit()
     else:
         # generate initial guess parameters from data when user does not manually initialze guess
@@ -1687,10 +1723,11 @@ def fit(filepath: str,
 
     # Extract data near resonate frequency to fit
     xdata, ydata = extract_near_res(x_raw, y_raw, freq, kappa,
-                                    extract_factor=1)  # xdata is new set of data to be fit, within extract_factor times the bandwidth, ydata is S21 data to match indices with xdata
+                                    extract_factor=1)  # xdata is new set of data to be fit, within extract_factor
+    # times the bandwidth, ydata is S21 data to match indices with xdata
 
     if Method.method == 'INV':
-        ydata = ydata ** -1  ## Inverse S21
+        ydata = ydata ** -1  # Inverse S21
 
     # Step Two. Fit Both Re and Im data
     # create a set of Parameters
@@ -1710,7 +1747,8 @@ def fit(filepath: str,
             params.add('Qa', value=init[3], vary=change_Qa, min=-init[3] * 1.1, max=init[3] * 1.1)
         else:
             params.add('phi', value=init[3], vary=change_phi, min=-np.pi, max=np.pi)
-    except:
+    except Exception as e:
+        print(f'Exception {e}')
         print(">Failed to define parameters, please make sure parameters are of correct format")
         quit()
 
@@ -1807,7 +1845,7 @@ def fit(filepath: str,
         '''except:
             print(">Failed to plot DCM fit for data")
             quit()'''
-    if Method.method == 'PHI':
+    elif Method.method == 'PHI':
         try:
             title = 'PHI fit for ' + filename
             figurename = "PHI with Monte Carlo Fit and Raw data\nPower: " + filename
@@ -1818,7 +1856,7 @@ def fit(filepath: str,
         except:
             print(">Failed to plot PHI fit for data")
             quit()
-    if Method.method == 'DCM REFLECTION':
+    elif Method.method == 'DCM REFLECTION':
         try:
             title = 'DCM REFLECTION fit for ' + filename
             figurename = " DCM REFLECTION with Monte Carlo Fit and Raw data\nPower: " + filename
