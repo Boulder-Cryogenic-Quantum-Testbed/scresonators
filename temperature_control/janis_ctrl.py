@@ -21,8 +21,7 @@ Example:
     # Also make sure the still heater is set at 0.4 V
     # This should all work from the New York control computer
 
-    python temp_pid_ctrl.py
-
+    python janis_ctrl.py
 
 """
 

@@ -116,7 +116,7 @@ def read_data(pna, points, outputfile, power, temp):
     mag = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #open output file and put data points into the file
-    filename = name_datafile(outputfile, power, temp)
+    filename = outputfile # filename = name_datafile(outputfile, power, temp)
     file = open(filename+'.csv',"w")
 
     count = 0

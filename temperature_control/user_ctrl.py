@@ -5,6 +5,7 @@ User file for controlling the Janis and PNA instruments
 
 from janis_ctrl import JanisCtrl
 import numpy as np
+import time
 
 """
 Temperature sweep settings
@@ -32,15 +33,15 @@ Change these settings for each power sweep
 """
 # Set the PNA inputs for the power sweep
 # Jctrl.vna_centerf = 6.23698 # GHz
-Jctrl.vna_centerf = 8.0214305 # GHz
-Jctrl.vna_span = 0.5 # MHz
-Jctrl.vna_edelay = 1.027 #ns
+Jctrl.vna_centerf = 4.98855 # GHz
+Jctrl.vna_span = 1. # MHz
+Jctrl.vna_edelay = 69.29 #ns
 Jctrl.vna_points = 1001
-Jctrl.sparam = 'S12'
-Jctrl.vna_ifband = 1 #khz
-Jctrl.vna_startpower = -25 # dBm
+Jctrl.sparam = 'S21'
+Jctrl.vna_ifband = 0.10 #khz
+Jctrl.vna_startpower = -85 # dBm
 Jctrl.vna_endpower = -95 # dBm
-Jctrl.vna_numsweeps = 15
+Jctrl.vna_numsweeps = 3
 # Jctrl.vna_startpower = -89 # dBm
 # Jctrl.vna_endpower = -89 # dBm
 # Jctrl.vna_numsweeps = 2
@@ -49,7 +50,7 @@ powers = np.linspace(Jctrl.vna_startpower,
                     Jctrl.vna_endpower,
                     Jctrl.vna_numsweeps)
 print(f'powers: {powers}')
-total_time_hr = 48.
+total_time_hr = 19.
 Navg_adaptive = Jctrl.estimate_init_adaptive_averages(
                   time_per_sweep, 
                   powers,
@@ -58,12 +59,15 @@ print(f'Number of averages: {Navg_adaptive}')
 # Jctrl.vna_averages = 1000
 Jctrl.vna_averages = Navg_adaptive
 
+# Delay the start of a sweep by Nstart hours
+h2s = 3600.
+start_delay = 0. # hr
+
 # sample_name = 'RGSI002_A1g7_6p23698_GHz'
-cal_set = 'CryoCal_202207155'
+# cal_set = 'CryoCal_202207155'
+# sample_name = 'M3D6_02_WITH_2SP_INP_CRYOCAL'
+sample_name = 'HTNB2'
 cal_set = None
-sample_name = 'M3D6_02_WITH_2SP_INP_CRYOCAL'
-sample_name = 'M3D6_02_WITH_2SP_INP'
-# cal_set = None
 
 # Print the JanisCtrl class members
 Jctrl.print_class_members()
@@ -87,11 +91,13 @@ Jctrl.read_pressure('all')
 ## Note: adaptive_averaging will increase the averages
 ##       by a factor 10^(dp / 10), where dp is the power
 ##       step in the power sweep -- ~1.7 for dp = 5 dBm
+print(f'Delayed start of {start_delay} hr ...')
+time.sleep(start_delay * h2s)
 out = {}
 Jctrl.pna_process('meas', T, out, prefix=sample_name,
                   adaptive_averaging=adaptive_averaging,
                   cal_set=cal_set, setup_only=False)
-
+ 
 """
 # Temperature sweep, comment out the pna_process above
 """
