@@ -18,7 +18,7 @@ Example:
     # Make sure you login to the JetWay session on PuTTY
     # with user: 'bco' and password: 'aish8Hu8'
     # before running this code.
-    # Also make sure the still heater is set at 0.4 V
+    # Also make sure the still heater is OFF
     # This should all work from the New York control computer
 
     python janis_ctrl.py
@@ -181,12 +181,25 @@ class JanisCtrl(object):
         """
         self.tcp_send('readCMNTemp(9)')
         data = self.tcp_recv()
-        Z, T, tstamp, status = data.split(',')
-        Z = float(Z)
-        T = float(T)
-        status = int(status)
-        tstamp = tstamp.split(' ')
-        tstamp = tstamp[0].split('.')[0]
+        err = False
+        try:
+            Z, T, tstamp, status = data.split(',')
+        except Exception as e:
+            print(f'{e}\ndata: {data}')
+            err = True
+            
+        # Additional error checking
+        if err:
+            Z = None
+            T = None
+            status = 1
+        else:
+            Z = float(Z)
+            T = float(T)
+            status = int(status)
+            tstamp = tstamp.split(' ')
+            tstamp = tstamp[0].split('.')[0]
+
         if not status:
             return Z, T, tstamp
         else:
@@ -328,6 +341,18 @@ class JanisCtrl(object):
         Range, level = self.get_heater_rng_lvl(x)
         self.tcp_send(f'setHtrCntrlModeOpenLoop(1,{level},{Range})')
         _ = self.tcp_recv()
+
+
+    def set_still_heater(self, voltage):
+        """
+        Sets the still heater voltage
+        """
+        # Check that the voltage is zero
+        if voltage < 1e-6:
+            self.tcp_send(f'setHtrCntrlModeOpenLoop(2, 0, 0)')
+        else:
+            self.tcp_send(f'setHtrCntrlModeOpenLoop(2, {voltage}, {max(voltage, 3)})')
+
 
     def get_pid_ctrl(self, Tset, sample_time=15):
         """
@@ -819,15 +844,16 @@ if __name__ == '__main__':
     Jctrl.read_pressure('all')
 
     # Mines 3D cavity 9.2 GHz with, without InP
-    sample_name = 'M3D6_02_WITH_2SP_INP'
-    out = {}
-    Jctrl.pna_process('meas', T, out, prefix=sample_name,
-                    adaptive_averaging=True,
-                    cal_set=cal_set)
+    # sample_name = 'M3D6_02_WITH_2SP_INP'
+    # out = {}
+    # Jctrl.pna_process('meas', T, out, prefix=sample_name,
+    #                 adaptive_averaging=True,
+    #                 cal_set=cal_set)
+    Jctrl.set_still_heater(0.)
 
     # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'
     # Jctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
     Jctrl.set_current(0.)
     Z, T, tstamp = Jctrl.read_cmn()
-    print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
+    # print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
