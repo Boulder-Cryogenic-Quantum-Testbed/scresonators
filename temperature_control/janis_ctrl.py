@@ -350,8 +350,10 @@ class JanisCtrl(object):
         # Check that the voltage is zero
         if voltage < 1e-6:
             self.tcp_send(f'setHtrCntrlModeOpenLoop(2, 0, 0)')
+            _ = self.tcp_recv()
         else:
             self.tcp_send(f'setHtrCntrlModeOpenLoop(2, {voltage}, {max(voltage, 3)})')
+            _ = self.tcp_recv()
 
 
     def get_pid_ctrl(self, Tset, sample_time=15):
@@ -849,7 +851,7 @@ if __name__ == '__main__':
     # Jctrl.pna_process('meas', T, out, prefix=sample_name,
     #                 adaptive_averaging=True,
     #                 cal_set=cal_set)
-    Jctrl.set_still_heater(0.)
+    # Jctrl.set_still_heater(0.4)
 
     # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'
