@@ -583,7 +583,7 @@ class JanisCtrl(object):
         # Note: PNA power sweep assumes the outputfile has .csv as its last
         # four characters and removes them when manipulating strings and
         # directories
-        outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz.csv'
+        outputfile = sampleid # +'_'+str(self.vna_centerf)+'GHz'
         PNA.power_sweep(self.vna_startpower, self.vna_endpower,
                 self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
                 self.vna_averages, self.vna_edelay, self.vna_ifband,

@@ -21,7 +21,8 @@ therm_time  = 300. # wait an extra 5 minutes to thermalize
 ## Note: bypass_janis runs the JanisCtrl class without
 ##       communicating with the JACOB and can only
 ##       perform measurements with the PNA
-adaptive_averaging = True
+adaptive_averaging = False
+
 Jctrl = JanisCtrl(Tstart, Tstop, dT,
         sample_time=sample_time, T_eps=T_eps,
         therm_time=therm_time,
@@ -33,15 +34,15 @@ Change these settings for each power sweep
 """
 # Set the PNA inputs for the power sweep
 # Jctrl.vna_centerf = 6.23698 # GHz
-Jctrl.vna_centerf = 4.98855 # GHz
-Jctrl.vna_span = 1. # MHz
-Jctrl.vna_edelay = 69.29 #ns
-Jctrl.vna_points = 1001
+Jctrl.vna_centerf = 4.5 # GHz
+Jctrl.vna_span = 1000. # MHz
+Jctrl.vna_edelay = 64.82 #ns
+Jctrl.vna_points = 65001
 Jctrl.sparam = 'S21'
-Jctrl.vna_ifband = 0.10 #khz
-Jctrl.vna_startpower = -85 # dBm
-Jctrl.vna_endpower = -95 # dBm
-Jctrl.vna_numsweeps = 3
+Jctrl.vna_ifband = 100 #khz
+Jctrl.vna_startpower = -25 # dBm
+Jctrl.vna_endpower = -25 # dBm
+Jctrl.vna_numsweeps = 2
 # Jctrl.vna_startpower = -89 # dBm
 # Jctrl.vna_endpower = -89 # dBm
 # Jctrl.vna_numsweeps = 2
@@ -51,13 +52,13 @@ powers = np.linspace(Jctrl.vna_startpower,
                     Jctrl.vna_numsweeps)
 print(f'powers: {powers}')
 total_time_hr = 19.
-Navg_adaptive = Jctrl.estimate_init_adaptive_averages(
-                  time_per_sweep, 
-                  powers,
-                  total_time_hr)
-print(f'Number of averages: {Navg_adaptive}')
-# Jctrl.vna_averages = 1000
-Jctrl.vna_averages = Navg_adaptive
+# Navg_adaptive = Jctrl.estimate_init_adaptive_averages(
+#                   time_per_sweep, 
+#                   powers,
+#                   total_time_hr)
+# print(f'Number of averages: {Navg_adaptive}')
+Jctrl.vna_averages = 1
+# Jctrl.vna_averages = Navg_adaptive
 
 # Delay the start of a sweep by Nstart hours
 h2s = 3600.
@@ -66,11 +67,11 @@ start_delay = 0. # hr
 # sample_name = 'RGSI002_A1g7_6p23698_GHz'
 # cal_set = 'CryoCal_202207155'
 # sample_name = 'M3D6_02_WITH_2SP_INP_CRYOCAL'
-sample_name = 'HTNB2'
+sample_name = 'OXNbN01_01'
 cal_set = None
 
-# Print the JanisCtrl class members
 Jctrl.print_class_members()
+# Print the JanisCtrl class members
 
 # Set the MXC current to 0 mA
 Jctrl.set_current(0.)

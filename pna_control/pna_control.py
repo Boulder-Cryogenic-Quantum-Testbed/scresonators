@@ -99,8 +99,10 @@ def read_data(pna, points, outputfile, power, temp):
     '''
 
     #read in frequency
+    cfreq = float(pna.query('SENSe1:FREQuency:CENTER?')) / 1e9
     freq = np.linspace(float(pna.query('SENSe1:FREQuency:START?')),
             float(pna.query('SENSe1:FREQuency:STOP?')), points)
+    
 
     #read in phase
     pna.write('CALCulate1:FORMat PHASe')
@@ -116,7 +118,7 @@ def read_data(pna, points, outputfile, power, temp):
     mag = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #open output file and put data points into the file
-    filename = outputfile # filename = name_datafile(outputfile, power, temp)
+    filename = name_datafile(outputfile, power, temp, cfreq)
     file = open(filename+'.csv',"w")
 
     count = 0
@@ -220,7 +222,7 @@ def power_sweep(startpower: float,
     print(f'Measuring {sparam} ...')
 
     #create a new directory for the output to be put into
-    directory_name = timestamp_folder(os.getcwd(), meastype)
+    directory_name = timestamp_folder(os.getcwd(), centerf, meastype)
     os.mkdir(directory_name)
     outputfile = directory_name + '/' + outputfile
 
@@ -245,7 +247,8 @@ def power_sweep(startpower: float,
     for i in sweeps:
         print(f'{i} dBm, {averages//1} averages ...')
         get_data(centerf, span, temp, averages, i, edelay, ifband, points,
-                outputfile, sparam=sparam, cal_set=cal_set, setup_only=setup_only)
+                outputfile, sparam=sparam, cal_set=cal_set,
+                setup_only=setup_only)
         if adaptive_averaging: 
             averages = averages * ((10**(stepsize/10))**0.5)
     print('Power sweep completed.')
@@ -253,19 +256,21 @@ def power_sweep(startpower: float,
 
 def name_datafile(outputfile: str,
                   power: float,
-                  temp: float) -> str:
+                  temp: float,
+                  freq: float) -> str:
     # Check that the file does not have an extension, otherwise strip it
     fsplit = outputfile.split('.')
     if len(fsplit) > 1:
       outputfile = fsplit[0]
     # Use f-strings to make the formatting more compact
-    filename = f'{outputfile}_{power:.0f}dB_{temp:.0f}_mK.csv'
+    filename = f'{outputfile}_{freq:.3f}GHz_{power:.0f}dB_{temp:.0f}mK'
     # filename = outputfile+'_'+str(power)+'dB'+'_'+str(temp)+'mK.csv'
     filename = filename.replace('.','p')
 
     return filename
     
-def timestamp_folder(dir: str = None, meastype: str='powersweep') -> str:
+def timestamp_folder(dir: str = None, centerf = None, meastype:
+        str='powersweep') -> str:
     """Create a filename and directory structure to annotate the scan.
 
         Takes a root directory, appends scan type and timestamp.
@@ -279,11 +284,11 @@ def timestamp_folder(dir: str = None, meastype: str='powersweep') -> str:
     """
     now = time.strftime("%y%m%d_%H_%M_%S", time.localtime())
 
-    output = meastype+ '_' + now
+    output = meastype+ '_' + f'{centerf:.3f}GHz_' + now
     output = output.replace('.','p')
     
     if dir != None:
-        output_path = os.path.join(dir,output)
+        output_path = os.path.join(dir, output)
     else:
         output_path = output + '/'
     count=2
