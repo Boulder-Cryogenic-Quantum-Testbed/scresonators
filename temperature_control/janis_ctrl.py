@@ -54,6 +54,9 @@ class JanisCtrl(object):
         self.TCP_PORT = 5559
         self.init_socket = True
 
+        # Set the default VNA address
+        self.vna_addr = 'TCPIP0::K-N5222B-21927::hislip0,4880::INSTR'
+
         # Set as True to start the PID controller, then set to False to allow
         # for updates to the PID values from the previous temperature set point
         self.is_pid_init  = True
@@ -349,9 +352,11 @@ class JanisCtrl(object):
         """
         # Check that the voltage is zero
         if voltage < 1e-6:
+            print('Turning off still heater')
             self.tcp_send(f'setHtrCntrlModeOpenLoop(2, 0, 0)')
             _ = self.tcp_recv()
         else:
+            print(f'Turning on still heater with {voltage} V ...')
             self.tcp_send(f'setHtrCntrlModeOpenLoop(2, {voltage}, {max(voltage, 3)})')
             _ = self.tcp_recv()
 
@@ -571,29 +576,97 @@ class JanisCtrl(object):
         pstr = f'{prefix}_{int(self.vna_startpower)}_{int(self.vna_endpower)}dBm'
 
         # Preparing to measure frequencies, powers
-        powers = np.linspace(self.vna_startpower, self.vna_endpower,
-                             self.vna_numsweeps)
-        print(f'Measuring at {self.vna_centerf} GHz')
-        print(f'IFBW: {self.vna_ifband} kHz')
-        print(f'Span: {self.vna_span} MHz')
-        print(f'Npoints: {self.vna_points}')
-        print(f'Nsweeps: {self.vna_numsweeps}')
-        print(f'Powers: {powers} dBm')
+        if self.vna_numsweeps > 1:
+            powers = np.linspace(self.vna_startpower, self.vna_endpower,
+                                 self.vna_numsweeps)
+            print(f'Measuring at {self.vna_centerf} GHz')
+            print(f'IFBW: {self.vna_ifband} kHz')
+            print(f'Span: {self.vna_span} MHz')
+            print(f'Npoints: {self.vna_points}')
+            print(f'Nsweeps: {self.vna_numsweeps}')
+            print(f'Powers: {powers} dBm')
 
-        # Note: PNA power sweep assumes the outputfile has .csv as its last
-        # four characters and removes them when manipulating strings and
-        # directories
-        outputfile = sampleid # +'_'+str(self.vna_centerf)+'GHz'
-        PNA.power_sweep(self.vna_startpower, self.vna_endpower,
-                self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
-                self.vna_averages, self.vna_edelay, self.vna_ifband,
-                self.vna_points, outputfile, sparam=self.sparam, 
-                meastype=pstr,
-                adaptive_averaging=adaptive_averaging,
-                cal_set=cal_set,
-                setup_only=setup_only)
+            # Note: PNA power sweep assumes the outputfile has .csv as its last
+            # four characters and removes them when manipulating strings and
+            # directories
+            outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz'
+            PNA.power_sweep(self.vna_startpower, self.vna_endpower,
+                    self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
+                    self.vna_averages, self.vna_edelay, self.vna_ifband,
+                    self.vna_points, outputfile, sparam=self.sparam, 
+                    meastype=pstr,
+                    adaptive_averaging=adaptive_averaging,
+                    cal_set=cal_set,
+                    setup_only=setup_only)
+
+        else:
+            outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz'
+            PNA.get_data(centerf    = self.vna_centerf,
+                         span       = self.vna_span,
+                         temp       = temp,
+                         averages   = self.vna_averages,
+                         power      = self.vna_startpower,
+                         edelay     = self.vna_edelay,
+                         ifband     = self.vna_ifband,
+                         points     = self.vna_points,
+                         outputfile = outputfile,
+                         sparam     = self.sparam,
+                         cal_set    = calset,
+                         instr_addr = self.vna_addr)
 
         out[idx] = 0
+
+
+    def broadband_sweep(self, sampleid, power, frequency_band=[4e9, 8e9],
+                        max_pts=65001, frequency_chunk_size=1e9, cal_set=None):
+        """
+        Performs a broadband frequency sweep in 1 GHz chunks
+        """
+        # Read the CMN temperature
+        Z, temp, timestamp = self.read_cmn()
+
+        # Determine the number of chunks to measure
+        df = frequency_band[1] - frequency_band[0]
+        Nchunks = int(np.floor(df / frequency_chunk_size))
+        print(f'Sweeping a {df / 1e9} GHz band in {Nchunks} chunks ...')
+        f0 = frequency_band[0] / 1e9
+        fdata = np.array([])
+        smag = np.array([])
+        sph = np.array([])
+        for n in range(Nchunks):
+            # Set the center frequency
+            centerf = f0 + 0.5 * frequency_chunk_size / 1e9
+            print(f'{f0} GHz to {f0 + (frequency_chunk_size/1e9)} GHz ...')
+            PNA.get_data(centerf    = centerf,
+                         span       = frequency_chunk_size / 1e6, # MHz
+                         temp       = temp * 1e3,
+                         averages   = self.vna_averages,
+                         power      = power, 
+                         edelay     = self.vna_edelay,
+                         ifband     = self.vna_ifband,
+                         points     = max(max_pts, self.vna_points), 
+                         outputfile = sampleid+'.csv',
+                         sparam     = self.sparam,
+                         cal_set    = cal_set,
+                         instr_addr = self.vna_addr)
+
+            # Move to the next starting position
+            f0 += frequency_chunk_size / 1e9
+
+            # Read data and append to larger data set
+            fname = f'{sampleid}_{freq:.3f}GHz_{power:.0f}dB_{temp:.0f}mK'
+            fname = filename.replace('.','p')
+            data = np.genfromtxt(fname, delimiter=',').T
+            fdata = np.hstack((fdata, data[0]))
+            smag = np.hstack((smag, data[1]))
+            sph = np.hstack((sph, data[2]))
+
+        f0 = frequency_band[0] / 1e9; f1 = frequency_band[1] / 1e9
+        fname = f'{sampleid}_{f0:.3f}_{f1:.3f}GHz_{power:.0f}dB_{temp:.0f}mK.csv'
+        print(f'Writing all data to {fname_all} ...')
+        with open(fname, 'w') as fid:
+            fid.write('\n'.join([f'{ff}, {sm}, {sp}' 
+                            for ff, sm, sp in zip(fdata, smag, sph)]))
 
 
     def run_temp_sweep(self, measure_vna=False, prefix='M3D6_02_WITH_1SP_INP'):

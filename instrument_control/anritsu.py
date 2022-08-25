@@ -30,6 +30,9 @@ class AnritsuCtrl(object):
         self.rm = pyvisa.ResourceManager()
         self.dstr = datetime.datetime.today().strftime('%y%m%d')
 
+        # Set the precision on the frequency string
+        self.fndigits = 3
+
         # Update the arguments and the keyword arguments
         # This will overwrite the above defaults with the user-passed kwargs
         for k, v in kwargs.items():
@@ -83,7 +86,7 @@ class AnritsuCtrl(object):
         # Note: PNA power sweep assumes the outputfile has .csv as its last
         # four characters and removes them when manipulating strings and
         # directories
-        outputfile = sampleid+'_'+str(vna_dict['centerf'])+'GHz.csv'
+        outputfile = sampleid+'_'+str(vna_dict['centerf'])+'GHz'
         pna.get_data(centerf    = vna_dict['centerf'],
                      span       = vna_dict['span'],
                      temp       = vna_dict['temp'],
@@ -143,6 +146,8 @@ class AnritsuCtrl(object):
         self.write_check(f'SOUR:POW:LEV:IMM:AMPL {power} dBm')
         print(f'Sweeping frequencies {sweep_freqs} GHz at {power} dBm ...')
 
+        fndigits = self.fndigits
+
         # Iterate over all frequencies
         for freq in sweep_freqs:
             print(f'Measuring with {freq} GHz ...')
@@ -151,7 +156,9 @@ class AnritsuCtrl(object):
             if not is_output_on:
                 self.write_check('OUTP:STAT ON')
             if run_vna and vna_dict:
-                self.vna_process(vna_dict, suffix=f'{power}_dBm_{freq}_GHz')
+                fout = f'pump_{freq:.{fndigits}f}_GHz_{power}_dBm'
+                fout = fout.replace('.', 'p')
+                self.vna_process(vna_dict, suffix=fout)
 
         # Turn off power at the end of the sweep
         self.write_check('OUTP:STAT OFF')
@@ -174,6 +181,7 @@ class AnritsuCtrl(object):
         self.write_check(f'SOUR:FREQ:CW {freq} GHZ') 
 
         print(f'Sweeping powers {sweep_powers} dBm at {freq} GHz ...')
+        fndigits = self.fndigits
 
         # Iterate over all frequencies
         for power in sweep_powers:
@@ -183,7 +191,9 @@ class AnritsuCtrl(object):
             if not is_output_on:
                 self.write_check('OUTP:STAT ON')
             if run_vna and vna_dict:
-                self.vna_process(vna_dict, suffix=f'{freq}_GHz_{power}_dBm')
+                fout = f'pump_{freq:.{fndigits}f}_GHz_{power}_dBm'
+                fout = fout.replace('.', 'p')
+                self.vna_process(vna_dict, suffix=fout)
 
         # Turn off power at the end of the sweep
         self.write_check('OUTP:STAT OFF')

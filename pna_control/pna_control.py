@@ -119,7 +119,7 @@ def read_data(pna, points, outputfile, power, temp):
 
     #open output file and put data points into the file
     filename = name_datafile(outputfile, power, temp, cfreq)
-    file = open(filename+'.csv',"w")
+    file = open(filename+'.csv', "w")
 
     count = 0
     for i in freq:
@@ -149,7 +149,6 @@ def get_data(centerf: float,
     #set up the PNA to measure s21 for the specific instrument GPIB0::16::INSTR
     rm = pyvisa.ResourceManager()
     GPIB_addr = 'GPIB0::16::INSTR'
-
 
     # handle failure to open the GPIB resource #this is an issue when connecting
     # to the PNA-X from newyork rather than ontario
@@ -264,7 +263,6 @@ def name_datafile(outputfile: str,
       outputfile = fsplit[0]
     # Use f-strings to make the formatting more compact
     filename = f'{outputfile}_{freq:.3f}GHz_{power:.0f}dB_{temp:.0f}mK'
-    # filename = outputfile+'_'+str(power)+'dB'+'_'+str(temp)+'mK.csv'
     filename = filename.replace('.','p')
 
     return filename
