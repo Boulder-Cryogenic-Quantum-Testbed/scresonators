@@ -74,10 +74,14 @@ def pna_setup(pna,
     if cal_set:
         pna.write(f'CALCulate1:CORRection:TYPE \'Full 2 Port(1,2)\'')
         pna.write('SENSe1:CORRection:INTerpolate:state ON')
-        cal_cmd = f'SENS1:CORR:CSET:ACT \'{cal_set}\',1'
-        # cal_cmd = f'SENS:CORR:CSET:ACT \'{cal_set}\',0'
+        # XXX: This does not work!
+        # cal_cmd = f'SENS1:CORR:CSET:ACT \'{cal_set}\',1'
+        cal_cmd = f'SENS:CORR:CSET:ACT \'{cal_set}\',0'
         # print(f'cal_cmd: {cal_cmd}')
         pna.write(cal_cmd)
+
+        gpoints = pna.query(f'SENSe1:SWEep:POINts?')
+        assert int(gpoints) == points, f'VNA points ({gpoints}) != {points}.'
 
     pna.write(f'SOUR1:POW1 {power}')
     pna.write('SENSe1:AVERage:STATe ON')
@@ -102,7 +106,6 @@ def read_data(pna, points, outputfile, power, temp):
     cfreq = float(pna.query('SENSe1:FREQuency:CENTER?')) / 1e9
     freq = np.linspace(float(pna.query('SENSe1:FREQuency:START?')),
             float(pna.query('SENSe1:FREQuency:STOP?')), points)
-    
 
     #read in phase
     pna.write('CALCulate1:FORMat PHASe')
