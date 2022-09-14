@@ -280,8 +280,6 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
             popt, pcov = curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
             test = least_squares(ff.one_cavity_peak_abs, guess, max_nfev=100, bounds=(0, [np.inf] * 3))
-            print(popt)
-            print(test)
             Q = popt[0]
             Qc = popt[1]
             init_guess = [Q, Qc, f_c, phi]
