@@ -105,8 +105,7 @@ Must install pip module before installing pips for python 2. Once pip is install
 
 #### Section 1: Initial Setup
 Import code library with:
-`import fit_resonator.resonator as scres`
-###### User will need to set a variable with the name of their file:
+`import fit_resonator.resonator as scres`:
 
 ###### User will need to set a variable with the name of their file:
 `filename = 'your name here.csv/txt/snp'`
@@ -212,7 +211,7 @@ normalize: The number of points from the start/end of S21 data the user wants to
 Remember for these special initializations you can include as many as you need, just don't forget the keyword arguments!
 `my_resonator = scres.Resonator(background = background_file, normalize = 5, filepath = "PATH/TO/FILE, measurement = "S21"`
 
-##Check Data:
+### Check Data:
 
 A simple script to detect if the user's data file is of the correct format.
 
