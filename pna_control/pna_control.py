@@ -25,28 +25,67 @@ def pna_setup(pna,
               power: float,
               edelay: float,
               averages: int,
-              sparam : str = 'S12'):
+              sparam : str = 'S12', 
+              cal_set : str = None):
     '''
     set parameters for the PNA for the sweep (number of points, center
     frequency, span of frequencies, IF bandwidth, power, electrical delay and
     number of averages)
+
+    XXX: Do not change this order:
+
+    1.  Define a measurement
+    2.  Turn on display
+    3.  Set the number of points
+    4.  Set the center frequency, span
+    5.  Turn on sweep time AUTO
+    6.  Set the electrical delay
+    7.  Turn on interpolation
+    8.  Set the calibration
+    9.  Set the power
+    10. Turn on averaging
+    11. Set the IF bandwidth
+
     '''
 
-    #initial setup for measurement
-    if (pna.query('CALC:PAR:CAT:EXT?') != f'"Meas,{sparam}"\n'):
-        pna.write(f'CALCulate1:PARameter:DEFine:EXT \'Meas\',{sparam}')
-        pna.write('DISPlay:WINDow1:STATE ON')
-        pna.write('DISPlay:WINDow1:TRACe1:FEED \'Meas\'')
-        pna.write('DISPlay:WINDow1:TRACe2:FEED \'Meas\'')
+    # Initial setup for measurement
+    ## Query the exisiting measurements
+    measurements = pna.query('CALC1:PAR:CAT:EXTended?')
+
+    ## If any measurements exist, delete them all
+    if measurements != 'NO CATALOG':
+        pna.write(f'CALCulate1:PARameter:DELete:ALL')
+    pna.write(f'CALCulate1:MEASure1:DEFine \"{sparam}\"')
+    pna.write(f'CALCulate1:MEASure2:DEFine \"{sparam}\"')
+
     #set parameters for sweep
+    pna.write('DISPlay:WINDow1 ON')
+    pna.write('DISPlay:MEAS1:FEED 1')
+    pna.write('DISPlay:WINDow2 ON')
+    pna.write('DISPlay:MEAS2:FEED 2')
+
     pna.write(f'SENSe1:SWEep:POINts {points}')
     pna.write(f'SENSe1:FREQuency:CENTer {centerf}GHZ')
     pna.write(f'SENSe1:FREQuency:SPAN {span}MHZ')
-    pna.write(f'SENSe1:BANDwidth {ifband}KHZ')
+
     pna.write(f'SENSe1:SWEep:TIME:AUTO ON')
-    pna.write(f'SOUR:POW1 {power}')
     pna.write(f'CALCulate1:CORRection:EDELay:TIME {edelay}NS')
+
+    if cal_set:
+        pna.write(f'CALCulate1:CORRection:TYPE \'Full 2 Port(1,2)\'')
+        pna.write('SENSe1:CORRection:INTerpolate:state ON')
+        # XXX: This does not work!
+        # cal_cmd = f'SENS1:CORR:CSET:ACT \'{cal_set}\',1'
+        cal_cmd = f'SENS:CORR:CSET:ACT \'{cal_set}\',0'
+        # print(f'cal_cmd: {cal_cmd}')
+        pna.write(cal_cmd)
+
+        gpoints = pna.query(f'SENSe1:SWEep:POINts?')
+        assert int(gpoints) == points, f'VNA points ({gpoints}) != {points}.'
+
+    pna.write(f'SOUR1:POW1 {power}')
     pna.write('SENSe1:AVERage:STATe ON')
+    pna.write(f'SENSe1:BANDwidth {ifband}KHZ')
 
     #ensure at least 10 averages are taken
     #if(averages < 10):
@@ -64,6 +103,7 @@ def read_data(pna, points, outputfile, power, temp):
     '''
 
     #read in frequency
+    cfreq = float(pna.query('SENSe1:FREQuency:CENTER?')) / 1e9
     freq = np.linspace(float(pna.query('SENSe1:FREQuency:START?')),
             float(pna.query('SENSe1:FREQuency:STOP?')), points)
 
@@ -81,8 +121,8 @@ def read_data(pna, points, outputfile, power, temp):
     mag = pna.query_ascii_values('CALCulate1:DATA? FDATA', container=np.array)
 
     #open output file and put data points into the file
-    filename = name_datafile(outputfile, power, temp)
-    file = open(filename+'.csv',"w")
+    filename = name_datafile(outputfile, power, temp, cfreq)
+    file = open(filename+'.csv', "w")
 
     count = 0
     for i in freq:
@@ -99,8 +139,12 @@ def get_data(centerf: float,
             ifband: float = 5, 
             points: int = 201, 
             outputfile: str = "results.csv",
-            instr_addr : str = 'GPIB::16::INSTR',
-            sparam : str = 'S12'):
+            # instr_addr : str = 'GPIB::16::INSTR', # If using GPIB
+            # instr_addr : str = 'TCPIP0::69.254.35.52::islip0::INSTR1', # Old address from JILA lab
+            instr_addr : str = 'TCPIP0::K-N5222B-21927::hislip0,4880::INSTR',
+            sparam : str = 'S12',
+            cal_set : str = None,
+            setup_only : bool = False):
     '''
     function to get data and put it into a user specified file
     '''
@@ -113,6 +157,9 @@ def get_data(centerf: float,
     # to the PNA-X from newyork rather than ontario
     try:
         keysight = rm.open_resource(instr_addr)
+
+        ## Attempt to fix the timeout error in averaging command
+        keysight.timeout = None
         # keysight = rm.open_resource('GPIB0::16::INSTR')
     except Exception as ex:
         print(f'\n----------\nException:\n{ex}\n----------\n')
@@ -121,12 +168,15 @@ def get_data(centerf: float,
         # keysight = rm.open_resource(instr_addr)
 
     pna_setup(keysight, points, centerf, span, ifband, power, edelay, averages,
-              sparam=sparam)
+              sparam=sparam, cal_set=cal_set)
+
+    if setup_only:
+        return
 
     #start taking data for S21
     keysight.write('INITiate:CONTinuous ON')
     keysight.write('OUTPut:STATe ON')
-    keysight.write('CALCulate1:PARameter:SELect \'Meas\'')
+    # keysight.write('CALCulate1:PARameter:SELect \'M1\'')
     keysight.write('FORMat ASCII')
 
     #wait until the averages are done being taken then read in the data
@@ -159,8 +209,11 @@ def power_sweep(startpower: float,
                 ifband: float = 5, 
                 points: int = 201, 
                 outputfile: str = "results.csv",
-                meastype: str = None,
-                sparam : str = 'S12'):
+                meastype: str = 'powersweep',
+                sparam : str = 'S12',
+                adaptive_averaging : bool = True,
+                cal_set : str = None,
+                setup_only : bool = False):
     '''
     run a power sweep for specified power range with a certain number of sweeps
     '''
@@ -171,48 +224,54 @@ def power_sweep(startpower: float,
     print(f'Measuring {sparam} ...')
 
     #create a new directory for the output to be put into
-    directory_name = timestamp_folder(os.getcwd(),meastype)
+    directory_name = timestamp_folder(os.getcwd(), centerf, meastype)
     os.mkdir(directory_name)
     outputfile = directory_name + '/' + outputfile
 
     #write an output file with conditions
-    file = open(directory_name+'/'+'conditions.csv',"w")
-    file.write('STARTPOWER: '+str(startpower)+' dB\n')
-    file.write('ENDPOWER: '+str(endpower)+' dB\n')
-    file.write('NUMSWEEPS: '+str(numsweeps)+'\n')
-    file.write('CENTERF: '+str(centerf)+' GHz\n')
-    file.write('SPAN: '+str(span)+' MHz\n')
-    file.write('TEMP: '+f'{temp:.3f}'+' mK\n')
-    file.write('STARTING AVERAGES: '+str(averages)+'\n')
-    file.write('EDELAY: '+str(edelay)+' ns\n')
-    file.write('IFBAND: '+str(ifband)+' kHz\n')
-    file.write('POINTS: '+str(points)+'\n')
-    file.close()
+    with open(directory_name+'/'+'conditions.csv',"w") as file:
+        file.write('# Parameter, Value, Units\n')
+        file.write(f'SPARAM, {sparam}, \n')
+        file.write(f'CALSET, {cal_set}, \n')
+        file.write(f'STARTPOWER, {startpower}, dB\n')
+        file.write(f'ENDPOWER, {endpower}, dB\n')
+        file.write(f'NUMSWEEPS, {numsweeps}, \n')
+        file.write(f'CENTERF, {centerf}, GHz\n')
+        file.write(f'SPAN, {span}, MHz\n')
+        file.write(f'TEMP, {temp:.3f}, mK\n')
+        file.write(f'STARTING AVERAGES, {averages}\n')
+        file.write(f'EDELAY, {edelay}, ns\n')
+        file.write(f'IFBAND, {ifband}, kHz\n')
+        file.write(f'POINTS, {points}, \n')
+        file.close()
 
     #run each sweep
     for i in sweeps:
         print(f'{i} dBm, {averages//1} averages ...')
-        getdata(centerf, span, temp, averages, i, edelay, ifband, points,
-                outputfile, sparam=sparam)
-        averages = averages * ((10**(stepsize/10))**0.5)
+        get_data(centerf, span, temp, averages, i, edelay, ifband, points,
+                outputfile, sparam=sparam, cal_set=cal_set,
+                setup_only=setup_only)
+        if adaptive_averaging: 
+            averages = averages * ((10**(stepsize/10))**0.5)
     print('Power sweep completed.')
 
 
 def name_datafile(outputfile: str,
                   power: float,
-                  temp: float) -> str:
+                  temp: float,
+                  freq: float) -> str:
     # Check that the file does not have an extension, otherwise strip it
     fsplit = outputfile.split('.')
     if len(fsplit) > 1:
       outputfile = fsplit[0]
     # Use f-strings to make the formatting more compact
-    filename = f'{outputfile}_{power:.0f}dB_{temp:.0f}_mK.csv'
-    # filename = outputfile+'_'+str(power)+'dB'+'_'+str(temp)+'mK.csv'
+    filename = f'{outputfile}_{freq:.3f}GHz_{power:.0f}dB_{temp:.0f}mK'
     filename = filename.replace('.','p')
 
     return filename
     
-def timestamp_folder(dir: str = None, meastype: str='powersweep') -> str:
+def timestamp_folder(dir: str = None, centerf = None, meastype:
+        str='powersweep') -> str:
     """Create a filename and directory structure to annotate the scan.
 
         Takes a root directory, appends scan type and timestamp.
@@ -226,11 +285,11 @@ def timestamp_folder(dir: str = None, meastype: str='powersweep') -> str:
     """
     now = time.strftime("%y%m%d_%H_%M_%S", time.localtime())
 
-    output = meastype+ '_' + now
+    output = meastype+ '_' + f'{centerf:.3f}GHz_' + now
     output = output.replace('.','p')
     
     if dir != None:
-        output_path = os.path.join(dir,output)
+        output_path = os.path.join(dir, output)
     else:
         output_path = output + '/'
     count=2

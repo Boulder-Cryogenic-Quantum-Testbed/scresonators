@@ -3,6 +3,10 @@ import numpy as np
 import lmfit
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+
+import sympy as sym
+import uncertainties
+
 from scipy.optimize import curve_fit
 from matplotlib.patches import Circle
 from lmfit import Minimizer
@@ -400,7 +404,7 @@ def PlotFit(x,
             extract_factor=None,
             title="Fit",
             manual_params=None,
-            dfac: int = 10,
+            dfac: int = 1,
             msizes: list = [12, 7],
             xstr: str = 'Frequency [GHz]',
             fsize: float = 16.):
@@ -526,8 +530,8 @@ def PlotFit(x,
         ax4.set_ylabel('Ang[S21]')
 
     ax1.plot(x_initial[0::dfac],
-             np.log10(np.abs(y_initial[0::dfac])) * 20, 'ko',
-             label='raw data', fillstyle='none',
+             np.log10(np.abs(y_initial[0::dfac])) * 20, 'bo',
+             label='raw data',
              markersize=msize2)
     ax1.plot(x, x * slope2 + intercept2, '--', color='tab:gray',
              label='normalize line', linewidth=2)
@@ -536,8 +540,8 @@ def PlotFit(x,
     for tick in ax1.xaxis.get_major_ticks():
         tick.label.set_fontsize(fsize)
 
-    ax2.plot(x_initial[0::dfac], np.angle(y_initial[0::dfac]), 'ko',
-             label='raw data', markersize=msize2, fillstyle='none')
+    ax2.plot(x_initial[0::dfac], np.angle(y_initial[0::dfac]), 'bo',
+             label='raw data', markersize=msize2)
     ax2.plot(x, x * slope + intercept, '--', color='tab:gray',
              label='normalize line', linewidth=2)
     ax2.set_xlim(left=x[0], right=x[-1])
@@ -549,8 +553,9 @@ def PlotFit(x,
     x = x[0::dfac]
     y = y[0::dfac]
 
-    ax3.plot(x, np.log10(np.abs(y)) * 20, 'bo', label='normalized data',
-             fillstyle='none', markersize=msize2)
+    ax3.plot(x, np.log10(np.abs(y)) * 20, 'bo',
+            label='normalized data',
+            markersize=msize2)
     # ax3.plot(x_fit_full,np.log10(np.abs(y_fit_full))*20,'g--',label = 'fit past 3dB from resonance',color = 'lightgreen', alpha=0.7)
     ax3.plot(x_fit, np.log10(np.abs(y_fit)) * 20, 'r-',
              lw=3, label='fit function')
@@ -568,7 +573,7 @@ def PlotFit(x,
         tick.label.set_fontsize(fsize)
 
     line1 = ax.plot(np.real(y), np.imag(y), 'bo',
-                    label='normalized data', markersize=msize2, fillstyle='none')
+                    label='normalized data', markersize=msize2)
     line2 = ax.plot(np.real(y_fit), np.imag(y_fit), 'r-', label='fit function',
                     linewidth=3)
     # ax.plot(np.real(y_fit_full),np.imag(y_fit_full),'--',color = 'lightgreen',label = 'fit past 3dB from resonance',linewidth = 4.5, alpha=0.7)
