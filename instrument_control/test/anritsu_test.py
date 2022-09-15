@@ -8,7 +8,9 @@ Date:   220728
 """
 
 import sys
-sys.path.append(r'C:\Users\Lehnert Lab\GitHub\measurement\instrument_control')
+# sys.path.append(r'C:\Users\Lehnert Lab\GitHub\measurement\instrument_control')
+# Need to test relative path, otherwise try the above
+sys.path.append(r'..\')
 from anritsu import AnritsuCtrl
 import numpy as np
 import sys
