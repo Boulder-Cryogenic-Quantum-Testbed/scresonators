@@ -16,7 +16,7 @@ import datetime
 
 class AnritsuCtrl(object):
     """
-    Class that implments the Anritsu SCPI control
+    Class that implements the Anritsu SCPI control
     """
     def __init__(self, *args, **kwargs):
         """
