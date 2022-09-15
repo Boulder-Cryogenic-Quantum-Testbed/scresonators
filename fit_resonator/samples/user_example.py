@@ -14,7 +14,6 @@ np.set_printoptions(precision=4,suppress=True)# display numbers with 4 sig. figu
 
                          ## Code Starts Here ##
 
-dir = '/Users/coreyraemcrae/Documents/GitHub/data/epi-GaAs_LEres/GaAs_Die1/BlueFors/4p792GHz/2019_08_22_11_36_20_highpowersweep/' #make sure to use / instead of \
 dir = '/Users/Lehnert Lab/GitHub/measurement/temperature_control/powersweep_220617_11_56_17'
 #make sure to use / instead of \
 filename = 'M3D6_03_BARE_220617_7_-15dB_300000000_mKpcsv.csv'
