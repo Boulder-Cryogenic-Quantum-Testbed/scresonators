@@ -139,8 +139,8 @@ def get_data(centerf: float,
             ifband: float = 5, 
             points: int = 201, 
             outputfile: str = "results.csv",
-            # instr_addr : str = 'GPIB::16::INSTR',
-            # instr_addr : str = 'TCPIP0::69.254.35.52::islip0::INSTR1',
+            # instr_addr : str = 'GPIB::16::INSTR', # If using GPIB
+            # instr_addr : str = 'TCPIP0::69.254.35.52::islip0::INSTR1', # Old address from JILA lab
             instr_addr : str = 'TCPIP0::K-N5222B-21927::hislip0,4880::INSTR',
             sparam : str = 'S12',
             cal_set : str = None,
