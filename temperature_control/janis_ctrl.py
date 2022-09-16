@@ -18,11 +18,10 @@ Example:
     # Make sure you login to the JetWay session on PuTTY
     # with user: 'bco' and password: 'aish8Hu8'
     # before running this code.
-    # Also make sure the still heater is set at 0.4 V
+    # Also make sure the still heater is OFF
     # This should all work from the New York control computer
 
-    python temp_pid_ctrl.py
-
+    python janis_ctrl.py
 
 """
 
@@ -55,15 +54,20 @@ class JanisCtrl(object):
         self.TCP_PORT = 5559
         self.init_socket = True
 
+        # Set the default VNA address
+        self.vna_addr = 'TCPIP0::K-N5222B-21927::hislip0,4880::INSTR'
+
         # Set as True to start the PID controller, then set to False to allow
         # for updates to the PID values from the previous temperature set point
-        self.is_pid_init = True
-        self.pid_values  = None
+        self.is_pid_init  = True
+        self.pid_values   = None
+        self.bypass_janis = False
 
         # Default thermalization time
         self.therm_time  = 300. # Wait extra 5 minutes to thermalize [s]
         self.T_eps       = 1e-2 # Temperature settling threshold [mK]
         self.T_sweep_list_spacing = 'linear'
+        self.adaptive_averaging = False
 
         # Set the base temperature of the fridge here
         self.T_base = 0.016
@@ -80,9 +84,12 @@ class JanisCtrl(object):
             setattr(self, k, v)
 
         # Create socket connection to the Janus Gas Handling System
-        if self.init_socket:
+        print(f'self.bypass_janis: {self.bypass_janis}')
+        if self.init_socket and (not self.bypass_janis):
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.connect((self.TCP_IP, self.TCP_PORT))
+        elif self.bypass_janis:
+            self.socket = None
         else:
             self.socket = None
 
@@ -177,12 +184,25 @@ class JanisCtrl(object):
         """
         self.tcp_send('readCMNTemp(9)')
         data = self.tcp_recv()
-        Z, T, tstamp, status = data.split(',')
-        Z = float(Z)
-        T = float(T)
-        status = int(status)
-        tstamp = tstamp.split(' ')
-        tstamp = tstamp[0].split('.')[0]
+        err = False
+        try:
+            Z, T, tstamp, status = data.split(',')
+        except Exception as e:
+            print(f'{e}\ndata: {data}')
+            err = True
+            
+        # Additional error checking
+        if err:
+            Z = None
+            T = None
+            status = 1
+        else:
+            Z = float(Z)
+            T = float(T)
+            status = int(status)
+            tstamp = tstamp.split(' ')
+            tstamp = tstamp[0].split('.')[0]
+
         if not status:
             return Z, T, tstamp
         else:
@@ -324,6 +344,22 @@ class JanisCtrl(object):
         Range, level = self.get_heater_rng_lvl(x)
         self.tcp_send(f'setHtrCntrlModeOpenLoop(1,{level},{Range})')
         _ = self.tcp_recv()
+
+
+    def set_still_heater(self, voltage):
+        """
+        Sets the still heater voltage
+        """
+        # Check that the voltage is zero
+        if voltage < 1e-6:
+            print('Turning off still heater')
+            self.tcp_send(f'setHtrCntrlModeOpenLoop(2, 0, 0)')
+            _ = self.tcp_recv()
+        else:
+            print(f'Turning on still heater with {voltage} V ...')
+            self.tcp_send(f'setHtrCntrlModeOpenLoop(2, {voltage}, {max(voltage, 3)})')
+            _ = self.tcp_recv()
+
 
     def get_pid_ctrl(self, Tset, sample_time=15):
         """
@@ -492,36 +528,145 @@ class JanisCtrl(object):
         out['PID']      = [P, I, D]
         out[flo_key]    = flow
         fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}\n')
+
+
+    def estimate_init_adaptive_averages(
+            self,
+            time_per_sweep : float, 
+            powers : np.ndarray,
+            total_time_hr : float) -> int:
+        """
+        Estimates the initial number of averages used by the adaptive averaging
+        performed by power_sweep
+    
+        Arguments:
+        ---------
+    
+        time_per_sweep:     time to perform 1 average [s]
+        powers:             array of powers in the power sweep [dBm]
+        total_time_hr:      total runtime [hr]
+    
+        """
+        # Check that adaptive averaging is active
+        assert self.adaptive_averaging, 'Adaptive averaging not set!'
+
+        # Compute the step size and number of points
+        stepsize = abs(powers[1] - powers[0])
+        print(f'stepsize: {stepsize}')
+        Npts = len(powers)
+        fac = (10**(stepsize/10))**0.5
+        print(f'fac: {fac}')
+        sec2hr = 3600.
+    
+        # Compute the number of averages
+        Navg = total_time_hr / sum([time_per_sweep * fac**i / sec2hr
+                                    for i in range(Npts)])
+    
+        return int(np.ceil(Navg))
     
 
-    def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP'):
+    def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP',
+                    adaptive_averaging=True, cal_set=None, setup_only=False):
         """
         Performs a PNA measurement
         """
         # Get the temperature from the temperature controller
         temp = Tset * 1e3 #mk
         sampleid = f'{prefix}_{self.dstr}' 
+        pstr = f'{prefix}_{int(self.vna_startpower)}_{int(self.vna_endpower)}dBm'
 
         # Preparing to measure frequencies, powers
-        powers = np.linspace(self.vna_startpower, self.vna_endpower,
-                             self.vna_numsweeps)
-        print(f'Measuring at {self.vna_centerf} GHz')
-        print(f'IFBW: {self.vna_ifband} kHz')
-        print(f'Span: {self.vna_span} MHz')
-        print(f'Npoints: {self.vna_points}')
-        print(f'Nsweeps: {self.vna_numsweeps}')
-        print(f'Powers: {powers} dBm')
+        if self.vna_numsweeps > 1:
+            powers = np.linspace(self.vna_startpower, self.vna_endpower,
+                                 self.vna_numsweeps)
+            print(f'Measuring at {self.vna_centerf} GHz')
+            print(f'IFBW: {self.vna_ifband} kHz')
+            print(f'Span: {self.vna_span} MHz')
+            print(f'Npoints: {self.vna_points}')
+            print(f'Nsweeps: {self.vna_numsweeps}')
+            print(f'Powers: {powers} dBm')
 
-        # Note: PNA power sweep assumes the outputfile has .csv as its last
-        # four characters and removes them when manipulating strings and
-        # directories
-        outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz.csv'
-        PNA.powersweep(self.vna_startpower, self.vna_endpower,
-                self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
-                self.vna_averages, self.vna_edelay, self.vna_ifband,
-                self.vna_points, outputfile, sparam=self.sparam)
+            # Note: PNA power sweep assumes the outputfile has .csv as its last
+            # four characters and removes them when manipulating strings and
+            # directories
+            outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz'
+            PNA.power_sweep(self.vna_startpower, self.vna_endpower,
+                    self.vna_numsweeps, self.vna_centerf, self.vna_span, temp,
+                    self.vna_averages, self.vna_edelay, self.vna_ifband,
+                    self.vna_points, outputfile, sparam=self.sparam, 
+                    meastype=pstr,
+                    adaptive_averaging=adaptive_averaging,
+                    cal_set=cal_set,
+                    setup_only=setup_only)
+
+        else:
+            outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz'
+            PNA.get_data(centerf    = self.vna_centerf,
+                         span       = self.vna_span,
+                         temp       = temp,
+                         averages   = self.vna_averages,
+                         power      = self.vna_startpower,
+                         edelay     = self.vna_edelay,
+                         ifband     = self.vna_ifband,
+                         points     = self.vna_points,
+                         outputfile = outputfile,
+                         sparam     = self.sparam,
+                         cal_set    = calset,
+                         instr_addr = self.vna_addr)
 
         out[idx] = 0
+
+
+    def broadband_sweep(self, sampleid, power, frequency_band=[4e9, 8e9],
+                        max_pts=65001, frequency_chunk_size=1e9, cal_set=None):
+        """
+        Performs a broadband frequency sweep in 1 GHz chunks
+        """
+        # Read the CMN temperature
+        Z, temp, timestamp = self.read_cmn()
+
+        # Determine the number of chunks to measure
+        df = frequency_band[1] - frequency_band[0]
+        Nchunks = int(np.floor(df / frequency_chunk_size))
+        print(f'Sweeping a {df / 1e9} GHz band in {Nchunks} chunks ...')
+        f0 = frequency_band[0] / 1e9
+        fdata = np.array([])
+        smag = np.array([])
+        sph = np.array([])
+        for n in range(Nchunks):
+            # Set the center frequency
+            centerf = f0 + 0.5 * frequency_chunk_size / 1e9
+            print(f'{f0} GHz to {f0 + (frequency_chunk_size/1e9)} GHz ...')
+            PNA.get_data(centerf    = centerf,
+                         span       = frequency_chunk_size / 1e6, # MHz
+                         temp       = temp * 1e3,
+                         averages   = self.vna_averages,
+                         power      = power, 
+                         edelay     = self.vna_edelay,
+                         ifband     = self.vna_ifband,
+                         points     = max(max_pts, self.vna_points), 
+                         outputfile = sampleid+'.csv',
+                         sparam     = self.sparam,
+                         cal_set    = cal_set,
+                         instr_addr = self.vna_addr)
+
+            # Move to the next starting position
+            f0 += frequency_chunk_size / 1e9
+
+            # Read data and append to larger data set
+            fname = f'{sampleid}_{freq:.3f}GHz_{power:.0f}dB_{temp:.0f}mK'
+            fname = filename.replace('.','p')
+            data = np.genfromtxt(fname, delimiter=',').T
+            fdata = np.hstack((fdata, data[0]))
+            smag = np.hstack((smag, data[1]))
+            sph = np.hstack((sph, data[2]))
+
+        f0 = frequency_band[0] / 1e9; f1 = frequency_band[1] / 1e9
+        fname = f'{sampleid}_{f0:.3f}_{f1:.3f}GHz_{power:.0f}dB_{temp:.0f}mK.csv'
+        print(f'Writing all data to {fname_all} ...')
+        with open(fname, 'w') as fid:
+            fid.write('\n'.join([f'{ff}, {sm}, {sp}' 
+                            for ff, sm, sp in zip(fdata, smag, sph)]))
 
 
     def run_temp_sweep(self, measure_vna=False, prefix='M3D6_02_WITH_1SP_INP'):
@@ -738,92 +883,29 @@ if __name__ == '__main__':
     Jctrl = JanisCtrl(Tstart, Tstop, dT,
             sample_time=sample_time, T_eps=T_eps,
             therm_time=therm_time,
-            init_socket=True)
+            # init_socket=True, bypass_janis=True)
+            init_socket=True, bypass_janis=False)
 
-    # Setup for the VNA controller
-    Jctrl.sparam = 'S12'
-    Jctrl.vna_edelay = 76.983 #ns
-    Jctrl.vna_ifband = 1.0 # kHz
-    # 1SP InP
-    # Jctrl.vna_centerf = 7.58967
-    # 2SP InP
-    # Jctrl.vna_centerf = 8.01385
-    # # Mines 3D #1, bare
-    # Jctrl.vna_centerf = 9.23069
-    # Jctrl.vna_span = 0.75 # MHz
-    # Jctrl.vna_edelay = 77.62 #ns
-    # Mines 3D #2, bare
-    Jctrl.vna_centerf = 4.22383
-    Jctrl.vna_span = 0.2 # MHz
-    Jctrl.vna_edelay = 60.93 #ns
-    # # NYU 2D Al on InP
-    # Jctrl.vna_edelay = 76.635 #ns
-    # Jctrl.vna_centerf = 7.7182
-    # Jctrl.vna_span = 15 # MHz
+    # Mines 3D #3, bare
+    Jctrl.vna_centerf = 8.0214305
+    Jctrl.vna_span = 0.5 # MHz
+    # Jctrl.vna_edelay = 0.969 #ns
+    Jctrl.vna_edelay = 1.039 #ns
+
     Jctrl.vna_points = 1001
 
     # Temperature sweep settings
     Jctrl.sparam = 'S12'
+    cal_set = 'CryoCal_2SP_INP_8p02G_20220712'
 
     # First sweep, int power
-    Jctrl.vna_averages = 10000
-    Jctrl.vna_ifband = 1.0 #khz
-    Jctrl.vna_numsweeps = 2 
-    Jctrl.vna_startpower = -95
-    Jctrl.vna_endpower = -95
-
-    # Second sweep, intermediate power
-    # Jctrl.vna_averages = 3
-    # Jctrl.vna_ifband = 10 #khz
-    # Jctrl.vna_numsweeps = 3
-    # Jctrl.vna_startpower = -5
-    # Jctrl.vna_endpower = -15
-    # Jctrl.vna_centerf = 4.224
-    # Jctrl.vna_span = 1000. # MHz
-    # Jctrl.vna_points = 32001
-
-    # # Third sweep, low power
-    # Jctrl.vna_averages = 1000
-    # Jctrl.vna_ifband = 0.05 #khz
-    # Jctrl.vna_numsweeps = 4
-    # Jctrl.vna_startpower = -80
-    # Jctrl.vna_endpower = -95
-
-    # # Fast test sweep, low power
-    # Jctrl.vna_averages = 3
-    # Jctrl.vna_ifband = 1 #khz
-    # Jctrl.vna_numsweeps = 2 
-    # Jctrl.vna_startpower = -30
-    # Jctrl.vna_endpower = -35
-
-    # # High power sweep
-    # Jctrl.vna_averages = 10
-    # Jctrl.vna_ifband = 1.0 #khz
-    # Jctrl.vna_numsweeps = 7
-    # Jctrl.vna_startpower = -35
-    # Jctrl.vna_endpower = -5
-
-    # # Intermediate power sweep #2
-    # Jctrl.vna_averages = 100
-    # Jctrl.vna_ifband = 1.0 #khz
-    # Jctrl.vna_numsweeps = 8
-    # Jctrl.vna_startpower = -50
+    Jctrl.vna_averages = 5000
+    Jctrl.vna_ifband = 0.1 #khz
+    Jctrl.vna_numsweeps = 3
+    # Jctrl.vna_startpower = -70
     # Jctrl.vna_endpower = -85
-
-    # # Low power sweep #1
-    # Jctrl.vna_averages = 1500
-    # Jctrl.vna_ifband = 0.150 #khz
-    # Jctrl.vna_numsweeps = 2
-    # Jctrl.vna_startpower = -90
-    # Jctrl.vna_endpower = -95
-
-    # # Low power sweep
-    # Jctrl.vna_edelay = 78.056
-    # Jctrl.vna_averages = 2000 
-    # Jctrl.vna_ifband = 0.1 #khz
-    # Jctrl.vna_numsweeps = 2 
-    # Jctrl.vna_startpower = -90
-    # Jctrl.vna_endpower = -95
+    Jctrl.vna_startpower = -85
+    Jctrl.vna_endpower = -95
 
     Jctrl.print_class_members()
 
@@ -838,27 +920,15 @@ if __name__ == '__main__':
 
     # Mines 3D cavity 9.2 GHz with, without InP
     # sample_name = 'M3D6_02_WITH_2SP_INP'
-    # sample_name = 'M3D6_02_BARE'
-
-    # # Mines 3D cavity 7.6 GHz with, without InP
-    sample_name = 'M3D6_03_BARE'
-    # # NYU 2D resonator, Al on InP
-    # sample_name = 'NYU2D_AL_INP'
-
-    # # Rigetti Reference Wafer 1, Die 1
-    sample_name = 'RGREF01_01'
     # out = {}
-    # Jctrl.pna_process('meas', T, out, prefix=sample_name)
+    # Jctrl.pna_process('meas', T, out, prefix=sample_name,
+    #                 adaptive_averaging=True,
+    #                 cal_set=cal_set)
+    # Jctrl.set_still_heater(0.4)
 
-    # Rigetti Reference Wafer 1, Die 1 -- all resonators
-    # multiple_resonator_driver(Jctrl)
-
-    # sample_name = 'M3D6_02_WITH_2SP_INP'
-    # sample_name = 'M3D6_02_BARE'
-    # sample_name = 'M3D6_03_BARE'
     # NYU 2D resonator, Al on InP
     # sample_name = 'NYU2D_AL_INP'
     # Jctrl.run_temp_sweep(measure_vna=True, prefix=sample_name)
     Jctrl.set_current(0.)
     Z, T, tstamp = Jctrl.read_cmn()
-    print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
+    # print(f'{tstamp}, {Z} ohms, {T*1e3} mK')
