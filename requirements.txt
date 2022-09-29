@@ -1,8 +1,8 @@
 attr==0.3.*
 inflect==2.1.*
 lmfit==0.9.*
-matplotlib>=3.0.*
-numpy==1.16.*
+matplotlib>==3.5.3*
+numpy>==1.17.*
 pandas==0.24.*
 pylabrad==0.97.*
 pytest==7.1.*
