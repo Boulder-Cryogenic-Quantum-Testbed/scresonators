@@ -59,7 +59,8 @@ class FitMethod(object):
                  MC_fix: list = [],
                  MC_step_const: float = 0.6,
                  manual_init: list = None,
-                 vary: bool = None):
+                 vary: bool = None,
+                 preprocess_method:str = "linear"):
         assert method in ['DCM', 'DCM REFLECTION', 'PHI', 'INV',
                           'CPZM'], "Wrong Method, please input:PHI, DCM, INV or CPZM"
         assert (manual_init == None) or (
@@ -83,6 +84,7 @@ class FitMethod(object):
         self.MC_fix = MC_fix
         self.manual_init = manual_init
         self.vary = vary if vary is not None else [True] * 6
+        self.preprocess_method = preprocess_method
 
     def __repr__(self):
         return ', '.join("%s: %s" % item for item in vars(self).items())
@@ -158,7 +160,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         else:
             self.data = fs.VNASweep.from_columns(freqs, amps, phases)
 
-    def from_file(self, filepath=None, measurement=None, fscale=1e9):
+    def from_file(self, filepath=filepath, fscale=fscale, measurement=None):
         if self.filepath is None and filepath is not None:
             self.filepath = filepath
         if self.measurement is None and measurement is not None:
@@ -175,9 +177,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
                    MC_step_const=0.6,
                    manual_init=None,
                    vary=None,
-                   preprocess_method:str = "linear"):
-        if self.preprocess_method is not preprocess_method:
-            self.preprocess_method = preprocess_method
+                   preprocess_method: str = preprocess_method):
         self.method_class = FitMethod(method, MC_iteration, MC_rounds, MC_weight, MC_weightvalue, MC_fix, MC_step_const,
                                       manual_init, vary, preprocess_method)
 
@@ -298,19 +298,19 @@ class DCMparams(object):  # DCM fitting results
     params: np.ndarray
     chi: float
 
-    def __attrs_post_init__(self, params, chi):
-        self.Qc = params[2]
-        self.Q = params[1]
-        Qc = params[2] * np.exp(1j * params[4])
-        Qi = (params[1] ** -1 - abs(np.real(Qc ** -1))) ** -1
+    def __attrs_post_init__(self):
+        self.Qc = self.params[2]
+        self.Q = self.params[1]
+        Qc = self.params[2] * np.exp(1j * self.params[4])
+        Qi = (self.params[1] ** -1 - abs(np.real(Qc ** -1))) ** -1
         self.ReQc = 1 / np.real(Qc ** -1)
         self.Qi = Qi
-        self.chi = chi
-        self.fc = params[3]
-        self.phi = ((params[4] + np.pi) % (2 * np.pi) - np.pi) / np.pi * 180
-        self.A = params[0]
-        self.theta = params[5]
-        self.all = params
+        self.chi = self.chi
+        self.fc = self.params[3]
+        self.phi = ((self.params[4] + np.pi) % (2 * np.pi) - np.pi) / np.pi * 180
+        self.A = self.params[0]
+        self.theta = self.params[5]
+        self.all = self.params
 
 
 @attrs.define
@@ -318,17 +318,17 @@ class INVparams(object):  # INV fitting results
     params: np.ndarray
     chi: float
 
-    def __attrs_post_init__(self, params, chi):
-        self.Qc = params[2]
-        self.Qi = params[1]
-        Q = 1 / (params[1] ** -1 + params[2] ** -1)
+    def __attrs_post_init__(self):
+        self.Qc = self.params[2]
+        self.Qi = self.params[1]
+        Q = 1 / (self.params[1] ** -1 + self.params[2] ** -1)
         self.Q = Q
-        self.chi = chi
-        self.fc = params[3]
-        self.phi = ((params[4] + np.pi) % (2 * np.pi) - np.pi) / np.pi * 180
-        self.A = params[0]
-        self.theta = params[5]
-        self.all = params
+        self.chi = self.chi
+        self.fc = self.params[3]
+        self.phi = ((self.params[4] + np.pi) % (2 * np.pi) - np.pi) / np.pi * 180
+        self.A = self.params[0]
+        self.theta = self.params[5]
+        self.all = self.params
 
 
 @attrs.define
@@ -336,9 +336,9 @@ class CPZMparams(object):
     params: np.ndarray
     chi: float
 
-    def __attrs_post_init__(self, params, chi):
-        self.Qc = params[2]
-        self.Qi = params[1]
-        self.Qa = params[4]
-        self.chi = chi
-        self.fc = params[3]
+    def __attrs_post_init__(self):
+        self.Qc = self.params[2]
+        self.Qi = self.params[1]
+        self.Qa = self.params[4]
+        self.chi = self.chi
+        self.fc = self.params[3]

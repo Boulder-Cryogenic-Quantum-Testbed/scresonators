@@ -31,7 +31,7 @@ def test_fit_method():
     assert fit_method
 
 
-def test_simple():
+def test_from_file():
     reson = res.Resonator()
 
     # Test with file load into class
@@ -53,7 +53,7 @@ def test_raw_res():
     my_resonator = res.Resonator()
 
     # Load the raw data
-    url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/master/cryores/test_data/dqm_lab/resonatorData0.csv'
+    url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/master/cryores/test_data/AWR/AWR_Data.csv'
     raw = np.loadtxt(url, delimiter=',')
 
     # Test with file load into class

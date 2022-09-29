@@ -279,11 +279,12 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             guess = Q, Qc, f_c
             # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
             popt, pcov = curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
-            test = least_squares(ff.one_cavity_peak_abs, guess, max_nfev=100, bounds=(0, [np.inf] * 3))
+            #test = least_squares(ff.one_cavity_peak_abs, guess, max_nfev=100, bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
             init_guess = [Q, Qc, f_c, phi]
-        except:
+        except Exception as e:
+            print(e)
             if Method.method == 'DCM':
                 print(">Failed to find initial guess for method DCM. Please manually initialize a guess")
             else:
@@ -915,7 +916,7 @@ class VNASweep(object):
     s_col = None
 
     @classmethod
-    def from_file(cls, filepath, data_column=None, fscale=1e9):
+    def from_file(cls, filepath, fscale, data_column=None):
         if data_column is not None:
             cls.s_col = data_column
         filename, extension = os.path.splitext(filepath)
@@ -1318,7 +1319,7 @@ def preprocess_linear(xdata: np.ndarray, ydata: np.ndarray, normalize: int, outp
             "Not enough points to normalize, please lower value of normalize variable or take more points near resonance")
         quit()
 
-    # Check for bed linear preprocessing outputs
+    # Check for bad linear preprocessing outputs
     # Redirect to circle preprocessing
     phase = np.unwrap(np.angle(ydata))
     slope1, intercept1, r_value1, p_value1, std_err1 = stats.linregress(xdata, phase)
