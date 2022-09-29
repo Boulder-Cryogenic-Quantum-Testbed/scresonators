@@ -12,20 +12,11 @@ sys.path.append(pathToParent)#path to Fit_Cavity
 import fit_resonator.resonator as scres
 
                          ## Code Starts Here ##
-
-<<<<<<< HEAD
-<<<<<<< HEAD
 dir = '/Users/Lehnert Lab/GitHub/measurement/temperature_control/powersweep_220617_11_56_17'
 #make sure to use / instead of \
 filename = 'M3D6_03_BARE_220617_7_-15dB_300000000_mKpcsv.csv'
-=======
 # The object all following code will be called from
 my_resonator = scres.Resonator()
->>>>>>> fc7abbf (#132 Changes)
-=======
-# The object all following code will be called from
-my_resonator = scres.Resonator()
->>>>>>> fc7abbfdaff28b4b302353f49049de4909bb40ce
 
 # Load the raw data
 url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/master/cryores/test_data/AWR/AWR_Data.csv'
@@ -40,17 +31,9 @@ fit_type = 'DCM'
 MC_iteration = 10
 MC_rounds = 1e3
 MC_fix = ['w1']
-<<<<<<< HEAD
-<<<<<<< HEAD
 MC_fix = []
 #manual_init = [Qi,Qc,freq,phi]        #make your own initial guess: [Qi, Qc, freq, phi] (instead of phi used Qa for CPZM)
 manual_init = None # find initial guess by itself
-=======
-manual_init = None
->>>>>>> fc7abbf (#132 Changes)
-=======
-manual_init = None
->>>>>>> fc7abbfdaff28b4b302353f49049de4909bb40ce
 
 # Pass these to your resonator object
 my_resonator.fit_method(fit_type, MC_iteration, MC_rounds=MC_rounds, MC_fix=MC_fix, manual_init=manual_init,
@@ -59,6 +42,6 @@ my_resonator.fit_method(fit_type, MC_iteration, MC_rounds=MC_rounds, MC_fix=MC_f
 # Fit!
 my_resonator.fit()
 ### Fit Resonator function with background removal ###
-#background_file = 'example_background.csv'
-#my_resonator.fit(background=background_file)
-###############################################
+#background_file = 'path/to/example_background.csv'
+#my_resonator.init_background(background_file, (optional)fscale)
+

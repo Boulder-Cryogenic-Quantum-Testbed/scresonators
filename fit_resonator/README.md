@@ -204,12 +204,15 @@ Call the fitting function once resonator class hold all relevant information wit
 
 If the user wants to have the code remove their background, they need to include the path to their background removal file in resonator object initialization with:
 `my_resonator = scres.Resonator(background = background_file)`
+For scaling file data and background file data
+`my_resonator.from_file(filepath, fscale)`
+`my_resonator.init_background(filepath, fscale)`
 
 normalize: The number of points from the start/end of S21 data the user wants to use in the linear fit of S21 data for magnitude and phase for normalization, set with:
-`my_resonator = scres.Resonator(background = background_file)`
+`my_resonator = scres.Resonator(normalize = integer value)`
 
 Remember for these special initializations you can include as many as you need, just don't forget the keyword arguments!
-`my_resonator = scres.Resonator(background = background_file, normalize = 5, filepath = "PATH/TO/FILE, measurement = "S21"`
+`my_resonator = scres.Resonator(background = background_file, normalize = 5, filepath = "PATH/TO/FILE, measurement = "S21")`
 
 ### Check Data:
 

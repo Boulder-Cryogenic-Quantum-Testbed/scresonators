@@ -60,7 +60,7 @@ class FitMethod(object):
                  MC_step_const: float = 0.6,
                  manual_init: list = None,
                  vary: bool = None,
-                 preprocess_method:str = "linear"):
+                 preprocess_method: str = "linear"):
         assert method in ['DCM', 'DCM REFLECTION', 'PHI', 'INV',
                           'CPZM'], "Wrong Method, please input:PHI, DCM, INV or CPZM"
         assert (manual_init == None) or (
@@ -132,6 +132,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
 
     filepath: str = None
     data: fs.VNASweep or np.ndarray = None
+    databg: fs.VNASweep or np.ndarray = None
     method_class: FitMethod = None
     name: str = ''
     date: datetime.datetime = None
@@ -143,7 +144,6 @@ class Resonator:  # Object is auto-initialized with @attr annotation
     background_array: np.ndarray = None
     plot_extra: bool = False
     preprocess_method: str = "linear"
-    fscale: float = 1e9
 
     # Store non-VNASweep forms of data passed in class construction as VNASweep objects.
     def __attrs_post_init__(self):
@@ -153,6 +153,21 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         if self.data is not None and not isinstance(self.data, fs.VNASweep):
             self.from_columns(self.data.T[0], self.data.T[1], self.data.T[2])
 
+        if self.background is not None and self.databg is None:
+            self.init_background(filepath=self.background)
+        if self.background_array is not None and self.bg is None:
+            self.init_background_array(self.background_array)
+
+    def init_background(self, filepath=background, fscale=1e9):
+        if self.background is None and filepath is not None:
+            self.background = filepath
+        self.databg = fs.VNASweep.from_file(self.background, fscale)
+
+    def init_background_array(self, bg_array=background_array):
+        if self.background_array is None and bg_array is not None:
+            self.background_array = bg_array
+        self.databg = fs.VNASweep.from_columns(self.background_array.T[0], self.background_array.T[1], self.background_array.T[2])
+
     def from_columns(self, freqs, amps=None, phases=None):
         # Allows for user to pass array variable alone
         if freqs is not None and amps is None and phases is None:
@@ -160,7 +175,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         else:
             self.data = fs.VNASweep.from_columns(freqs, amps, phases)
 
-    def from_file(self, filepath=filepath, fscale=fscale, measurement=None):
+    def from_file(self, filepath=filepath, fscale=1e9, measurement=None):
         if self.filepath is None and filepath is not None:
             self.filepath = filepath
         if self.measurement is None and measurement is not None:

@@ -1581,13 +1581,11 @@ def fit(resonator):
     filepath = resonator.filepath
     Method = resonator.method_class
     normalize = resonator.normalize
-    measurement = resonator.measurement
-    data_array = resonator.data
+    data = resonator.data
     background = resonator.background
     background_array = resonator.background_array
     plot_extra = resonator.plot_extra
     preprocess_method = resonator.preprocess_method
-    fscale = resonator.fscale
 
     # read in data from file
     if filepath is not None:
@@ -1599,17 +1597,6 @@ def fit(resonator):
     else:
         dir = ROOT_DIR
         filename = 'scresonators'
-    if data_array is None:
-        if measurement is None:
-            data = VNASweep.from_file(filepath, fscale=fscale)
-        data = VNASweep.from_file(filepath, measurement, fscale=fscale)
-    elif type(data_array) is VNASweep:
-        data = data_array
-    elif data_array.any():
-        data = VNASweep.from_columns(freqs=data_array.T[0], amps=data_array.T[1], phases=data_array.T[2])
-    else:
-        print("No data was input. Please either input a directory to read a file in from or a data array to fit.")
-        quit()
 
     # separate data by column
     try:
@@ -1656,18 +1643,8 @@ def fit(resonator):
     intercept = 0
     slope2 = 0
     intercept2 = 0
-    if background is not None:
-        if dir is not None:
-            filepath = dir + '/' + background
-        else:
-            print("Directory for background file not speficied")
-            quit()
-        databg = VNASweep.from_file(filepath, fscale=fscale)
-        ydata = background_removal(databg, linear_amps, phases, output_path)
-    elif background_array is not None:
-        databg = VNASweep.from_columns(freqs=background_array.T[0], amps=background_array.T[1],
-                                       phases=background_array.T[2])
-        ydata = background_removal(databg, linear_amps, phases, output_path)
+    if resonator.databg is not None:
+        ydata = background_removal(resonator.databg, linear_amps, phases, output_path)
     elif preprocess_method == "linear":
         t_ydata, t_slope, t_intercept, t_slope2, t_intercept2 = preprocess_linear(xdata, ydata, normalize, output_path,
                                                                                   plot_extra)
@@ -1684,7 +1661,6 @@ def fit(resonator):
     else:
         pass
     print(f'preprocess_method: {preprocess_method}')
-    print(f'fscale: {fscale:g}')
 
     # a copy of data before modification for plotting
     y_raw = ydata

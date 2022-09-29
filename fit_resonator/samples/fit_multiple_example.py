@@ -34,6 +34,9 @@ for i in names:
 
     ### Fit Resonator object without background removal ###
     resonator = res.Resonator(filepath=filepath, normalize=normalize)
+    ### If you need to scale your data file
+    # resonator = res.Resonator()
+    # resonator.from_file(filepath=filepath, fscale=SCALE_VALUE)
 
     #############################################
     ## create Method
@@ -65,8 +68,7 @@ for i in names:
 
     ### Fit Resonator function with background removal ###
     # path_to_background = dir+'/'+'example_background.csv'
-    # resonator = res.Resonator(filepath=filepath, normalize=normalize, background=path_to_background)
-    # params1,fig1,chi1,init1 = resonator.fit()
+    # resonator.init_background(path_to_background, (optional)fscale)
     ###############################################
 
 file = open(dir + "/power_sweep_params.csv", "w")
