@@ -31,7 +31,7 @@ def test_fit_method():
     assert fit_method
 
 
-def test_simple():
+def test_from_file():
     reson = res.Resonator()
 
     # Test with file load into class

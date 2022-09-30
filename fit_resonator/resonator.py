@@ -59,7 +59,8 @@ class FitMethod(object):
                  MC_fix: list = [],
                  MC_step_const: float = 0.6,
                  manual_init: list = None,
-                 vary: bool = None):
+                 vary: bool = None,
+                 preprocess_method: str = "linear"):
         assert method in ['DCM', 'DCM REFLECTION', 'PHI', 'INV',
                           'CPZM'], "Wrong Method, please input:PHI, DCM, INV or CPZM"
         assert (manual_init == None) or (
@@ -83,6 +84,7 @@ class FitMethod(object):
         self.MC_fix = MC_fix
         self.manual_init = manual_init
         self.vary = vary if vary is not None else [True] * 6
+        self.preprocess_method = preprocess_method
 
     def __repr__(self):
         return ', '.join("%s: %s" % item for item in vars(self).items())
@@ -130,6 +132,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
 
     filepath: str = None
     data: fs.VNASweep or np.ndarray = None
+    databg: fs.VNASweep or np.ndarray = None
     method_class: FitMethod = None
     name: str = ''
     date: datetime.datetime = None
@@ -141,7 +144,6 @@ class Resonator:  # Object is auto-initialized with @attr annotation
     background_array: np.ndarray = None
     plot_extra: bool = False
     preprocess_method: str = "linear"
-    fscale: float = 1e9
 
     # Store non-VNASweep forms of data passed in class construction as VNASweep objects.
     def __attrs_post_init__(self):
@@ -151,6 +153,21 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         if self.data is not None and not isinstance(self.data, fs.VNASweep):
             self.from_columns(self.data.T[0], self.data.T[1], self.data.T[2])
 
+        if self.background is not None and self.databg is None:
+            self.init_background(filepath=self.background)
+        if self.background_array is not None and self.bg is None:
+            self.init_background_array(self.background_array)
+
+    def init_background(self, filepath=background, fscale=1e9):
+        if self.background is None and filepath is not None:
+            self.background = filepath
+        self.databg = fs.VNASweep.from_file(self.background, fscale)
+
+    def init_background_array(self, bg_array=background_array):
+        if self.background_array is None and bg_array is not None:
+            self.background_array = bg_array
+        self.databg = fs.VNASweep.from_columns(self.background_array.T[0], self.background_array.T[1], self.background_array.T[2])
+
     def from_columns(self, freqs, amps=None, phases=None):
         # Allows for user to pass array variable alone
         if freqs is not None and amps is None and phases is None:
@@ -158,7 +175,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         else:
             self.data = fs.VNASweep.from_columns(freqs, amps, phases)
 
-    def from_file(self, filepath=None, measurement=None, fscale=1e9):
+    def from_file(self, filepath=filepath, fscale=1e9, measurement=None):
         if self.filepath is None and filepath is not None:
             self.filepath = filepath
         if self.measurement is None and measurement is not None:
@@ -174,9 +191,10 @@ class Resonator:  # Object is auto-initialized with @attr annotation
                    MC_fix=[],
                    MC_step_const=0.6,
                    manual_init=None,
-                   vary=None):
+                   vary=None,
+                   preprocess_method: str = preprocess_method):
         self.method_class = FitMethod(method, MC_iteration, MC_rounds, MC_weight, MC_weightvalue, MC_fix, MC_step_const,
-                                      manual_init, vary)
+                                      manual_init, vary, preprocess_method)
 
     def fit(self):
         fs.fit(self)
@@ -295,19 +313,19 @@ class DCMparams(object):  # DCM fitting results
     params: np.ndarray
     chi: float
 
-    def __attrs_post_init__(self, params, chi):
-        self.Qc = params[2]
-        self.Q = params[1]
-        Qc = params[2] * np.exp(1j * params[4])
-        Qi = (params[1] ** -1 - abs(np.real(Qc ** -1))) ** -1
+    def __attrs_post_init__(self):
+        self.Qc = self.params[2]
+        self.Q = self.params[1]
+        Qc = self.params[2] * np.exp(1j * self.params[4])
+        Qi = (self.params[1] ** -1 - abs(np.real(Qc ** -1))) ** -1
         self.ReQc = 1 / np.real(Qc ** -1)
         self.Qi = Qi
-        self.chi = chi
-        self.fc = params[3]
-        self.phi = ((params[4] + np.pi) % (2 * np.pi) - np.pi) / np.pi * 180
-        self.A = params[0]
-        self.theta = params[5]
-        self.all = params
+        self.chi = self.chi
+        self.fc = self.params[3]
+        self.phi = ((self.params[4] + np.pi) % (2 * np.pi) - np.pi) / np.pi * 180
+        self.A = self.params[0]
+        self.theta = self.params[5]
+        self.all = self.params
 
 
 @attrs.define
@@ -315,17 +333,17 @@ class INVparams(object):  # INV fitting results
     params: np.ndarray
     chi: float
 
-    def __attrs_post_init__(self, params, chi):
-        self.Qc = params[2]
-        self.Qi = params[1]
-        Q = 1 / (params[1] ** -1 + params[2] ** -1)
+    def __attrs_post_init__(self):
+        self.Qc = self.params[2]
+        self.Qi = self.params[1]
+        Q = 1 / (self.params[1] ** -1 + self.params[2] ** -1)
         self.Q = Q
-        self.chi = chi
-        self.fc = params[3]
-        self.phi = ((params[4] + np.pi) % (2 * np.pi) - np.pi) / np.pi * 180
-        self.A = params[0]
-        self.theta = params[5]
-        self.all = params
+        self.chi = self.chi
+        self.fc = self.params[3]
+        self.phi = ((self.params[4] + np.pi) % (2 * np.pi) - np.pi) / np.pi * 180
+        self.A = self.params[0]
+        self.theta = self.params[5]
+        self.all = self.params
 
 
 @attrs.define
@@ -333,9 +351,9 @@ class CPZMparams(object):
     params: np.ndarray
     chi: float
 
-    def __attrs_post_init__(self, params, chi):
-        self.Qc = params[2]
-        self.Qi = params[1]
-        self.Qa = params[4]
-        self.chi = chi
-        self.fc = params[3]
+    def __attrs_post_init__(self):
+        self.Qc = self.params[2]
+        self.Qi = self.params[1]
+        self.Qa = self.params[4]
+        self.chi = self.chi
+        self.fc = self.params[3]
