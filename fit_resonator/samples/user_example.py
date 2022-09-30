@@ -11,10 +11,7 @@ sys.path.append(pathToParent)#path to Fit_Cavity
 
 import fit_resonator.resonator as scres
 
-                         ## Code Starts Here ##
-dir = '/Users/Lehnert Lab/GitHub/measurement/temperature_control/powersweep_220617_11_56_17'
-#make sure to use / instead of \
-filename = 'M3D6_03_BARE_220617_7_-15dB_300000000_mKpcsv.csv'
+## Code Starts Here ##
 # The object all following code will be called from
 my_resonator = scres.Resonator()
 
@@ -44,4 +41,3 @@ my_resonator.fit()
 ### Fit Resonator function with background removal ###
 #background_file = 'path/to/example_background.csv'
 #my_resonator.init_background(background_file, (optional)fscale)
-
