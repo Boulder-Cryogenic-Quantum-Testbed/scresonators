@@ -22,6 +22,7 @@ import scipy.optimize as spopt
 from scipy.ndimage.filters import gaussian_filter1d
 from scipy.interpolate import interp1d
 import fit_resonator.functions as ff
+import csv
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)  # Path to Fit_Cavity
@@ -790,48 +791,32 @@ def PlotFit(x,
                     plt.gcf().text(0.7, 0.09, textstr, fontsize=18)
 
             # write to output csv file
-            title_without_period = ''
-            for i in title:  # remove period from title
-                if i != '.':
-                    title_without_period = title_without_period + i
-            file = open(output_path + "fit_params.csv", "w")
-            if func == ff.cavity_inverse:
-                textstr = r'Qi = ' + '%s' % float('{0:.10g}'.format(Qi)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[0])) + \
-                          '\n' + r'Qc* = ' + '%s' % float('{0:.10g}'.format(Qc)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[1])) + \
-                          '\n' + r'phi = ' + '%s' % float('{0:.10g}'.format(phi)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[2])) + ' radians' + \
-                          '\n' + r'fc = ' + '%s' % float('{0:.10g}'.format(f_c)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[3])) + ' GHz'
-            elif func == ff.cavity_CPZM:
-                textstr = r'Q_i = ' + '{0:01f}'.format(params[0]) + \
-                          '\n' + r'Q_c = ' + '{0:01f}'.format(params[0] * params[1] ** -1) + \
-                          '\n' + r'Q_a = ' + '{0:01f}'.format(params[0] * params[3] ** -1) + \
-                          '\n' + r'f_c = ' + '{0:01f}'.format(params[2]) + ' GHz'
+            with open(output_path + "fit_params.csv", "w", newline='') as file:
+                writer = csv.writer(file)
+                if func == ff.cavity_inverse:
+                    fields = ['Qi', 'Qc*', 'phi', 'fc']
+                    vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(phi)),
+                             float('{0:.10g}'.format(f_c))],
+                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
+                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
 
-                textstr = r'Qi = ' + '%s' % float('{0:.10g}'.format(Qi)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[0])) + \
-                          '\n' + r'Qc = ' + '%s' % float('{0:.10g}'.format(Qc)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[1])) + \
-                          '\n' + r'Qa = ' + '%s' % float('{0:.10g}'.format(Qa)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[2])) + \
-                          '\n' + r'fc = ' + '%s' % float('{0:.10g}'.format(f_c)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[3])) + ' GHz'
-            else:
-                textstr = 'Q = ' + '%s' % float('{0:.10g}'.format(Q)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[0])) + \
-                          '\n' + r'Qi = ' + '%s' % float('{0:.10g}'.format(Qi)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[1])) + \
-                          '\n' + r'Qc = ' + '%s' % float('{0:.10g}'.format(Qc)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[2])) + \
-                          '\n' + r'1/Re[1/Qc] = ' + '%s' % float('{0:.10g}'.format(Qc_Re)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[3])) + \
-                          '\n' + r'phi = ' + '%s' % float('{0:.10g}'.format(phi)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[4])) + ' radians' + \
-                          '\n' + r'fc = ' + '%s' % float('{0:.10g}'.format(f_c)) + r"+/-" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[5])) + ' GHz'
-        file.write(textstr)
+                elif func == ff.cavity_CPZM:
+                    fields = ['Qi', 'Qc', 'Qa', 'fc']
+                    vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(Qa)),
+                             float('{0:.10g}'.format(f_c))],
+                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
+                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
+                else:
+
+                    fields = ['Q', 'Qi', 'Qc', '1/Re[1/Qc]', 'phi', 'fc']
+                    vals = [[float('{0:.10g}'.format(Q)), float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)),
+                             float('{0:.10g}'.format(Qc_Re)), float('{0:.10g}'.format(phi)), float('{0:.10g}'.format(f_c))],
+                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
+                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3])),
+                             float('{0:.1g}'.format(conf_array[4])), float('{0:.1g}'.format(conf_array[5]))]]
+                writer.writerow(fields)
+                writer.writerows(vals)
+                file.close()
     except:
         print(">Error when trying to write parameters on plot")
         quit()
