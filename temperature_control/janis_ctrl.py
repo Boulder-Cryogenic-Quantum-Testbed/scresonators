@@ -126,6 +126,16 @@ class JanisCtrl(object):
             self.socket.close()
             self.socket = None
 
+    def close_socket(self):
+        """
+        Close the jacob socket connection
+        """
+        if self.socket is not None:
+            print('Setting current to 0 ...')
+            self.set_current(0.)
+            self.socket.close()
+            self.socket = None
+
     def print_class_members(self):
         """
         Prints all the values of the members stored in the class instance
@@ -566,10 +576,14 @@ class JanisCtrl(object):
     
 
     def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP',
-                    adaptive_averaging=True, cal_set=None, setup_only=False):
+                    adaptive_averaging=True, cal_set=None, setup_only=False,
+                    close_socket_start=True):
         """
         Performs a PNA measurement
         """
+        if close_socket_start:
+            self.close_socket()
+
         # Get the temperature from the temperature controller
         temp = Tset * 1e3 #mk
         sampleid = f'{prefix}_{self.dstr}' 

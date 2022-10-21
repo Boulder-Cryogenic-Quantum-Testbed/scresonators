@@ -173,7 +173,7 @@ def get_data(centerf: float,
     if setup_only:
         return
 
-    #start taking data for S21
+    # start taking data for S21
     keysight.write('INITiate:CONTinuous ON')
     keysight.write('OUTPut:STATe ON')
     # keysight.write('CALCulate1:PARameter:SELect \'M1\'')
