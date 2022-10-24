@@ -166,12 +166,14 @@ class Resonator:  # Object is auto-initialized with @attr annotation
     def init_background_array(self, bg_array=background_array):
         if self.background_array is None and bg_array is not None:
             self.background_array = bg_array
-        self.databg = fs.VNASweep.from_columns(self.background_array.T[0], self.background_array.T[1], self.background_array.T[2])
+        self.databg = fs.VNASweep.from_columns(self.background_array.T[0],
+                self.background_array.T[1], self.background_array.T[2])
 
     def from_columns(self, freqs, amps=None, phases=None):
         # Allows for user to pass array variable alone
         if freqs is not None and amps is None and phases is None:
-            self.data = fs.VNASweep.from_columns(freqs.T[0], freqs.T[1], freqs.T[2])
+            self.data = fs.VNASweep.from_columns(freqs.T[0], freqs.T[1],
+                                                 freqs.T[2])
         else:
             self.data = fs.VNASweep.from_columns(freqs, amps, phases)
 
@@ -180,7 +182,8 @@ class Resonator:  # Object is auto-initialized with @attr annotation
             self.filepath = filepath
         if self.measurement is None and measurement is not None:
             self.measurement = measurement
-        self.data = fs.VNASweep.from_file(self.filepath, self.measurement, fscale)
+        self.data = fs.VNASweep.from_file(self.filepath, fscale=fscale,
+                                          data_column=None)
 
     def fit_method(self,
                    method: str,
@@ -193,8 +196,9 @@ class Resonator:  # Object is auto-initialized with @attr annotation
                    manual_init=None,
                    vary=None,
                    preprocess_method: str = preprocess_method):
-        self.method_class = FitMethod(method, MC_iteration, MC_rounds, MC_weight, MC_weightvalue, MC_fix, MC_step_const,
-                                      manual_init, vary, preprocess_method)
+        self.method_class = FitMethod(method, MC_iteration, MC_rounds,
+                MC_weight, MC_weightvalue, MC_fix, MC_step_const, manual_init,
+                vary, preprocess_method)
 
     def fit(self):
         fs.fit(self)

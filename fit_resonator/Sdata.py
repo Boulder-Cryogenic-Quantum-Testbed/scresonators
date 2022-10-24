@@ -906,7 +906,7 @@ class VNASweep(object):
     s_col = None
 
     @classmethod
-    def from_file(cls, filepath, fscale, data_column=None):
+    def from_file(cls, filepath, fscale=1e9, data_column=None):
         if data_column is not None:
             cls.s_col = data_column
         filename, extension = os.path.splitext(filepath)
@@ -933,6 +933,7 @@ class VNASweep(object):
             except Exception as e:
                 print(f'Exception: **{e}** encountered when attempting to load data file as .txt/.csv')
                 print(f'Are you using a comma as your delimiter?')
+
             freqs = data.T[0] / fscale
             amps = data.T[1]
             phases = data.T[2] * np.pi / 180
