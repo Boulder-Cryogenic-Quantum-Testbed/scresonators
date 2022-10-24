@@ -35,7 +35,7 @@ def test_from_file():
     reson = res.Resonator()
 
     # Test with file load into class
-    reson.from_file(".s2p","s12")
+    reson.from_file(".s2p", "s12")
     fit_type = 'DCM'
     MC_iteration = 10
     MC_rounds = 1e3
