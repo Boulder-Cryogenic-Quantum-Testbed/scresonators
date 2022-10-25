@@ -159,10 +159,10 @@ You can also pass the data as a filename or data object when initializing your r
 
 If you're using a snp file with more than three columns please specify to the resonator object which value to use with:
 `my_resonator.from_file('PATH/TO/FILE.snp', "S12")`
-`my_resonator = scres.Resontor(filepath='PATH/TO/FILE.snp', measurement="S12"`
+`my_resonator = scres.Resonator(filepath='PATH/TO/FILE.snp', measurement="S12")`
 or with the index value(s)
 `my_resonator.from_file('PATH/TO/FILE.snp', [2,3])`
-`my_resonator = scres.Resontor(filepath='PATH/TO/FILE.snp', measurement=[2,3]`
+`my_resonator = scres.Resonator(filepath='PATH/TO/FILE.snp', measurement=[2,3]`
 
 
 Define the parameters of your fitting method with:
