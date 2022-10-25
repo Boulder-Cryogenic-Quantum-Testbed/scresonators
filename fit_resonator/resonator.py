@@ -182,8 +182,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
             self.filepath = filepath
         if self.measurement is None and measurement is not None:
             self.measurement = measurement
-        self.data = fs.VNASweep.from_file(self.filepath, fscale=fscale,
-                                          data_column=None)
+        self.data = fs.VNASweep.from_file(self.filepath, data_column=measurement, fscale=fscale)
 
     def fit_method(self,
                    method: str,

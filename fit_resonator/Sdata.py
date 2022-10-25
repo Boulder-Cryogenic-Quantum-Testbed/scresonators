@@ -457,17 +457,18 @@ def PlotFit(x,
     y_fit = func(x_fit, *params)
 
     fig = plt.figure(figurename, figsize=(15, 10))
-    gs = GridSpec(6, 6)
+    fig.set_tight_layout(True)
+    gs = GridSpec(11, 10)
     # original magnitude
-    ax1 = plt.subplot(gs[0:1, 4:6])
+    #ax1 = plt.subplot(gs[0:1, 4:6])
     # original angle
-    ax2 = plt.subplot(gs[2:3, 4:6])
+    #ax2 = plt.subplot(gs[2:3, 4:6])
     # normalized magnitude
-    ax3 = plt.subplot(gs[1:2, 4:6])
+    ax3 = plt.subplot(gs[0:4, 6:10])
     # normalized angle
-    ax4 = plt.subplot(gs[3:4, 4:6])
+    ax4 = plt.subplot(gs[4:8, 6:10])
     # IQ plot
-    ax = plt.subplot(gs[2:6, 0:4])
+    ax = plt.subplot(gs[0:11, 0:6])
 
     # Marker sizes
     msize1, msize2 = msizes
@@ -523,18 +524,20 @@ def PlotFit(x,
         y_fit = np.copy(y_fit_full)
 
     if func == ff.cavity_inverse:
-        ax1.set_ylabel('Mag[S21]')
-        ax2.set_ylabel('Ang[S21]')
+        #ax1.set_ylabel('Mag[S21]')
+        #ax2.set_ylabel('Ang[S21]')
         ax3.set_ylabel('Mag[1/S21]')
         ax4.set_ylabel('Ang[1/S21]')
     else:
-        ax1.set_ylabel('Mag[S21]')
-        ax2.set_ylabel('Ang[S21]')
+        #ax1.set_ylabel('Mag[S21]')
+        #ax2.set_ylabel('Ang[S21]')
         ax3.set_ylabel('Mag[S21]')
         ax4.set_ylabel('Ang[S21]')
 
     for i in range(len(x_initial)):
         x_initial[i] = round(x_initial[i], 8)
+
+    """
     ax1.plot(x_initial[0::dfac],
              np.log10(np.abs(y_initial[0::dfac])) * 20, 'bo',
              label='raw data',
@@ -555,6 +558,7 @@ def PlotFit(x,
     ax2.set_xlabel(xstr, fontsize=17)
     for tick in ax2.xaxis.get_major_ticks():
         tick.label.set_fontsize(fsize)
+    """
 
     # Decimate the x and y-data
     x = x[0::dfac]
@@ -788,7 +792,7 @@ def PlotFit(x,
                         elif val == r'$f_c$':
                             textstr += ' GHz'
                         textstr += '\n'
-                    plt.gcf().text(0.7, 0.09, textstr, fontsize=18)
+                    plt.gcf().text(0.63, 0.05, textstr, fontsize=18)
 
             # write to output csv file
             with open(output_path + "fit_params.csv", "w", newline='') as file:
@@ -820,8 +824,6 @@ def PlotFit(x,
     except:
         print(">Error when trying to write parameters on plot")
         quit()
-
-    plt.tight_layout()
     return fig
 
 
@@ -1313,11 +1315,6 @@ def preprocess_linear(xdata: np.ndarray, ydata: np.ndarray, normalize: int, outp
     # Check for bad linear preprocessing outputs
     # Redirect to circle preprocessing
     phase = np.unwrap(np.angle(ydata))
-    slope1, intercept1, r_value1, p_value1, std_err1 = stats.linregress(xdata, phase)
-
-    # Method for redirecting to circle, currently erroring data tends to have these attributes
-    if p_value1 < 1e-90 or std_err1 > 60:
-        return 'circle', None, None, None, None
 
     # normalize phase of S21 using linear fit
     slope, intercept, r_value, p_value, std_err = stats.linregress(np.append(xdata[0:normalize], xdata[-normalize:]),
@@ -1343,10 +1340,6 @@ def preprocess_linear(xdata: np.ndarray, ydata: np.ndarray, normalize: int, outp
     preprocessed_data = np.multiply(magnitude, np.exp(1j * angle))
     if plot_extra:
         plot(np.real(preprocessed_data), np.imag(preprocessed_data), "Normalize_4", output_path)
-
-    # Another common attribute among erroring data
-    if std_err2 > std_err and std_err2 > .0002:
-        return 'circle', None, None, None, None
 
     return preprocessed_data, slope, intercept, slope2, intercept2
 
@@ -1466,11 +1459,17 @@ def min_fit(params, xdata, ydata, Method):
             # confidence interval for Qc
             if 'Qc' in p_names:
                 Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
+                # Ignore one-sided conf test
+                if np.isinf(Qc_conf):
+                    Qc_conf = min(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
                 # confidence interval for 1/Re[1/Qc]
                 Qc_Re = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][1][1])
                 Qc_Re_neg = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][0][1])
                 Qc_Re_pos = 1 / np.real(np.exp(1j * fit_params[3]) / ci['Qc'][2][1])
                 Qc_Re_conf = max(np.abs(Qc_Re - Qc_Re_neg), np.abs(Qc_Re - Qc_Re_pos))
+                # Ignore one-sided conf test
+                if np.isinf(Qc_Re_conf):
+                    Qc_Re_conf = min(np.abs(Qc_Re - Qc_Re_neg), np.abs(Qc_Re - Qc_Re_pos))
             else:
                 Qc_conf = 0
             # confidence interval for phi
