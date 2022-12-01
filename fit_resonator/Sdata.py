@@ -908,7 +908,7 @@ class VNASweep(object):
     s_col = None
 
     @classmethod
-    def from_file(cls, filepath, fscale=1e9, data_column=None):
+    def from_file(cls, filepath, data_column=None, fscale=1e9):
         if data_column is not None:
             cls.s_col = data_column
         filename, extension = os.path.splitext(filepath)
@@ -920,6 +920,8 @@ class VNASweep(object):
                 print(f'Data file: {filepath} could not be found/read')
             file, inline, options, frequency_units, data_format = cls.header_parse(cls, file=snp_file)
             freqs, amps, phases, linear_amps = cls.data_parse(cls, inline, frequency_units, data_format, file, options)
+            freqs = freqs / fscale
+
             return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
         elif 'txt' in extension or 'csv' in extension:
             try:

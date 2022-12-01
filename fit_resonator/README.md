@@ -76,6 +76,8 @@ fits, manually input guess parameters, and the final parameters found from the f
 1. The 95% confidence interval is found for the fit and the range of values for the interval is reported as the error in the final plot
 1. At this point the final parameter values have been found and fitting is complete. Final fitting is plotted and fit parameters are written to a .csv file
 
+Example Output
+![img.png](img.png)
 -------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 ## Installation
