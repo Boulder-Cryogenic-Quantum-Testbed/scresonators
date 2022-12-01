@@ -908,7 +908,7 @@ class VNASweep(object):
     s_col = None
 
     @classmethod
-    def from_file(cls, filepath, fscale=1e9, data_column=None):
+    def from_file(cls, filepath, data_column=None, fscale=1e9):
         if data_column is not None:
             cls.s_col = data_column
         filename, extension = os.path.splitext(filepath)
@@ -920,6 +920,8 @@ class VNASweep(object):
                 print(f'Data file: {filepath} could not be found/read')
             file, inline, options, frequency_units, data_format = cls.header_parse(cls, file=snp_file)
             freqs, amps, phases, linear_amps = cls.data_parse(cls, inline, frequency_units, data_format, file, options)
+            freqs = freqs / fscale
+
             return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
         elif 'txt' in extension or 'csv' in extension:
             try:
@@ -1477,6 +1479,9 @@ def min_fit(params, xdata, ydata, Method):
                 phi_neg = ci['phi'][0][1]
                 phi_pos = ci['phi'][2][1]
                 phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+                # Ignore one-sided conf test
+                if np.isinf(phi_conf):
+                    phi_conf = min(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
             else:
                 phi_conf = 0
             # confidence interval for resonance frequency
@@ -1484,6 +1489,9 @@ def min_fit(params, xdata, ydata, Method):
                 w1_neg = ci['w1'][0][1]
                 w1_pos = ci['w1'][2][1]
                 w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+                # Ignore one-sided conf test
+                if np.isinf(w1_conf):
+                    w1_conf = min(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
             else:
                 w1_conf = 0
             # Array of confidence intervals
@@ -1503,11 +1511,17 @@ def min_fit(params, xdata, ydata, Method):
             # confidence interval for phi
             if 'phi' in p_names:
                 phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+                # Ignore one-sided conf test
+                if np.isinf(phi_conf):
+                    phi_conf = min(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
             else:
                 phi_conf = 0
             # confidence interval for resonance frequency
             if 'w1' in p_names:
                 w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+                # Ignore one-sided conf test
+                if np.isinf(w1_conf):
+                    w1_conf = min(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
             else:
                 w1_conf = 0
             # Array of confidence intervals
@@ -1538,6 +1552,9 @@ def min_fit(params, xdata, ydata, Method):
             # confidence interval for resonance frequency
             if 'w1' in p_names:
                 w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+                # Ignore one-sided conf test
+                if np.isinf(w1_conf):
+                    min(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
             else:
                 w1_conf = 0
             # Array of confidence intervals

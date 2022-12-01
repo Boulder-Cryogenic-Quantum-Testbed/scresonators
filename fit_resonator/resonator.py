@@ -177,7 +177,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         else:
             self.data = fs.VNASweep.from_columns(freqs, amps, phases)
 
-    def from_file(self, filepath=filepath, fscale=1e9, measurement=None):
+    def from_file(self, filepath=filepath, measurement=None, fscale=1e9):
         if self.filepath is None and filepath is not None:
             self.filepath = filepath
         if self.measurement is None and measurement is not None:
