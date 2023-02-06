@@ -127,8 +127,7 @@ setup(
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/discussions/install-requires-vs-requirements/
-    install_requires=["attr==0.3.*", "inflect==2.1.*", "lmfit==0.9.*", "matplotlib>=3.0.*", "numpy==1.16.*", "pandas==0.24.*", "pylabrad==0.97.*" , "scipy==1.3.*", "sympy==1.4.*", "scikit-rf==0.19.*", "uncertainties>=3.1.*"],  # Optional
-    # List additional groups of dependencies here (e.g. development
+    install_requires =["attr==0.3.*,inflect==6.0.*,lmfit==1.1.*,matplotlib>==3.6.*,numpy>==1.24.*,pandas==1.5.*,pylabrad==0.98.*,pytest==7.2.*,scipy==1.9.*,sympy==1.11.*,scikit-rf==0.24.*,uncertainties>=3.1.*,"], # Optional    # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
     # syntax, for example:
     #
