@@ -120,14 +120,14 @@ setup(
     # 'Programming Language' classifiers above, 'pip install' will check this
     # and refuse to install the project if the version does not match. See
     # https://packaging.python.org/guides/distributing-packages-using-setuptools/#python-requires
-    python_requires=">=3.7",
+    python_requires ='>=3.9',
     # This field lists other packages that your project depends on to run.
     # Any package you put here will be installed by pip when your project is
     # installed, so they must be valid existing projects.
     #
     # For an analysis of "install_requires" vs pip's requirements files see:
     # https://packaging.python.org/discussions/install-requires-vs-requirements/
-    install_requires=["attr==0.3.*", "inflect==2.1.*", "lmfit==0.9.*", "matplotlib>=3.0.*", "numpy==1.16.*", "pandas==0.24.*", "pylabrad==0.97.*" , "scipy==1.3.*", "sympy==1.4.*", "scikit-rf==0.19.*", "uncertainties>=3.1.*"],  # Optional
+    install_requires =["attr==0.3.*","inflect==6.0.*","lmfit==1.1.*","matplotlib>==3.6.*","numpy>==1.24.*","pandas==1.5.*","pylabrad==0.98.*","pytest==7.2.*","scipy==1.9.*","sympy==1.11.*","scikit-rf==0.24.*","uncertainties>=3.1.*"], # Optional
     # List additional groups of dependencies here (e.g. development
     # dependencies). Users will be able to install these using the "extras"
     # syntax, for example:
