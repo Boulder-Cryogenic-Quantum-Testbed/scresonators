@@ -920,6 +920,13 @@ class VNASweep(object):
                 print(f'Data file: {filepath} could not be found/read')
             file, inline, options, frequency_units, data_format = cls.header_parse(cls, file=snp_file)
             freqs, amps, phases, linear_amps = cls.data_parse(cls, inline, frequency_units, data_format, file, options)
+            print(frequency_units)
+            if frequency_units == 'hz':
+                fscale = fscale / 1e9
+            elif frequency_units == 'mhz':
+                fscale = fscale / 1e3
+            elif frequency_units == 'khz':
+                fscale = fscale / 1e6
             freqs = freqs / fscale
 
             return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
