@@ -219,8 +219,13 @@ def power_sweep(startpower: float,
     '''
 
     #create an array with the values of power for each sweep
-    sweeps = np.linspace(startpower, endpower, numsweeps)
-    stepsize = sweeps[0]-sweeps[1]
+    if np.isclose(startpower, endpower):
+        print(f'Running only one power {startpower} dBm ...')
+        sweeps = [startpower]
+        stepsize = 0
+    else:
+        sweeps = np.linspace(startpower, endpower, numsweeps)
+        stepsize = sweeps[0]-sweeps[1]
     print(f'Measuring {sparam} ...')
 
     #create a new directory for the output to be put into
