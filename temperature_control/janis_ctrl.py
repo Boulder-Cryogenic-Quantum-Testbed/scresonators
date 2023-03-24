@@ -577,7 +577,7 @@ class JanisCtrl(object):
 
     def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP',
                     adaptive_averaging=True, cal_set=None, setup_only=False,
-                    close_socket_start=True):
+                    close_socket_start=True, segments=None):
         """
         Performs a PNA measurement
         """
@@ -611,7 +611,8 @@ class JanisCtrl(object):
                     meastype=pstr,
                     adaptive_averaging=adaptive_averaging,
                     cal_set=cal_set,
-                    setup_only=setup_only)
+                    setup_only=setup_only,
+                    segments=segments)
 
         else:
             outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz'

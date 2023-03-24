@@ -26,7 +26,8 @@ def pna_setup(pna,
               edelay: float,
               averages: int,
               sparam : str = 'S12', 
-              cal_set : str = None):
+              cal_set : str = None,
+              segments : list = None):
     '''
     set parameters for the PNA for the sweep (number of points, center
     frequency, span of frequencies, IF bandwidth, power, electrical delay and
@@ -64,11 +65,20 @@ def pna_setup(pna,
     pna.write('DISPlay:WINDow2 ON')
     pna.write('DISPlay:MEAS2:FEED 2')
 
-    pna.write(f'SENSe1:SWEep:POINts {points}')
-    pna.write(f'SENSe1:FREQuency:CENTer {centerf}GHZ')
-    pna.write(f'SENSe1:FREQuency:SPAN {span}MHZ')
 
-    pna.write(f'SENSe1:SWEep:TIME:AUTO ON')
+    if segments:
+        num_segments = len(segments)
+        seg_data = ''.join([s for s in segments])
+        pna.write("SENSe1:SWEep:TYPE SEGment")
+        pna.write(f'SENSe1:SEGMent:LIST SSTOP, {num_segments}{seg_data}')
+    else:
+        pna.write("SENSe1:SWEep:TYPE LINear")
+        pna.write(f'SENSe1:SWEep:POINts {points}')
+        pna.write(f'SENSe1:FREQuency:CENTer {centerf}GHZ')
+        pna.write(f'SENSe1:FREQuency:SPAN {span}MHZ')
+
+        pna.write(f'SENSe1:SWEep:TIME:AUTO ON')
+        
     pna.write(f'CALCulate1:CORRection:EDELay:TIME {edelay}NS')
 
     if cal_set:
@@ -80,8 +90,8 @@ def pna_setup(pna,
         # print(f'cal_cmd: {cal_cmd}')
         pna.write(cal_cmd)
 
-        gpoints = pna.query(f'SENSe1:SWEep:POINts?')
-        assert int(gpoints) == points, f'VNA points ({gpoints}) != {points}.'
+        # gpoints = pna.query(f'SENSe1:SWEep:POINts?')
+        # assert int(gpoints) == points, f'VNA points ({gpoints}) != {points}.'
 
     pna.write(f'SOUR1:POW1 {power}')
     pna.write('SENSe1:AVERage:STATe ON')
@@ -97,15 +107,29 @@ def pna_setup(pna,
     averages = averages//1
     pna.write('SENSe1:AVERage:Count {}'.format(averages))
 
-def read_data(pna, points, outputfile, power, temp):
+def read_data(pna, points, outputfile, power, temp, segments : list = None):
     '''
     function to read in data from the pna and output it into a file
     '''
 
     #read in frequency
     cfreq = float(pna.query('SENSe1:FREQuency:CENTER?')) / 1e9
-    freq = np.linspace(float(pna.query('SENSe1:FREQuency:START?')),
-            float(pna.query('SENSe1:FREQuency:STOP?')), points)
+
+    # This obviates the need for points as an input
+    if segments:
+        # Read the list of all segments
+        freq = np.array([])
+        for s in segments:
+            ssplit = s.split(',')
+            nf = int(ssplit[2])
+            f1 = float(ssplit[3])
+            f2 = float(ssplit[4])
+            f = np.linspace(f1, f2, nf)
+            freq = np.hstack((freq, f))
+    else:
+        gpoints = int(pna.query(f'SENSe1:SWEep:POINts?'))
+        freq = np.linspace(float(pna.query('SENSe1:FREQuency:START?')),
+                float(pna.query('SENSe1:FREQuency:STOP?')), gpoints)
 
     #read in phase
     pna.write('CALCulate1:FORMat PHASe')
@@ -144,7 +168,8 @@ def get_data(centerf: float,
             instr_addr : str = 'TCPIP0::K-N5222B-21927::hislip0,4880::INSTR',
             sparam : str = 'S12',
             cal_set : str = None,
-            setup_only : bool = False):
+            setup_only : bool = False,
+            segments : list = None):
     '''
     function to get data and put it into a user specified file
     '''
@@ -168,7 +193,7 @@ def get_data(centerf: float,
         # keysight = rm.open_resource(instr_addr)
 
     pna_setup(keysight, points, centerf, span, ifband, power, edelay, averages,
-              sparam=sparam, cal_set=cal_set)
+              sparam=sparam, cal_set=cal_set, segments=segments)
 
     if setup_only:
         return
@@ -194,7 +219,9 @@ def get_data(centerf: float,
     time.sleep(3.0)
     keysight.write('SYSTem:CHANnels:HOLD')
 
-    read_data(keysight, points, outputfile, power, temp)
+    read_data(keysight, points, outputfile, power, temp,
+              segments=segments)
+
     keysight.write('SYSTem:CHANnels:RESume')
     keysight.write('OUTPut:STATe OFF')
 
@@ -213,7 +240,8 @@ def power_sweep(startpower: float,
                 sparam : str = 'S12',
                 adaptive_averaging : bool = True,
                 cal_set : str = None,
-                setup_only : bool = False):
+                setup_only : bool = False,
+                segments : list = None):
     '''
     run a power sweep for specified power range with a certain number of sweeps
     '''
@@ -255,7 +283,7 @@ def power_sweep(startpower: float,
         print(f'{i} dBm, {averages//1} averages ...')
         get_data(centerf, span, temp, averages, i, edelay, ifband, points,
                 outputfile, sparam=sparam, cal_set=cal_set,
-                setup_only=setup_only)
+                setup_only=setup_only, segments=segments)
         if adaptive_averaging: 
             averages = averages * ((10**(stepsize/10))**0.5)
     print('Power sweep completed.')
