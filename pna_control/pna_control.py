@@ -48,6 +48,10 @@ def pna_setup(pna,
     11. Set the IF bandwidth
 
     '''
+    # Send a preset command to the VNA and turn off the RF power
+    pna.write('SYSTem:FPRESet')
+    time.sleep(0.01)
+    pna.write('OUTPut:STATe OFF')
 
     # Initial setup for measurement
     ## Query the exisiting measurements
