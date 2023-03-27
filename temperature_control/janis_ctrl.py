@@ -573,11 +573,46 @@ class JanisCtrl(object):
                                     for i in range(Npts)])
     
         return int(np.ceil(Navg))
+
+
+    def estimate_time_adaptive_averages(
+            self,
+            time_per_sweep : float, 
+            powers : np.ndarray,
+            Navg : int) -> float:
+        """
+        Estimates the initial number of averages used by the adaptive averaging
+        performed by power_sweep
     
+        Arguments:
+        ---------
+    
+        time_per_sweep:     time to perform 1 average [s]
+        powers:             array of powers in the power sweep [dBm]
+        total_time_hr:      total runtime [hr]
+    
+        """
+        # Check that adaptive averaging is active
+        assert self.adaptive_averaging, 'Adaptive averaging not set!'
+
+        # Compute the step size and number of points
+        stepsize = abs(powers[1] - powers[0])
+        print(f'stepsize: {stepsize}')
+        Npts = len(powers)
+        fac = (10**(stepsize/10))**0.5
+        print(f'fac: {fac}')
+        sec2hr = 3600.
+    
+        # Compute the number of averages
+        total_time_hr = Navg * sum([time_per_sweep * fac**i / sec2hr
+                                    for i in range(Npts)])
+
+        return total_time_hr
+
 
     def pna_process(self, idx, Tset, out, prefix='M3D6_02_WITH_1SP_INP',
                     adaptive_averaging=True, cal_set=None, setup_only=False,
-                    close_socket_start=True):
+                    close_socket_start=True, segments=None):
         """
         Performs a PNA measurement
         """
@@ -611,7 +646,8 @@ class JanisCtrl(object):
                     meastype=pstr,
                     adaptive_averaging=adaptive_averaging,
                     cal_set=cal_set,
-                    setup_only=setup_only)
+                    setup_only=setup_only,
+                    segments=segments)
 
         else:
             outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz'
