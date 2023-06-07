@@ -10,18 +10,20 @@ The scresonators library supports fitting using the:
 
 Additionally, the code is able to fit reflection type geometry resonators with an altered version of the Diameter Correction Method (DCM REFLECTION)
 
-
 ## Directory Structure
+```
 scresonators
-* fit_resonator
-* * Python Code to Fit Microwave Resonator Data
-
-* temp_control
-* * Code to be used in iterative fitting functionality (under development)
-* pna_control
-* * Code to be used in iterative fitting functionality (under development)
-* filler_control
-* * Code to be used in iterative fitting functionality (under development)
+├── contrib
+│   └── Credit to Contributors (add yourself in your pull request)
+├── fit_resonator
+│   └── Python Code to Fit Microwave Resonator Data
+├── instrument_control
+│   └── Code to be used in iterative fitting functionality (under development)
+├── pna_control
+│   └── Code to be used in iterative fitting functionality (under development)
+└── temperature_control
+    └── Code to be used in iterative fitting functionality (under development)
+   ```
 
 # How to use the Library:
 
@@ -35,7 +37,7 @@ Fitting resonator data will revolve around the resonator class. The resonator cl
 
 #### Setting Fit Variables:
 
-###### User must initialize a Fit_Method class instance with arguments: 
+##### User must initialize a Fit_Method class instance with arguments: 
 * fit_type
 * MC_iteration
 * MC_rounds
@@ -43,7 +45,7 @@ Fitting resonator data will revolve around the resonator class. The resonator cl
 * manual_init
 * MC_step_const
 
-fit_type: 'DCM','DCM REFLECTION','PHI','INV' or 'CPZM' for the method user wishes to run
+fit_type: `DCM`,`DCM REFLECTION`,`PHI`,`INV` or `CPZM` for the method user wishes to run
 
 MC_iteration: The number of times the user wants the Monte Carlo fit to run
 
@@ -52,19 +54,18 @@ MC_rounds: The number of iterations the Monte Carlo fit will do per run. Default
 MC_fix: An array of which variables the MC fit will not change during iteration.
    >An example of MC_fix is as follows:
    `MC_fix = ['w1','Qi']`
-   >The strings user can use for MC_fix are as follows: 'Q','Qi','Qc','w1','phi','Qa'
+   >The strings user can use for MC_fix are as follows: `Q`,`Qi`,`Qc`,`w1`,`phi`,`Qa`
 
 manual_init: Used to define initial guess variables
    >If the user wants to have the program auto guess parameters, they can set manual_init equal to None
    
    >If the user wants to define their own initial guess parameters, they must define it in the following format: 
    `manual_init = [1,2,3,4]`
-    1 = Qi
-    2 = Qc
-    3 = resonance frequency (GHz)
-    4 = phi (radians) or Qa (Qa only used for CPZM)
-
-> Note that if using CPZM, 4 needs to be Qa not phi. If using any other method, 4 needs to be phi.
+   1. = Qi
+   2. = Qc
+   3. = resonance frequency (GHz)
+   4. = phi (radians) or Qa (Qa only used for CPZM)
+   * __Note__ that if using CPZM, 4 needs to be Qa not phi. If using any other method, 4 needs to be phi.
 
 MC_step_const: Range for the random parameter values chosen in MC fit. This scaling is exponential. The larger this number, the higher and lower the random values
 
@@ -73,23 +74,25 @@ MC_step_const: Range for the random parameter values chosen in MC fit. This scal
 Initialize resonator object with:
 `my_resonator = scres.Resonator()`
 
-Initialize raw data or file into resonator object with:
-`my_resonator.from_columns(raw_data)`
+Initialize raw data or file into resonator object with:<br />
+`my_resonator.from_columns(raw_data)`<br />
 `my_resonator.from_file(filename)`
 
-You can also pass the data as a filename or data object when initializing your resonator object with:
-`my_resonator = scres.Resonator(filepath='PATH/TO/FILE')`
+You can also pass the data as a filename or data object when initializing your resonator object with:<br />
+`my_resonator = scres.Resonator(filepath='PATH/TO/FILE')`<br />
 `my_resonator = scres.Resonator(data=raw_data)`
 
-If you're using a snp file with more than three columns please specify to the resonator object which value to use with:
-`my_resonator.from_file('PATH/TO/FILE.snp', "S12")`
+If you're using a snp file with more than three columns please specify to the resonator object which value to use with:<br />
+`my_resonator.from_file('PATH/TO/FILE.snp', "S12")`<br />
 `my_resonator = scres.Resonator(filepath='PATH/TO/FILE.snp', measurement="S12")`
-or with the index value(s)
-`my_resonator.from_file('PATH/TO/FILE.snp', [2,3])`
-`my_resonator = scres.Resonator(filepath='PATH/TO/FILE.snp', measurement=[2,3]`
+
+or with the index value(s)<br />
+`my_resonator.from_file('PATH/TO/FILE.snp', [2,3])`<br />
+`my_resonator = scres.Resonator(filepath='PATH/TO/FILE.snp', measurement=[2,3])`
 
 
 Define the parameters of your fitting method with:
+```python
 my_resonator.fit_method(method: str,
 MC_iteration=None,
 MC_rounds=100,
@@ -97,15 +100,17 @@ MC_weight='no',
 MC_weightvalue=2,
 MC_fix=[],
 MC_step_const=0.6,
-manual_init=None):)
+manual_init=None)
+```
 
-Call the fitting function once resonator class hold all relevant information with:
+Call the fitting function once resonator class hold all relevant information with:<br />
 `params1,fig1,chi1,init1 = my_resonator.fit()`
 
-If the user wants to have the code remove their background, they need to include the path to their background removal file in resonator object initialization with:
+If the user wants to have the code remove their background, they need to include the path to their background removal file in resonator object initialization with:<br />
 `my_resonator = scres.Resonator(background = background_file)`
-For scaling file data and background file data
-`my_resonator.from_file(filepath, fscale)`
+
+For scaling file data and background file data<br />
+`my_resonator.from_file(filepath, fscale)`<br />
 `my_resonator.init_background(filepath, fscale)`
 
 normalize: The number of points from the start/end of S21 data the user wants to use in the linear fit of S21 data for magnitude and phase for normalization, set with:
@@ -136,7 +141,7 @@ my_resonator.from_columns(raw)
 fit_type = 'DCM'
 MC_iteration = 10
 MC_rounds = 1e3
-MC_fix = ['w1']
+MC_fix = []
 manual_init = None
 
 # Pass these to your resonator object
@@ -147,7 +152,7 @@ my_resonator.fit_method(fit_type, MC_iteration, MC_rounds=MC_rounds, MC_fix=MC_f
 my_resonator.fit()
 ```
 
-You can find more examples of user code [right here](https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/measurement/master/fit_resonator/user_files).
+You can find more examples of user code [right here](https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/tree/master/fit_resonator/samples).
 
 
 
