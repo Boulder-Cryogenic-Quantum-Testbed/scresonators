@@ -186,9 +186,9 @@ All output will be put in a new folder titled with a timestamp in the folder wit
 in the complex plane, plots of the linear fits that normalize the data for both magnitude and phase, plots of the normalized magnitude and phase with their final
 fits, manually input guess parameters, and the final parameters found from the fit with their 95% confidence intervals.
 1. The code will also print a .csv file displaying the information that the fit has gathered with each term on a new line:
-    * DCM/DCM REFLECTION/PHI: Q, Qi, Qc, 1/Re[1/Qc], phi, f_c
-    * INV: Qi, Qc*, phi, f_c
-    * CPZM: Qi, Qc, Qa, f_c
+    * For DCM, DCM REFLECTION, and PHI: Q, Qi, Qc, 1/Re[1/Qc], phi, f_c
+    * For INV: Qi, Qc*, phi, f_c
+    * For CPZM: Qi, Qc, Qa, f_c
 
 >User has the option of disabling extra graphs such as the normalization process graphs when calling the fit_resonator function
 
