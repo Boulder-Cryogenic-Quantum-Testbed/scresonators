@@ -3,12 +3,7 @@ import numpy as np
 import lmfit
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
-
-import sympy as sym
-import uncertainties
-
 from scipy.optimize import curve_fit
-from scipy.optimize import least_squares
 from matplotlib.patches import Circle
 from lmfit import Minimizer
 import inflect
@@ -80,18 +75,6 @@ def extract_near_res(x_raw: np.ndarray,
 
     return np.asarray(x_temp), np.asarray(y_temp)
 
-
-def convert_params(from_method, params):
-    if from_method == 'DCM':
-        Qc = params[2] / np.cos(params[4])
-        Qi = params[1] * Qc / (Qc - params[1])
-        Qc_INV = params[2]
-        Qi_INV = Qi / (1 + np.sin(params[4]) / Qc_INV / 2)
-        return [1 / params[0], Qi_INV, Qc_INV, params[3], -params[4], -params[5]]
-    elif from_method == 'INV':
-        Qc_DCM = params[2]
-        Q_DCM = (np.cos(params[4]) / params[2] + 1 / params[1]) ** -1
-        return [1 / params[0], Q_DCM, Qc_DCM, params[3], -params[4], -params[5]]
 
 
 def find_circle(x, y):
@@ -284,7 +267,6 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             guess = Q, Qc, f_c
             # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
             popt, pcov = curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
-            #test = least_squares(ff.one_cavity_peak_abs, guess, max_nfev=100, bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
             init_guess = [Q, Qc, f_c, phi]
