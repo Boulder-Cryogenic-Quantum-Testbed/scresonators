@@ -1,23 +1,27 @@
+import lmfit
+from lmfit import Minimizer
+
+import matplotlib.pyplot as plt
+import matplotlib.pylab as pylab
+from matplotlib.gridspec import GridSpec
+from matplotlib.patches import Circle
+
+import scipy.optimize as spopt
+from scipy.ndimage.filters import gaussian_filter1d
+from scipy.interpolate import interp1d
+from scipy import stats
+
 import attr
 import numpy as np
-import lmfit
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-from scipy.optimize import curve_fit
-from matplotlib.patches import Circle
-from lmfit import Minimizer
 import inflect
-import matplotlib.pylab as pylab
-from scipy import stats
 import time
 import sys
 import os
 import logging
-import scipy.optimize as spopt
-from scipy.ndimage.filters import gaussian_filter1d
-from scipy.interpolate import interp1d
-import fit_resonator.functions as ff
+import git
 import csv
+
+import fit_resonator.functions as ff
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)  # Path to Fit_Cavity
@@ -75,6 +79,18 @@ def extract_near_res(x_raw: np.ndarray,
 
     return np.asarray(x_temp), np.asarray(y_temp)
 
+
+def convert_params(from_method, params):
+    if from_method == 'DCM':
+        Qc = params[2] / np.cos(params[4])
+        Qi = params[1] * Qc / (Qc - params[1])
+        Qc_INV = params[2]
+        Qi_INV = Qi / (1 + np.sin(params[4]) / Qc_INV / 2)
+        return [1 / params[0], Qi_INV, Qc_INV, params[3], -params[4], -params[5]]
+    elif from_method == 'INV':
+        Qc_DCM = params[2]
+        Q_DCM = (np.cos(params[4]) / params[2] + 1 / params[1]) ** -1
+        return [1 / params[0], Q_DCM, Qc_DCM, params[3], -params[4], -params[5]]
 
 
 def find_circle(x, y):
@@ -266,7 +282,8 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             Qc = Q / Q_Qc
             guess = Q, Qc, f_c
             # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
-            popt, pcov = curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
+            #test = least_squares(ff.one_cavity_peak_abs, guess, max_nfev=100, bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
             init_guess = [Q, Qc, f_c, phi]
@@ -296,7 +313,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             Q = f_c / kappa
             Qc = Q / Q_Qc
             # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
-            popt, pcov = curve_fit(ff.one_cavity_peak_abs_REFLECTION, x, np.abs(ydata), p0=[Q, Qc, f_c],
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs_REFLECTION, x, np.abs(ydata), p0=[Q, Qc, f_c],
                                    bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
@@ -325,7 +342,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             Qi = f_c / (kappa)
             Qc = Qi / Qi_Qc
             # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
-            popt, pcov = curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Qi, Qc, f_c], bounds=(0, [np.inf] * 3))
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Qi, Qc, f_c], bounds=(0, [np.inf] * 3))
             Qi = popt[0]
             Qc = popt[1]
             init_guess = [Qi, Qc, f_c, phi]
@@ -345,7 +362,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
 
             Q = f_c / kappa
             Qc = Q / Q_Qc
-            popt, pcov = curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
             Qa = -1 / np.imag(Qc ** -1 * np.exp(-1j * phi))
@@ -473,8 +490,7 @@ def PlotFit(x,
                 '{0:.5g}'.format(manual_params[1])) + \
                       '\n' + r'$Q_i$ = ' + '%s' % float('{0:.5g}'.format(manual_params[0])) + \
                       '\n' + r'$f_c$ = ' + '%s' % float('{0:.5g}'.format(manual_params[2])) + ' GHz' \
-                                                                                              '\n' + r'$\phi$ = ' + '%s' % float(
-                '{0:.5g}'.format(manual_params[3])) + ' radians'
+                      '\n' + r'$\phi$ = ' + '%s' % float('{0:.5g}'.format(manual_params[3])) + ' radians'
         elif func == ff.cavity_CPZM:
             textstr = r'Manually input parameters:' + '\n' + r'$Q_c$ = ' + '%s' % float(
                 '{0:.5g}'.format(manual_params[0] * manual_params[1] ** -1)) + \
@@ -800,6 +816,18 @@ def PlotFit(x,
                             [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
                              float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3])),
                              float('{0:.1g}'.format(conf_array[4])), float('{0:.1g}'.format(conf_array[5]))]]
+                writer.writerow(fields)
+                writer.writerows(vals)
+                file.close()
+
+            ################### CODE TO BE MOVED TO INDEPENDENT FUNCTION IN SOFTWARE REDESIGN ###################
+            repo = git.Repo(search_parent_directories=True)
+            sha = repo.head.object.hexsha
+            # write input parameters to metadata file
+            with open(output_path + "metadata.csv", "w", newline='') as file:
+                writer = csv.writer(file)
+                fields = ['Current Git Commit']
+                vals = [sha]
                 writer.writerow(fields)
                 writer.writerows(vals)
                 file.close()
