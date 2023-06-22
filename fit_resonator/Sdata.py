@@ -1,28 +1,27 @@
+import lmfit
+from lmfit import Minimizer
+
+import matplotlib.pyplot as plt
+import matplotlib.pylab as pylab
+from matplotlib.gridspec import GridSpec
+from matplotlib.patches import Circle
+
+import scipy.optimize as spopt
+from scipy.ndimage.filters import gaussian_filter1d
+from scipy.interpolate import interp1d
+from scipy import stats
+
 import attr
 import numpy as np
-import lmfit
-import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
-
-import sympy as sym
-import uncertainties
-
-from scipy.optimize import curve_fit
-from scipy.optimize import least_squares
-from matplotlib.patches import Circle
-from lmfit import Minimizer
 import inflect
-import matplotlib.pylab as pylab
-from scipy import stats
 import time
 import sys
 import os
 import logging
-import scipy.optimize as spopt
-from scipy.ndimage.filters import gaussian_filter1d
-from scipy.interpolate import interp1d
-import fit_resonator.functions as ff
+from git import Repo
 import csv
+
+import fit_resonator.functions as ff
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)  # Path to Fit_Cavity
@@ -283,7 +282,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             Qc = Q / Q_Qc
             guess = Q, Qc, f_c
             # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
-            popt, pcov = curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
             #test = least_squares(ff.one_cavity_peak_abs, guess, max_nfev=100, bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
@@ -314,7 +313,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             Q = f_c / kappa
             Qc = Q / Q_Qc
             # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
-            popt, pcov = curve_fit(ff.one_cavity_peak_abs_REFLECTION, x, np.abs(ydata), p0=[Q, Qc, f_c],
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs_REFLECTION, x, np.abs(ydata), p0=[Q, Qc, f_c],
                                    bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
@@ -343,7 +342,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             Qi = f_c / (kappa)
             Qc = Qi / Qi_Qc
             # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
-            popt, pcov = curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Qi, Qc, f_c], bounds=(0, [np.inf] * 3))
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Qi, Qc, f_c], bounds=(0, [np.inf] * 3))
             Qi = popt[0]
             Qc = popt[1]
             init_guess = [Qi, Qc, f_c, phi]
@@ -363,7 +362,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
 
             Q = f_c / kappa
             Qc = Q / Q_Qc
-            popt, pcov = curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
             Qa = -1 / np.imag(Qc ** -1 * np.exp(-1j * phi))
@@ -491,8 +490,7 @@ def PlotFit(x,
                 '{0:.5g}'.format(manual_params[1])) + \
                       '\n' + r'$Q_i$ = ' + '%s' % float('{0:.5g}'.format(manual_params[0])) + \
                       '\n' + r'$f_c$ = ' + '%s' % float('{0:.5g}'.format(manual_params[2])) + ' GHz' \
-                                                                                              '\n' + r'$\phi$ = ' + '%s' % float(
-                '{0:.5g}'.format(manual_params[3])) + ' radians'
+                      '\n' + r'$\phi$ = ' + '%s' % float('{0:.5g}'.format(manual_params[3])) + ' radians'
         elif func == ff.cavity_CPZM:
             textstr = r'Manually input parameters:' + '\n' + r'$Q_c$ = ' + '%s' % float(
                 '{0:.5g}'.format(manual_params[0] * manual_params[1] ** -1)) + \
@@ -1212,7 +1210,7 @@ def fit_delay(xdata: np.ndarray, ydata: np.ndarray):
 
     # Translate data to origin
     xc, yc, r0 = find_circle(np.real(ydata), np.imag(ydata))
-    z_data = ydata - np.complex(xc, yc)
+    z_data = ydata - complex(xc, yc)
     # Find first estimate of parameters
     fr, Ql, theta, delay = fit_phase(xdata, z_data)
 
@@ -1224,7 +1222,7 @@ def fit_delay(xdata: np.ndarray, ydata: np.ndarray):
         # Translate new best fit data to origin
         z_data = ydata * np.exp(2j * np.pi * delay * xdata)
         xc, yc, r0 = find_circle(np.real(z_data), np.imag(z_data))
-        z_data -= np.complex(xc, yc)
+        z_data -= complex(xc, yc)
 
         # Find correction to current delay
         guesses = (fr, Ql, 5e-11)
@@ -1275,7 +1273,7 @@ def calibrate(x_data: np.ndarray, z_data: np.ndarray):
 
     # Translate circle to origin
     xc, yc, r = find_circle(np.real(z_data), np.imag(z_data))
-    zc = np.complex(xc, yc)
+    zc = complex(xc, yc)
     z_data2 = z_data - zc
 
     # Find off-resonant point by fitting offset phase
@@ -1928,6 +1926,29 @@ def fit(resonator):
 
     fig.savefig(name_plot(filename, str(Method.method), output_path),
                 format='pdf')
+    
+    ######################### CODE TO BE MOVED TO INDEPENDENT FUNCTION IN SOFTWARE REDESIGN #####################
+
+    repo = Repo(ROOT_DIR)
+    sha = repo.head.object.hexsha
+    # write input parameters to metadata file
+    with open(output_path + "metadata.csv", "w", newline='') as file:
+        writer = csv.writer(file)
+        fields = ['Method', 'MC_iteration', 'MC_rounds', \
+                  'MC_weight', 'MC_weightvalue', 'MC_fix', \
+                  'MC_step_const', 'manual_init', \
+                  'preprocess_method', 'Current Git Commit']
+        print(fields)
+        vals = [resonator.method_class.method, resonator.method_class.MC_iteration, resonator.method_class.MC_rounds,\
+                resonator.method_class.MC_weight, resonator.method_class.MC_weightvalue, resonator.method_class.MC_fix, \
+                resonator.method_class.MC_step_const, resonator.method_class.manual_init, \
+                resonator.method_class.preprocess_method, sha]
+        print(vals)
+        writer.writerow(fields)
+        writer.writerow(vals)
+        file.close()
+
+    #############################################################################################################
 
     return output_params, conf_array, fig, error, init
 
