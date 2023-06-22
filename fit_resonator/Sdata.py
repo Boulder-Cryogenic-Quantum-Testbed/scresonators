@@ -23,8 +23,6 @@ import csv
 
 import fit_resonator.functions as ff
 
-import os
-
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)  # Path to Fit_Cavity
 
