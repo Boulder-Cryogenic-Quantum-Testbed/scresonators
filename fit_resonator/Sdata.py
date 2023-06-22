@@ -18,10 +18,12 @@ import time
 import sys
 import os
 import logging
-import git
+from git import Repo
 import csv
 
 import fit_resonator.functions as ff
+
+import os
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)  # Path to Fit_Cavity
@@ -819,18 +821,6 @@ def PlotFit(x,
                 writer.writerow(fields)
                 writer.writerows(vals)
                 file.close()
-
-            ################### CODE TO BE MOVED TO INDEPENDENT FUNCTION IN SOFTWARE REDESIGN ###################
-            repo = git.Repo(search_parent_directories=True)
-            sha = repo.head.object.hexsha
-            # write input parameters to metadata file
-            with open(output_path + "metadata.csv", "w", newline='') as file:
-                writer = csv.writer(file)
-                fields = ['Current Git Commit']
-                vals = [sha]
-                writer.writerow(fields)
-                writer.writerows(vals)
-                file.close()
     except:
         print(">Error when trying to write parameters on plot")
         quit()
@@ -1222,7 +1212,7 @@ def fit_delay(xdata: np.ndarray, ydata: np.ndarray):
 
     # Translate data to origin
     xc, yc, r0 = find_circle(np.real(ydata), np.imag(ydata))
-    z_data = ydata - np.complex(xc, yc)
+    z_data = ydata - complex(xc, yc)
     # Find first estimate of parameters
     fr, Ql, theta, delay = fit_phase(xdata, z_data)
 
@@ -1234,7 +1224,7 @@ def fit_delay(xdata: np.ndarray, ydata: np.ndarray):
         # Translate new best fit data to origin
         z_data = ydata * np.exp(2j * np.pi * delay * xdata)
         xc, yc, r0 = find_circle(np.real(z_data), np.imag(z_data))
-        z_data -= np.complex(xc, yc)
+        z_data -= complex(xc, yc)
 
         # Find correction to current delay
         guesses = (fr, Ql, 5e-11)
@@ -1285,7 +1275,7 @@ def calibrate(x_data: np.ndarray, z_data: np.ndarray):
 
     # Translate circle to origin
     xc, yc, r = find_circle(np.real(z_data), np.imag(z_data))
-    zc = np.complex(xc, yc)
+    zc = complex(xc, yc)
     z_data2 = z_data - zc
 
     # Find off-resonant point by fitting offset phase
@@ -1938,6 +1928,29 @@ def fit(resonator):
 
     fig.savefig(name_plot(filename, str(Method.method), output_path),
                 format='pdf')
+    
+    ######################### CODE TO BE MOVED TO INDEPENDENT FUNCTION IN SOFTWARE REDESIGN #####################
+
+    repo = Repo(ROOT_DIR)
+    sha = repo.head.object.hexsha
+    # write input parameters to metadata file
+    with open(output_path + "metadata.csv", "w", newline='') as file:
+        writer = csv.writer(file)
+        fields = ['Method', 'MC_iteration', 'MC_rounds', \
+                  'MC_weight', 'MC_weightvalue', 'MC_fix', \
+                  'MC_step_const', 'manual_init', \
+                  'preprocess_method', 'Current Git Commit']
+        print(fields)
+        vals = [resonator.method_class.method, resonator.method_class.MC_iteration, resonator.method_class.MC_rounds,\
+                resonator.method_class.MC_weight, resonator.method_class.MC_weightvalue, resonator.method_class.MC_fix, \
+                resonator.method_class.MC_step_const, resonator.method_class.manual_init, \
+                resonator.method_class.preprocess_method, sha]
+        print(vals)
+        writer.writerow(fields)
+        writer.writerow(vals)
+        file.close()
+
+    #############################################################################################################
 
     return output_params, conf_array, fig, error, init
 
