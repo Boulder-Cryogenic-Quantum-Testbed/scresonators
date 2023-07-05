@@ -120,36 +120,41 @@ Remember for these special initializations you can include as many as you need, 
 `my_resonator = scres.Resonator(background = background_file, normalize = 5, filepath = "PATH/TO/FILE, measurement = "S21")`
 
 
-#### Here's an example using some of the data hosted on this repository. (needs to be updated now that cryores is deleted) (could put an example snp or csv in Resources to fit)
+#### Here's an example using some of the data hosted on this repository.
 
 ```python
-import numpy as np
+import requests
+import os
 import fit_resonator.resonator as scres
 
-# The object all following code will be called from
+# Load sample resonator data into a local touchstone
+directory = os.getcwd()
+filename = directory + '/' + 'scres_example.s2p'
+url = 'https://raw.githubusercontent.com/scottito/scresonators/Example_with_Sample/fit_resonator/Resources/awr_sim_sample.s2p'
+r = requests.get(url).content.decode('utf-8')
+f = open(filename,'w')
+f.write(r)
+f.close()
+
+# Create resonator object from the sample data
 my_resonator = scres.Resonator()
+my_resonator.from_file(filepath=filename, measurement='S21', fscale=1e-9)
 
-# Load the raw data
-url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/master/cryores/test_data/AWR/AWR_Data.csv'
-raw = np.loadtxt(url, delimiter=',')
-# Can also use our file input system of my_resonator.from_file(url)
-
-# Test with file load into class
-my_resonator.from_columns(raw)
-
-# Assign your desired fit method variables
+# Set fit parameters
 fit_type = 'DCM'
 MC_iteration = 10
 MC_rounds = 1e3
 MC_fix = []
 manual_init = None
+my_resonator.preprocess_method = 'circle' # Preprocess method: default = linear
+my_resonator.filepath = './' # Path to fit output
 
-# Pass these to your resonator object
-my_resonator.fit_method(fit_type, MC_iteration, MC_rounds=MC_rounds, MC_fix=MC_fix, manual_init=manual_init,
-                 MC_step_const=0.3)
-
-# Fit!
+# Perform a fit on the data with given parameters
+my_resonator.fit_method(fit_type, MC_iteration, MC_rounds=MC_rounds, MC_fix=MC_fix, manual_init=manual_init, MC_step_const=0.3)
 my_resonator.fit()
+
+# Remove sample data
+os.remove(filename) 
 ```
 
 You can find more examples of user code [right here](https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/tree/master/fit_resonator/samples).

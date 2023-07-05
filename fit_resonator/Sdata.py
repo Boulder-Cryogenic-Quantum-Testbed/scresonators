@@ -66,14 +66,16 @@ def extract_near_res(x_raw: np.ndarray,
     xend = f_res + extract_factor / 2 * kappa
     x_temp = []
     y_temp = []
-    # xdata is new set of data to be fit, within extract_factor times the bandwidth, ydata is S21 data to match indices with xdata
+    # xdata is new set of data to be fit, within extract_factor times the 
+    # bandwidth, ydata is S21 data to match indices with xdata
     for i, freq in enumerate(x_raw):
         if (freq > xstart and freq < xend):
             x_temp.append(freq)
             y_temp.append(y_raw[i])
 
     if len(y_temp) < 5:
-        print("Less than 5 Data points to fit data, not enough points near resonance, attempting to fit anyway")
+        print("Less than 5 Data points to fit data, not enough points near",
+            "resonance, attempting to fit anyway")
     if len(x_temp) < 1:
         raise Exception(">Failed to extract data from designated bandwidth")
 
@@ -86,7 +88,8 @@ def convert_params(from_method, params):
         Qi = params[1] * Qc / (Qc - params[1])
         Qc_INV = params[2]
         Qi_INV = Qi / (1 + np.sin(params[4]) / Qc_INV / 2)
-        return [1 / params[0], Qi_INV, Qc_INV, params[3], -params[4], -params[5]]
+        return [1 / params[0], Qi_INV, Qc_INV, params[3], -params[4],
+                 -params[5]]
     elif from_method == 'INV':
         Qc_DCM = params[2]
         Q_DCM = (np.cos(params[4]) / params[2] + 1 / params[1]) ** -1
@@ -94,14 +97,16 @@ def convert_params(from_method, params):
 
 
 def find_circle(x, y):
-    """Given a set of x,y data return a circle that fits data using LeastSquares Circle Fit Randy Bullock (2017)
+    """Given a set of x,y data return a circle that fits data using LeastSquares
+      Circle Fit Randy Bullock (2017)
 
     Args:
         x: Array of x position of data in complex plane (real)
         y: Array of y position of data in complex plane (imaginary)
 
     Returns:
-        x (matrix1) and y (matrix2) center coordinates of the circle, and the radius of the circle "R"
+        x (matrix1) and y (matrix2) center coordinates of the circle, and the 
+        radius of the circle "R"
     """
     N = 0
     xavg = 0
@@ -179,7 +184,8 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         output_path: place to output any plots generated
         plot_extra: boolean that determines if extra plots will be output
 
-    Returns: initial guess for parameters, x coordinate for center of fit circle, y coordinate for center of fit circle, radius of fit circle
+    Returns: initial guess for parameters, x coordinate for center of fit 
+    circle, y coordinate for center of fit circle, radius of fit circle
 
     """
     try:
@@ -192,7 +198,8 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         y1 = np.real(y)
         y2 = np.imag(y)
     except:
-        print(">Problem initializing data in find_initial_guess(), please make sure data is of correct format")
+        print(">Problem initializing data in find_initial_guess(), please make",
+              " sure data is of correct format")
         quit()
 
     try:
@@ -201,14 +208,17 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         # define complex number to house circle center location data
         z_c = x_c + 1j * y_c
     except:
-        print(">Problem in function find_circle, please make sure data is of correct format")
+        print(">Problem in function find_circle, please make sure data is of ",
+              "correct format")
         quit()
 
     if plot_extra:
         try:
-            plot(np.real(y), np.imag(y), "circle", output_path, np.real(z_c), np.imag(z_c), r)
+            plot(np.real(y), np.imag(y), "circle", output_path, np.real(z_c), 
+                 np.imag(z_c), r)
         except:
-            print(">Error when trying to plot raw data and circle fit in find_initial_guess")
+            print(">Error when trying to plot raw data and circle fit in ",
+                  "find_initial_guess")
             quit()
 
     try:
@@ -218,11 +228,12 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         # Shift guide circle to match data shift
         z_c = z_c - 1
     except:
-        print(">Error when trying to shift data into canonical position minus 1")
+        print(">Error when trying to shift data into canonical position",
+              " minus 1")
         quit()
 
     try:
-        # determine the angle to the center of the fitting circle from the origin
+        # determine the angle to the center of the fitting circle from origin
         if Method.method == 'INV':
             phi = np.angle(z_c)
         else:
@@ -248,15 +259,18 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         z_c = z_c * np.exp(-1j * phi)
         if plot_extra:
             # plot shifted data with guide circle
-            plot(np.real(ydata), np.imag(ydata), "phi", output_path, np.real(z_c), np.imag(z_c), r,
+            plot(np.real(ydata), np.imag(ydata), "phi", output_path, 
+                 np.real(z_c), np.imag(z_c), r,
                  np.real(ydata[freq_idx]), np.imag(ydata[freq_idx]))
     except:
-        print(">Error when trying to shift data according to phi in find_initial_guess")
+        print(">Error when trying to shift data according to phi in ",
+              "find_initial_guess")
         quit()
 
     try:
         if f_c < 0:
-            print(">Resonance frequency is negative. Please only input positive frequencies.")
+            print(">Resonance frequency is negative. Please only input ",
+                  "positive frequencies.")
             quit()
     except:
         print(">Cannot find resonance frequency in find_initial_guess")
@@ -264,14 +278,15 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
 
     if Method.method == 'DCM' or Method.method == 'PHI':
         try:
-            # diameter of the circle found from getting distance from (0,0) to resonance frequency data point (possibly should be using fit circle)
+            # diameter of the circle found from getting distance from (0,0) to 
+            # resonance frequency data point (possibly should use fit circle)
             Q_Qc = np.max(np.abs(ydata))
             # y_temp = |ydata|-(diameter/sqrt(2))
             y_temp = np.abs(np.abs(ydata) - np.max(np.abs(ydata)) / 2 ** 0.5)
 
-            # find min value in y_temp on one half of circle from resonance frequency
+            # find min value in y_temp on one half of circle from resonance
             _, idx1 = find_nearest(y_temp[0:freq_idx], 0)
-            # find min value in y_temp on other half of circle from resonance frequency
+            # find min value in y_temp on other half of circle from resonance
             _, idx2 = find_nearest(y_temp[freq_idx:], 0)
             # add index of resonance frequency to get correct index for idx2
             idx2 = idx2 + freq_idx
@@ -281,29 +296,34 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             Q = f_c / kappa
             Qc = Q / Q_Qc
             guess = Q, Qc, f_c
-            # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
-            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
-            #test = least_squares(ff.one_cavity_peak_abs, guess, max_nfev=100, bounds=(0, [np.inf] * 3))
+            # fits parameters for the 3 terms given in p0 
+            # (this is where Qi and Qc are actually guessed)
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, 
+                                         np.abs(ydata), p0=[Q, Qc, f_c], 
+                                         bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
             init_guess = [Q, Qc, f_c, phi]
         except Exception as e:
             print(e)
             if Method.method == 'DCM':
-                print(">Failed to find initial guess for method DCM. Please manually initialize a guess")
+                print(">Failed to find initial guess for method DCM.",
+                      " Please manually initialize a guess")
             else:
-                print(">Failed to find initial guess for method PHI. Please manually initialize a guess")
+                print(">Failed to find initial guess for method PHI.",
+                      " Please manually initialize a guess")
             quit()
 
     elif Method.method == 'DCM REFLECTION':
         try:
-            # diameter of the circle found from getting distance from (0,0) to resonance frequency data point (possibly should be using fit circle)
+            # diameter of the circle found from getting distance from (0,0) 
+            # to resonance frequency data point (possibly should use fit circle)
             Q_Qc = np.max(np.abs(ydata)) / 2
-            y_temp = np.abs(np.abs(ydata) - np.max(np.abs(ydata)) / 2 ** 0.5)  # y_temp = |ydata|-(diameter/sqrt(2))
+            y_temp = np.abs(np.abs(ydata) - np.max(np.abs(ydata)) / 2 ** 0.5)
 
-            # find min value in y_temp on one half of circle from resonance frequency
+            # find min value in y_temp on one half of circle from resonance
             _, idx1 = find_nearest(y_temp[0:freq_idx], 0)
-            # find min value in y_temp on other half of circle from resonance frequency
+            # find min value in y_temp on other half of circle from resonance
             _, idx2 = find_nearest(y_temp[freq_idx:], 0)
             # add index of resonance frequency to get correct index for idx2
             idx2 = idx2 + freq_idx
@@ -312,27 +332,31 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
 
             Q = f_c / kappa
             Qc = Q / Q_Qc
-            # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
-            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs_REFLECTION, x, np.abs(ydata), p0=[Q, Qc, f_c],
-                                   bounds=(0, [np.inf] * 3))
+            # fits parameters for the 3 terms given in p0 
+            # (this is where Qi and Qc are actually guessed)
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs_REFLECTION, x, 
+                                         np.abs(ydata), p0=[Q, Qc, f_c],
+                                         bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
             init_guess = [Q, Qc, f_c, phi]
         except:
-            print(">Failed to find initial guess for method DCM REFLECTION. Please manually initialize a guess")
+            print(">Failed to find initial guess for method DCM REFLECTION. ",
+                  "Please manually initialize a guess")
             quit()
 
     elif Method.method == 'INV':
 
         try:
-            # diameter of the circle found from getting distance from (0,0) to resonance frequency
+            # diameter of the circle found from getting distance from (0,0) 
+            # to resonance frequency
             Qi_Qc = np.max(np.abs(ydata))
             # y_temp = |ydata|-(diameter/sqrt(2))
             y_temp = np.abs(np.abs(ydata) - np.max(np.abs(ydata)) / 2 ** 0.5)
 
-            # find min value in y_temp on one half of circle from resonance frequency
+            # find min value in y_temp on one half of circle from resonance
             _, idx1 = find_nearest(y_temp[0:freq_idx], 0)
-            # find min value in y_temp on other half of circle from resonance frequency
+            # find min value in y_temp on other half of circle from resonance
             _, idx2 = find_nearest(y_temp[freq_idx:], 0)
             # add index of resonance frequency to get correct index for idx2
             idx2 = idx2 + freq_idx
@@ -341,13 +365,17 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
 
             Qi = f_c / (kappa)
             Qc = Qi / Qi_Qc
-            # fits parameters for the 3 terms given in p0 (this is where Qi and Qc are actually guessed)
-            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Qi, Qc, f_c], bounds=(0, [np.inf] * 3))
+            # fits parameters for the 3 terms given in p0 
+            # (this is where Qi and Qc are actually guessed)
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, 
+                                         np.abs(ydata), p0=[Qi, Qc, f_c], 
+                                         bounds=(0, [np.inf] * 3))
             Qi = popt[0]
             Qc = popt[1]
             init_guess = [Qi, Qc, f_c, phi]
         except:
-            print(">Failed to find initial guess for method INV. Please manually initialize a guess")
+            print(">Failed to find initial guess for method INV. ",
+                  "Please manually initialize a guess")
             quit()
 
     elif Method.method == 'CPZM':
@@ -362,7 +390,9 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
 
             Q = f_c / kappa
             Qc = Q / Q_Qc
-            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, np.abs(ydata), p0=[Q, Qc, f_c], bounds=(0, [np.inf] * 3))
+            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, 
+                                         np.abs(ydata), p0=[Q, Qc, f_c], 
+                                         bounds=(0, [np.inf] * 3))
             Q = popt[0]
             Qc = popt[1]
             Qa = -1 / np.imag(Qc ** -1 * np.exp(-1j * phi))
@@ -372,10 +402,12 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             Qia = Qi / Qa
             init_guess = [Qi, Qic, f_c, Qia, kappa]
         except:
-            print(">Failed to find initial guess for method CPZM. Please manually initialize a guess")
+            print(">Failed to find initial guess for method CPZM. ",
+                  "Please manually initialize a guess")
             quit()
     else:
-        print(">Method is not defined. Please choose a method: DCM, DCM REFLECTION, PHI, INV or CPZM")
+        print(">Method is not defined. Please choose a method: DCM, ",
+              "DCM REFLECTION, PHI, INV or CPZM")
         quit()
     return init_guess, x_c, y_c, r
 
@@ -447,25 +479,22 @@ def PlotFit(x,
     """
     # close plot if still open
     plt.close(figurename)
-    # generate an even distribution of 5000 frequency points between the min and max of x for graphing purposes
+    # generate an even distribution of 5000 frequency points between 
+    # the min and max of x for graphing purposes
     if extract_factor == None:
         x_fit = np.linspace(x.min(), x.max(), 5000)
     elif isinstance(extract_factor, list) == True:
         x_fit = np.linspace(extract_factor[0], extract_factor[1], 5000)
-    # plug in the 5000 x points to respective fit function to create set of S21 data for graphing
+    # plug in the 5000 x points to respective fit function to create set of 
+    # S21 data for graphing
     y_fit = func(x_fit, *params)
 
     fig = plt.figure(figurename, figsize=(15, 10))
     fig.set_tight_layout(True)
     gs = GridSpec(11, 10)
-    # original magnitude
-    #ax1 = plt.subplot(gs[0:1, 4:6])
-    # original angle
-    #ax2 = plt.subplot(gs[2:3, 4:6])
-    # normalized magnitude
-    ax3 = plt.subplot(gs[0:4, 6:10])
+    ax1 = plt.subplot(gs[0:4, 6:10])
     # normalized angle
-    ax4 = plt.subplot(gs[4:8, 6:10])
+    ax2 = plt.subplot(gs[4:8, 6:10])
     # IQ plot
     ax = plt.subplot(gs[0:11, 0:6])
 
@@ -509,28 +538,20 @@ def PlotFit(x,
         plt.gcf().text(0.1, 0.7, textstr, fontsize=15)
     else:
         pass
-        # plt.gcf().text(0.05, 0.85, "No manually input parameters", fontsize=15)
 
     if isinstance(extract_factor, list) == True:
         x_fit_full = np.linspace(x.min(), x.max(), 5000)
         y_fit_full = func(x_fit_full, *params)
 
-        # x_fit = np.linspace(extract_factor[0], extract_factor[1], 5000)
-        # y_fit = func(x_fit, *params)
-
         x_fit = np.copy(x_fit_full)
         y_fit = np.copy(y_fit_full)
 
     if func == ff.cavity_inverse:
-        #ax1.set_ylabel('Mag[S21]')
-        #ax2.set_ylabel('Ang[S21]')
-        ax3.set_ylabel('Mag[1/S21]')
-        ax4.set_ylabel('Ang[1/S21]')
+        ax1.set_ylabel('Mag[1/S21]')
+        ax2.set_ylabel('Ang[1/S21]')
     else:
-        #ax1.set_ylabel('Mag[S21]')
-        #ax2.set_ylabel('Ang[S21]')
-        ax3.set_ylabel('Mag[S21]')
-        ax4.set_ylabel('Ang[S21]')
+        ax1.set_ylabel('Mag[S21]')
+        ax2.set_ylabel('Ang[S21]')
 
     for i in range(len(x_initial)):
         x_initial[i] = round(x_initial[i], 8)
@@ -562,39 +583,32 @@ def PlotFit(x,
     x = x[0::dfac]
     y = y[0::dfac]
 
-    ax3.plot(x, np.log10(np.abs(y)) * 20, 'bo',
+    ax1.plot(x, np.log10(np.abs(y)) * 20, 'bo',
             label='normalized data',
             markersize=msize2)
-    # ax3.plot(x_fit_full,np.log10(np.abs(y_fit_full))*20,'g--',label = 'fit past 3dB from resonance',color = 'lightgreen', alpha=0.7)
-    ax3.plot(x_fit, np.log10(np.abs(y_fit)) * 20, 'r-',
+    ax1.plot(x_fit, np.log10(np.abs(y_fit)) * 20, 'r-',
              lw=3, label='fit function')
-    ax3.set_xlim(left=x[0], right=x[-1])
-    ax3.set_xlabel(xstr, fontsize=17)
-    for tick in ax3.xaxis.get_major_ticks():
+    ax1.set_xlim(left=x[0], right=x[-1])
+    ax1.set_xlabel(xstr, fontsize=17)
+    for tick in ax1.xaxis.get_major_ticks():
         tick.label.set_fontsize(fsize)
 
-    ax4.plot(x, np.angle(y), 'bo', label='normalized data', markersize=msize2)
-    # ax4.plot(x_fit_full,np.angle(y_fit_full),'g--',label = 'fit past 3dB from resonance',color = 'lightgreen', alpha=0.7)
-    ax4.plot(x_fit, np.angle(y_fit), 'r-', label='fit function', lw=3)
-    ax4.set_xlim(left=x[0], right=x[-1])
-    ax4.set_xlabel(xstr, fontsize=17)
-    for tick in ax4.xaxis.get_major_ticks():
+    ax2.plot(x, np.angle(y), 'bo', label='normalized data', markersize=msize2)
+    ax2.plot(x_fit, np.angle(y_fit), 'r-', label='fit function', lw=3)
+    ax2.set_xlim(left=x[0], right=x[-1])
+    ax2.set_xlabel(xstr, fontsize=17)
+    for tick in ax2.xaxis.get_major_ticks():
         tick.label.set_fontsize(fsize)
 
     line1 = ax.plot(np.real(y), np.imag(y), 'bo',
                     label='normalized data', markersize=msize2)
     line2 = ax.plot(np.real(y_fit), np.imag(y_fit), 'r-', label='fit function',
                     linewidth=3)
-    # ax.plot(np.real(y_fit_full),np.imag(y_fit_full),'--',color = 'lightgreen',label = 'fit past 3dB from resonance',linewidth = 4.5, alpha=0.7)
     if x_c == 0 and y_c == 0 and radius == 0:
         pass
     else:
         pass
-        # plt.plot(x_c,y_c,'g-',markersize = 5,color=(0, 0.8, 0.8),
-        #         label = 'initial guess circle')
-        # circle = Circle((x_c, y_c), radius, facecolor='none',\
-        #             edgecolor=(0, 0.8, 0.8), linewidth=3, alpha=0.5)
-        # ax.add_patch(circle)
+
     # plot resonance
     if func == ff.cavity_inverse:
         resonance = (1 + params[0] / params[1] * np.exp(1j * params[3]) / (
@@ -610,9 +624,9 @@ def PlotFit(x,
         resonance = 1 + 1j * 0
     ax.plot(np.real(resonance), np.imag(resonance), '*', color='red', label=
     'resonance', markersize=10)
-    ax3.plot(params[2], np.log10(np.abs(resonance)) * 20, '*', color='red', label=
-    'resonance', markersize=msize1)
-    ax4.plot(params[2], np.angle(resonance), '*', color='red', label=
+    ax1.plot(params[2], np.log10(np.abs(resonance)) * 20, '*', color='red', 
+             label='resonance', markersize=msize1)
+    ax2.plot(params[2], np.angle(resonance), '*', color='red', label=
     'resonance', markersize=msize1)
 
     plt.axis('square')
@@ -622,7 +636,6 @@ def PlotFit(x,
         plt.ylabel('Im[$S_{21}^{-1}$]')
         plt.xlabel("Re[$S_{21}^{-1}$]")
     leg = plt.legend()
-    # ax1.legend(fontsize=8)
 
     # get the individual lines inside legend and set line width
     for line in leg.get_lines():
@@ -632,8 +645,12 @@ def PlotFit(x,
         if params:
             if func == ff.cavity_inverse:
                 if params[0] < 0:
-                    print(
-                        "Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. For reflection type geometry, please use DCM REFLECTION.")
+                    print("Qi is less than zero. Please make sure data is of"
+                          " correct format: decibals (log10*20 version), and "
+                          "radians. Otherwise, it is quite likely that the "
+                          "resonator being fit is not a Notch type resonator. "
+                          "For reflection type geometry, "
+                          "please use DCM REFLECTION.")
                 if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
                     Qi = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
                 else:
@@ -661,8 +678,12 @@ def PlotFit(x,
                 plt.gcf().text(0.7, 0.11, textstr, fontsize=18)
             elif func == ff.cavity_CPZM:
                 if params[0] < 0:
-                    print(
-                        "Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. For reflection type geometry, please use DCM REFLECTION.")
+                    print("Qi is less than zero. Please make sure data is "
+                          "of correct format: decibals (log10*20 version), "
+                          "and radians. Otherwise, it is quite likely that the "
+                          "resonator being fit is not a Notch type resonator. "
+                          "For reflection type geometry, "
+                          "please use DCM REFLECTION.")
                 if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
                     Qi = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
                 else:
@@ -688,17 +709,8 @@ def PlotFit(x,
                 for val in reports:
                     textstr += val + f' = {p_ref[reports.index(val)]:.10f}' + r'$\pm$' + f'{conf_array[reports.index(val)]:.1f} UNITS'
 
-                """
-                textstr = r'$Q_i$ = ' + '%s' % float('{0:.10g}'.format(Qi)) + r"$\pm$" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[0])) + \
-                          '\n' + r'$Q_c$ = ' + '%s' % float('{0:.10g}'.format(Qc)) + r"$\pm$" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[1])) + \
-                          '\n' + r'$Q_a$ = ' + '%s' % float('{0:.10g}'.format(Qa)) + r"$\pm$" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[2])) + \
-                          '\n' + r'$f_c$ = ' + '%s' % float('{0:.10g}'.format(f_c)) + r"$\pm$" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[3])) + ' GHz'
-                """
                 plt.gcf().text(0.7, 0.11, textstr, fontsize=18)
+
             else:
                 Qc = params[1] / np.exp(1j * params[3])
                 if Method.method == 'PHI':
@@ -1299,11 +1311,6 @@ def normalize(f_data, z_data, delay, a, alpha):
         off-resonant point).
         """
     z_norm = (z_data / a) * np.exp(1j * (-alpha))
-
-    '''z_norm = z_data / a * np.exp(
-            1j*(-alpha + 2.*np.pi*delay*f_data)
-        )'''
-
     return z_norm
 
 
@@ -1379,7 +1386,8 @@ def preprocess_circle(xdata: np.ndarray, ydata: np.ndarray, output_path: str, pl
     return z_norm
 
 
-def background_removal(databg: VNASweep, linear_amps: np.ndarray, phases: np.ndarray, output_path: str):
+def background_removal(databg: VNASweep, linear_amps: np.ndarray, 
+                       phases: np.ndarray, output_path: str):
     x_bg = databg.freqs
     linear_amps_bg = databg.linear_amps
     phases_bg = databg.phases
@@ -1483,20 +1491,24 @@ def min_fit(params, xdata, ydata, Method):
             if 'phi' in p_names:
                 phi_neg = ci['phi'][0][1]
                 phi_pos = ci['phi'][2][1]
-                phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+                phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), 
+                               np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
                 # Ignore one-sided conf test
                 if np.isinf(phi_conf):
-                    phi_conf = min(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+                    phi_conf = min(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), 
+                                   np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
             else:
                 phi_conf = 0
             # confidence interval for resonance frequency
             if 'w1' in p_names:
                 w1_neg = ci['w1'][0][1]
                 w1_pos = ci['w1'][2][1]
-                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), 
+                              np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
                 # Ignore one-sided conf test
                 if np.isinf(w1_conf):
-                    w1_conf = min(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+                    w1_conf = min(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), 
+                                  np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
             else:
                 w1_conf = 0
             # Array of confidence intervals
@@ -1505,28 +1517,34 @@ def min_fit(params, xdata, ydata, Method):
             ci = lmfit.conf_interval(minner, result, p_names=p_names, sigmas=[2])
             # confidence interval for Qi
             if 'Qi' in p_names:
-                Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+                Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), 
+                              np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
             else:
                 Qi_conf = 0
             # confidence interval for Qc
             if 'Qc' in p_names:
-                Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
+                Qc_conf = max(np.abs(ci['Qc'][1][1] - ci['Qc'][0][1]), 
+                              np.abs(ci['Qc'][1][1] - ci['Qc'][2][1]))
             else:
                 Qc_conf = 0
             # confidence interval for phi
             if 'phi' in p_names:
-                phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+                phi_conf = max(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), 
+                               np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
                 # Ignore one-sided conf test
                 if np.isinf(phi_conf):
-                    phi_conf = min(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
+                    phi_conf = min(np.abs(ci['phi'][1][1] - ci['phi'][0][1]), 
+                                   np.abs(ci['phi'][1][1] - ci['phi'][2][1]))
             else:
                 phi_conf = 0
             # confidence interval for resonance frequency
             if 'w1' in p_names:
-                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), 
+                              np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
                 # Ignore one-sided conf test
                 if np.isinf(w1_conf):
-                    w1_conf = min(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+                    w1_conf = min(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), 
+                                  np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
             else:
                 w1_conf = 0
             # Array of confidence intervals
@@ -1535,7 +1553,8 @@ def min_fit(params, xdata, ydata, Method):
             ci = lmfit.conf_interval(minner, result, p_names=p_names, sigmas=[2])
             # confidence interval for Qi
             if 'Qi' in p_names:
-                Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
+                Qi_conf = max(np.abs(ci['Qi'][1][1] - ci['Qi'][0][1]), 
+                              np.abs(ci['Qi'][1][1] - ci['Qi'][2][1]))
             else:
                 Qi_conf = 0
             # confidence interval for Qc
@@ -1556,10 +1575,12 @@ def min_fit(params, xdata, ydata, Method):
                 Qa_conf = 0
             # confidence interval for resonance frequency
             if 'w1' in p_names:
-                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+                w1_conf = max(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), 
+                              np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
                 # Ignore one-sided conf test
                 if np.isinf(w1_conf):
-                    min(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
+                    min(np.abs(ci['w1'][1][1] - ci['w1'][0][1]), 
+                        np.abs(ci['w1'][1][1] - ci['w1'][2][1]))
             else:
                 w1_conf = 0
             # Array of confidence intervals
@@ -1626,11 +1647,11 @@ def fit(resonator):
     else:
         output = output + str(result.tm_mon)
     if len(str(result.tm_mday)):
-        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(
-            result.tm_sec)
+        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour)\
+             + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
     else:
-        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(
-            result.tm_sec)
+        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' \
+            + str(result.tm_min) + '_' + str(result.tm_sec)
 
     output_path = dir + '/' + output + '/'
 
@@ -1735,12 +1756,14 @@ def fit(resonator):
                 print("Manual initial guess")
             else:
                 print(manual_init)
-                print(">Manual input wrong format, please follow the correct format of 4 parameters in an array")
+                print(">Manual input wrong format, please follow the correct "
+                      "format of 4 parameters in an array")
                 quit()
         except Exception as e:
             print(f'Excepction {e}')
             print(f'Loaded manual_init: {manual_init}')
-            print("Problem loading manually initialized parameters, please make sure parameters are all numbers")
+            print("Problem loading manually initialized parameters, please "
+                  "make sure parameters are all numbers")
             quit()
     else:
         # generate initial guess parameters from data when user does not manually initialze guess
@@ -1766,7 +1789,8 @@ def fit(resonator):
     ## Monte Carlo Loop to check for local minimums
     # define parameters from initial guess for John Martinis and monte_carlo_fit
     try:
-        # initialize parameter class, min is lower bound, max is upper bound, vary = boolean to determine if parameter varies during fit
+        # initialize parameter class, min is lower bound, max is upper bound, 
+        # vary = boolean to determine if parameter varies during fit
         params = lmfit.Parameters()
         if Method.method == 'DCM' or Method.method == 'DCM REFLECTION' or Method.method == 'PHI':
             params.add('Q', value=init[0], vary=change_Q, min=init[0] * 0.5, max=init[0] * 1.5)
@@ -1796,7 +1820,7 @@ def fit(resonator):
     MC_counts = 0
     error = [10]
     stop_MC = False
-    continue_condition = (MC_counts < Method.MC_iteration) and (stop_MC == False)  # MC_iteration equals 5 by default
+    continue_condition = (MC_counts < Method.MC_iteration) and (stop_MC == False)
     output_params = []
 
     while continue_condition:
@@ -1847,12 +1871,13 @@ def fit(resonator):
     # Check that bandwidth is not equal to zero
     if len(xdata) == 0:
         if manual_init is not None:
-            print(
-                ">Length of extracted data equals zero thus bandwidth is incorrect, most likely due to initial parameters being too far off")
-            print(">Please enter a new set of manual initial guess data or run an auto guess")
+            print(">Length of extracted data equals zero thus bandwidth is incorrect, "
+                  "most likely due to initial parameters being too far off")
+            print(">Please enter a new set of manual initial guess data "
+                  "or run an auto guess")
         else:
-            print(
-                ">Length of extracted data equals zero thus bandwidth is incorrect, please manually input a guess for parameters")
+            print(">Length of extracted data equals zero thus bandwidth is incorrect, "
+                  "please manually input a guess for parameters")
         quit()
 
     # set the range to plot for 1 3dB bandwidth
@@ -1867,23 +1892,20 @@ def fit(resonator):
 
     # plot fit
     if Method.method == 'DCM':
-        # title = 'DCM fit for ' + filename
-        title = 'Diameter Correction Method Fit'  # + filename
+        title = 'Diameter Correction Method Fit'
         figurename = " DCM with Monte Carlo Fit and Raw data\nPower: " + filename
-        fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, slope2, intercept2, output_params, Method,
-                      ff.cavity_DCM, error, figurename, x_c, y_c, r, output_path, conf_array, extract_factor, \
-                      title=title, manual_params=Method.manual_init)
-        '''except:
-            print(">Failed to plot DCM fit for data")
-            quit()'''
+        fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
+                      slope2, intercept2, output_params, Method, ff.cavity_DCM, 
+                      error, figurename, x_c, y_c, r, output_path, conf_array, 
+                      extract_factor, title=title, manual_params=Method.manual_init)
     elif Method.method == 'PHI':
         try:
             title = 'PHI fit for ' + filename
             figurename = "PHI with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, slope2, intercept2, output_params,
-                          Method, ff.cavity_DCM, error, figurename, x_c, y_c, r, output_path, conf_array,
-                          extract_factor, \
-                          title=title, manual_params=Method.manual_init)
+            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
+                      slope2, intercept2, output_params, Method, ff.cavity_DCM, 
+                      error, figurename, x_c, y_c, r, output_path, conf_array, 
+                      extract_factor, title=title, manual_params=Method.manual_init)
         except Exception as e:
             print(f'Exception: {e}')
             print(f'Failed to plot PHI fit for {data}')
@@ -1892,10 +1914,10 @@ def fit(resonator):
         try:
             title = 'DCM REFLECTION fit for ' + filename
             figurename = " DCM REFLECTION with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, slope2, intercept2, output_params,
-                          Method, ff.cavity_DCM_REFLECTION, error, figurename, x_c, y_c, r, output_path, conf_array,
-                          extract_factor, \
-                          title=title, manual_params=Method.manual_init)
+            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
+                      slope2, intercept2, output_params, Method, ff.cavity_DCM_REFLECTION,
+                      error, figurename, x_c, y_c, r, output_path, conf_array, 
+                      extract_factor, title=title, manual_params=Method.manual_init)
         except:
             print(">Failed to plot DCM fit for data")
             quit()
@@ -1903,10 +1925,10 @@ def fit(resonator):
         try:
             title = 'INV fit for ' + filename
             figurename = " Inverse with MC Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw, 1 / y_raw, x_initial, y_initial, slope, intercept, slope2, intercept2, output_params,
-                          Method, ff.cavity_inverse, error, figurename, x_c, y_c, r, output_path, conf_array,
-                          extract_factor, \
-                          title=title, manual_params=Method.manual_init)
+            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
+                      slope2, intercept2, output_params, Method, ff.cavity_inverse, 
+                      error, figurename, x_c, y_c, r, output_path, conf_array, 
+                      extract_factor, title=title, manual_params=Method.manual_init)
         except Exception as e:
             print(f'Exception: {e}')
             print(f'Failed to plot INV fit for {data}')
@@ -1915,10 +1937,10 @@ def fit(resonator):
         try:
             title = 'CPZM fit for ' + filename
             figurename = " CPZM with MC Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, slope2, intercept2, output_params,
-                          Method, ff.cavity_CPZM, error, figurename, x_c, y_c, r, output_path, conf_array,
-                          extract_factor, \
-                          title=title, manual_params=Method.manual_init)
+            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
+                      slope2, intercept2, output_params, Method, ff.cavity_CPZM, 
+                      error, figurename, x_c, y_c, r, output_path, conf_array, 
+                      extract_factor, title=title, manual_params=Method.manual_init)
         except Exception as e:
             print(f'Exception: {e}')
             print(f'Failed to plot CPZM fit for {data}')
@@ -1934,16 +1956,15 @@ def fit(resonator):
     # write input parameters to metadata file
     with open(output_path + "metadata.csv", "w", newline='') as file:
         writer = csv.writer(file)
-        fields = ['Method', 'MC_iteration', 'MC_rounds', \
-                  'MC_weight', 'MC_weightvalue', 'MC_fix', \
-                  'MC_step_const', 'manual_init', \
+        fields = ['Method', 'MC_iteration', 'MC_rounds',
+                  'MC_weight', 'MC_weightvalue', 'MC_fix',
+                  'MC_step_const', 'manual_init',
                   'preprocess_method', 'Current Git Commit']
-        print(fields)
-        vals = [resonator.method_class.method, resonator.method_class.MC_iteration, resonator.method_class.MC_rounds,\
-                resonator.method_class.MC_weight, resonator.method_class.MC_weightvalue, resonator.method_class.MC_fix, \
-                resonator.method_class.MC_step_const, resonator.method_class.manual_init, \
+        vals = [resonator.method_class.method, resonator.method_class.MC_iteration, 
+                resonator.method_class.MC_rounds,resonator.method_class.MC_weight, 
+                resonator.method_class.MC_weightvalue, resonator.method_class.MC_fix,
+                resonator.method_class.MC_step_const, resonator.method_class.manual_init,
                 resonator.method_class.preprocess_method, sha]
-        print(vals)
         writer.writerow(fields)
         writer.writerow(vals)
         file.close()
@@ -1967,8 +1988,6 @@ def plot(x,
     gs = GridSpec(2, 2)
     ax = plt.subplot(gs[0:2, 0:2])  ## plot
     # plot axies
-    # ax.axvline(x=0, linewidth=1, color='grey', linestyle = '--')
-    # ax.axhline(y=0, linewidth=1, color='grey', linestyle = '--')
     ax.plot(x, y, 'bo', label='raw data', markersize=3)
     # plot guide circle if it applies
     if x_c is not None and y_c is not None and r is not None:
@@ -1999,11 +2018,11 @@ def name_folder(dir, strmethod):
     else:
         output = output + str(result.tm_mon)
     if len(str(result.tm_mday)):
-        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(
-            result.tm_sec)
+        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) \
+            + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
     else:
-        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' + str(result.tm_min) + '_' + str(
-            result.tm_sec)
+        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' \
+            + str(result.tm_min) + '_' + str(result.tm_sec)
     if dir is not None:
         output_path = dir + '/' + output + '/'
     else:
