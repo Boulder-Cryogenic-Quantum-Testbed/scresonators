@@ -130,7 +130,7 @@ import fit_resonator.resonator as scres
 # Load sample resonator data into a local touchstone
 directory = os.getcwd()
 filename = directory + '/' + 'scres_example.s2p'
-url = 'https://raw.githubusercontent.com/scottito/scresonators/Example_with_Sample/fit_resonator/Resources/awr_sim_sample.s2p'
+url = 'https://raw.githubusercontent.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/master/fit_resonator/Resources/awr_sim_sample.s2p'
 r = requests.get(url).content.decode('utf-8')
 f = open(filename,'w')
 f.write(r)
