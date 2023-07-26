@@ -1,27 +1,18 @@
 import lmfit
-from lmfit import Minimizer
-
-import matplotlib.pyplot as plt
 import matplotlib.pylab as pylab
-from matplotlib.gridspec import GridSpec
-from matplotlib.patches import Circle
-
 import scipy.optimize as spopt
 from scipy.ndimage.filters import gaussian_filter1d
 from scipy.interpolate import interp1d
 from scipy import stats
-
-import attr
 import numpy as np
 import inflect
-import time
 import sys
 import os
 import logging
-from git import Repo
-import csv
 
-import fit_resonator.functions as ff
+import fit_resonator.cavity_functions as ff
+import fit_resonator.plot as fp
+import fit_resonator.resonator as res
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)  # Path to Fit_Cavity
@@ -214,7 +205,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
 
     if plot_extra:
         try:
-            plot(np.real(y), np.imag(y), "circle", output_path, np.real(z_c), 
+            fp.plot(np.real(y), np.imag(y), "circle", output_path, np.real(z_c), 
                  np.imag(z_c), r)
         except:
             print(">Error when trying to plot raw data and circle fit in ",
@@ -244,7 +235,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
 
         if plot_extra:
             # plot data with guide circle
-            plot(np.real(ydata),
+            fp.plot(np.real(ydata),
                  np.imag(ydata),
                  "resonance",
                  output_path,
@@ -259,7 +250,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         z_c = z_c * np.exp(-1j * phi)
         if plot_extra:
             # plot shifted data with guide circle
-            plot(np.real(ydata), np.imag(ydata), "phi", output_path, 
+            fp.plot(np.real(ydata), np.imag(ydata), "phi", output_path, 
                  np.real(z_c), np.imag(z_c), r,
                  np.real(ydata[freq_idx]), np.imag(ydata[freq_idx]))
     except:
@@ -417,427 +408,13 @@ def find_nearest(array, value):
     val = array[idx]
     return val, idx
 
-
-def PlotFit(x,
-            y,
-            x_initial,
-            y_initial,
-            slope,
-            intercept,
-            slope2,
-            intercept2,
-            params,
-            Method,
-            func,
-            error,
-            figurename,
-            x_c,
-            y_c,
-            radius,
-            output_path,
-            conf_array,
-            extract_factor=None,
-            title="Fit",
-            manual_params=None,
-            dfac: int = 1,
-            msizes: list = [12, 7],
-            xstr: str = 'Frequency [GHz]',
-            fsize: float = 16.):
-    """
-    Plots data and outputs fit parameters to a file
-
-    Args:
-        x: cropped frequency data
-        y: cropped S21 data after normalization
-        x_initial: original frequency data before normalization
-        y_initial: original S21 data before normalization
-        slope: slope of the normalization line for magnitude
-        intercept: intercept of normalization line for magnitude
-        slope2: slope of the normalization line for phase
-        intercept2: intercept of normalization line for phase
-        params: parameters generated from fit function
-        Method: Method class instance
-        func: function used to generate data for plotting
-              (DCM/DCM REFLECTION/INV/PHI/CPZM)
-        error: error from Monte Carlo Fit function
-        figurename: name the plot should have
-        x_c: center x coordinate for fit circle
-        y_c: center y coordinate for fit circle
-        radius: radius of fit circle
-        output_path: file path where the plots will be saved
-        conf_array: array with 95% confidence interval values
-        extract_factor: contains starting and ending frequency values
-        title: title the plot will have
-        manual_params: user input manual initial guess parameters for fit
-        dfac : decimation factor on the plotting of points in the resonance
-               circle Im S21 vs. Re S21
-        xstr : x-axis string label
-        fsize : fontsize for axes numbers and labels
-
-    Returns:
-        plot output to file
-    """
-    # close plot if still open
-    plt.close(figurename)
-    # generate an even distribution of 5000 frequency points between 
-    # the min and max of x for graphing purposes
-    if extract_factor == None:
-        x_fit = np.linspace(x.min(), x.max(), 5000)
-    elif isinstance(extract_factor, list) == True:
-        x_fit = np.linspace(extract_factor[0], extract_factor[1], 5000)
-    # plug in the 5000 x points to respective fit function to create set of 
-    # S21 data for graphing
-    y_fit = func(x_fit, *params)
-
-    fig = plt.figure(figurename, figsize=(15, 10))
-    fig.set_tight_layout(True)
-    gs = GridSpec(11, 10)
-    ax1 = plt.subplot(gs[0:4, 6:10])
-    # normalized angle
-    ax2 = plt.subplot(gs[4:8, 6:10])
-    # IQ plot
-    ax = plt.subplot(gs[0:11, 0:6])
-
-    # Marker sizes
-    msize1, msize2 = msizes
-
-    # add title
-    if len(title) > 77:
-        plot_title = title[0:40] + "\n" + title[40:76] + '...'
-        plt.gcf().text(0.05, 0.9, plot_title, fontsize=30)
-    if len(title) > 40:
-        plot_title = title[0:40] + "\n" + title[40:]
-        plt.gcf().text(0.05, 0.9, plot_title, fontsize=30)
-    else:
-        plt.gcf().text(0.05, 0.92, title, fontsize=30)
-
-    # manual parameters
-    textstr = ''
-    if manual_params != None:
-        if func == ff.cavity_inverse:
-            textstr = r'Manually input parameters:' + '\n' + r'$Q_c$ = ' + '%s' % float(
-                '{0:.5g}'.format(manual_params[1])) + \
-                      '\n' + r'$Q_i$ = ' + '%s' % float('{0:.5g}'.format(manual_params[0])) + \
-                      '\n' + r'$f_c$ = ' + '%s' % float('{0:.5g}'.format(manual_params[2])) + ' GHz' \
-                      '\n' + r'$\phi$ = ' + '%s' % float('{0:.5g}'.format(manual_params[3])) + ' radians'
-        elif func == ff.cavity_CPZM:
-            textstr = r'Manually input parameters:' + '\n' + r'$Q_c$ = ' + '%s' % float(
-                '{0:.5g}'.format(manual_params[0] * manual_params[1] ** -1)) + \
-                      '\n' + r'$Q_i$ = ' + '%s' % float('{0:.5g}'.format(manual_params[0])) + \
-                      '\n' + r'$Q_a$ = ' + '%s' % float('{0:.5g}'.format(manual_params[0] * manual_params[3] ** -1)) + \
-                      '\n' + r'$f_c$ = ' + '%s' % float('{0:.5g}'.format(manual_params[2])) + ' GHz'
-        else:
-            Qc = manual_params[1] / np.exp(1j * manual_params[3])
-            Qi = (manual_params[0] ** -1 - abs(np.real(Qc ** -1))) ** -1
-            textstr = r'Manually input parameters:' + '\n' + 'Q = ' + '%s' % float('{0:.5g}'.format(manual_params[0])) + \
-                      '\n' + r'1/Re[1/$Q_c$] = ' + '%s' % float('{0:.5g}'.format(1 / np.real(1 / Qc))) + \
-                      '\n' + r'$Q_c$ = ' + '%s' % float('{0:.5g}'.format(manual_params[1])) + \
-                      '\n' + r'$Q_i$ = ' + '%s' % float('{0:.5g}'.format(Qi)) + \
-                      '\n' + r'$f_c$ = ' + '%s' % float('{0:.5g}'.format(manual_params[2])) + ' GHz' + \
-                      '\n' + r'$\phi$ = ' + '%s' % float('{0:.5g}'.format(manual_params[3])) + ' radians'
-        plt.gcf().text(0.1, 0.7, textstr, fontsize=15)
-    else:
-        pass
-
-    if isinstance(extract_factor, list) == True:
-        x_fit_full = np.linspace(x.min(), x.max(), 5000)
-        y_fit_full = func(x_fit_full, *params)
-
-        x_fit = np.copy(x_fit_full)
-        y_fit = np.copy(y_fit_full)
-
-    if func == ff.cavity_inverse:
-        ax1.set_ylabel('Mag[1/S21]')
-        ax2.set_ylabel('Ang[1/S21]')
-    else:
-        ax1.set_ylabel('Mag[S21]')
-        ax2.set_ylabel('Ang[S21]')
-
-    for i in range(len(x_initial)):
-        x_initial[i] = round(x_initial[i], 8)
-
-    """
-    ax1.plot(x_initial[0::dfac],
-             np.log10(np.abs(y_initial[0::dfac])) * 20, 'bo',
-             label='raw data',
-             markersize=msize2)
-    ax1.plot(x, x * slope2 + intercept2, '--', color='tab:gray',
-             label='normalize line', linewidth=2)
-    ax1.set_xlim(left=x[0], right=x[-1])
-    ax1.set_xlabel(xstr, fontsize=17)
-
-    for tick in ax1.xaxis.get_major_ticks():
-        tick.label.set_fontsize(fsize)
-
-    ax2.plot(x_initial[0::dfac], np.angle(y_initial[0::dfac]), 'bo',
-             label='raw data', markersize=msize2)
-    ax2.plot(x, x * slope + intercept, '--', color='tab:gray',
-             label='normalize line', linewidth=2)
-    ax2.set_xlim(left=x[0], right=x[-1])
-    ax2.set_xlabel(xstr, fontsize=17)
-    for tick in ax2.xaxis.get_major_ticks():
-        tick.label.set_fontsize(fsize)
-    """
-
-    # Decimate the x and y-data
-    x = x[0::dfac]
-    y = y[0::dfac]
-
-    ax1.plot(x, np.log10(np.abs(y)) * 20, 'bo',
-            label='normalized data',
-            markersize=msize2)
-    ax1.plot(x_fit, np.log10(np.abs(y_fit)) * 20, 'r-',
-             lw=3, label='fit function')
-    ax1.set_xlim(left=x[0], right=x[-1])
-    ax1.set_xlabel(xstr, fontsize=17)
-    for tick in ax1.xaxis.get_major_ticks():
-        tick.label.set_fontsize(fsize)
-
-    ax2.plot(x, np.angle(y), 'bo', label='normalized data', markersize=msize2)
-    ax2.plot(x_fit, np.angle(y_fit), 'r-', label='fit function', lw=3)
-    ax2.set_xlim(left=x[0], right=x[-1])
-    ax2.set_xlabel(xstr, fontsize=17)
-    for tick in ax2.xaxis.get_major_ticks():
-        tick.label.set_fontsize(fsize)
-
-    line1 = ax.plot(np.real(y), np.imag(y), 'bo',
-                    label='normalized data', markersize=msize2)
-    line2 = ax.plot(np.real(y_fit), np.imag(y_fit), 'r-', label='fit function',
-                    linewidth=3)
-    if x_c == 0 and y_c == 0 and radius == 0:
-        pass
-    else:
-        pass
-
-    # plot resonance
-    if func == ff.cavity_inverse:
-        resonance = (1 + params[0] / params[1] * np.exp(1j * params[3]) / (
-                1 + 1j * 2 * params[0] * (params[2] - params[2]) / params[2]))
-    elif func == ff.cavity_DCM:
-        resonance = 1 - params[0] / params[1] * np.exp(1j * params[3])
-    elif func == ff.cavity_DCM_REFLECTION:
-        resonance = (1 - 2 * params[0] / params[1] * np.exp(1j * params[3]) / (
-                1 + 1j * (params[2] - params[2]) / params[2] * 2 * params[0]))
-    elif func == ff.cavity_CPZM:
-        resonance = 1 / (1 + params[1] + 1j * params[3])
-    else:
-        resonance = 1 + 1j * 0
-    ax.plot(np.real(resonance), np.imag(resonance), '*', color='red', label=
-    'resonance', markersize=10)
-    ax1.plot(params[2], np.log10(np.abs(resonance)) * 20, '*', color='red', 
-             label='resonance', markersize=msize1)
-    ax2.plot(params[2], np.angle(resonance), '*', color='red', label=
-    'resonance', markersize=msize1)
-
-    plt.axis('square')
-    plt.ylabel('Im[S21]')
-    plt.xlabel("Re[S21]")
-    if func == ff.cavity_inverse:
-        plt.ylabel('Im[$S_{21}^{-1}$]')
-        plt.xlabel("Re[$S_{21}^{-1}$]")
-    leg = plt.legend()
-
-    # get the individual lines inside legend and set line width
-    for line in leg.get_lines():
-        line.set_linewidth(10)
-
-    try:
-        if params:
-            if func == ff.cavity_inverse:
-                if params[0] < 0:
-                    print("Qi is less than zero. Please make sure data is of"
-                          " correct format: decibals (log10*20 version), and "
-                          "radians. Otherwise, it is quite likely that the "
-                          "resonator being fit is not a Notch type resonator. "
-                          "For reflection type geometry, "
-                          "please use DCM REFLECTION.")
-                if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
-                    Qi = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
-                else:
-                    Qi = params[0]
-                if conf_array[1] > 10 ** -10 and conf_array[1] != float('inf'):
-                    Qc = params[1] - params[1] % (10 ** int(np.log10(conf_array[1]) - 1))
-                else:
-                    Qc = params[1]
-                if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
-                    phi = params[3] - params[3] % (10 ** int(np.log10(conf_array[2]) - 1))
-                else:
-                    phi = params[3]
-                if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
-                    f_c = params[2] - params[2] % (10 ** int(np.log10(conf_array[3]) - 1))
-                else:
-                    f_c = params[2]
-                textstr = r'$Q_i$ = ' + '%s' % float('{0:.10g}'.format(Qi)) + r"$\pm$" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[0])) + \
-                          '\n' + r'$Q_c^*$ = ' + '%s' % float('{0:.10g}'.format(Qc)) + r"$\pm$" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[1])) + \
-                          '\n' + r'$\phi$ = ' + '%s' % float('{0:.10g}'.format(phi)) + r"$\pm$" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[2])) + ' radians' + \
-                          '\n' + r'$f_c$ = ' + '%s' % float('{0:.10g}'.format(f_c)) + r"$\pm$" + '%s' % float(
-                    '{0:.1g}'.format(conf_array[3])) + ' GHz'
-                plt.gcf().text(0.7, 0.11, textstr, fontsize=18)
-            elif func == ff.cavity_CPZM:
-                if params[0] < 0:
-                    print("Qi is less than zero. Please make sure data is "
-                          "of correct format: decibals (log10*20 version), "
-                          "and radians. Otherwise, it is quite likely that the "
-                          "resonator being fit is not a Notch type resonator. "
-                          "For reflection type geometry, "
-                          "please use DCM REFLECTION.")
-                if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
-                    Qi = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
-                else:
-                    Qi = params[0]
-                if conf_array[1] > 10 ** -10 and conf_array[1] != float('inf'):
-                    Qc = (params[0] * params[1] ** -1) - (params[0] * params[1] ** -1) % (
-                            10 ** int(np.log10(conf_array[1]) - 1))
-                else:
-                    Qc = (params[0] * params[1] ** -1)
-                if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
-                    Qa = (params[0] * params[3] ** -1) - (params[0] * params[3] ** -1) % (
-                            10 ** int(np.log10(conf_array[2]) - 1))
-                else:
-                    Qa = (params[0] * params[3] ** -1)
-                if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
-                    f_c = params[2] - params[2] % (10 ** int(np.log10(conf_array[3]) - 1))
-                else:
-                    f_c = params[2]
-                reports = ['$Q_i$', '$Q_c$', '$Q_a$', '$f_c$']
-                p_ref = [Qi, Qc, Qa, f_c]
-                textstr = ''
-
-                for val in reports:
-                    textstr += val + f' = {p_ref[reports.index(val)]:.10f}' + r'$\pm$' + f'{conf_array[reports.index(val)]:.1f} UNITS'
-
-                plt.gcf().text(0.7, 0.11, textstr, fontsize=18)
-
-            else:
-                Qc = params[1] / np.exp(1j * params[3])
-                if Method.method == 'PHI':
-                    Qi = (params[0] ** -1 - np.abs(Qc ** -1)) ** -1
-                else:
-                    Qi = (params[0] ** -1 - np.real(Qc ** -1)) ** -1
-
-                if Qi < 0 and Method.method != 'DCM REFLECTION':
-                    print(
-                        "Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
-                if 1 / np.real(1 / Qc) < 0:
-                    print("Warning: 1/Real[1/Qc] is less than 0. Calculating Qi anyway")
-                    if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
-                        Q = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
-                    else:
-                        Q = params[0]
-                    if conf_array[1] > 10 ** -10 and conf_array[1] != float('inf'):
-                        Qi = Qi - Qi % (10 ** int(np.log10(conf_array[1]) - 1))
-                    if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
-                        Qc = params[1] - params[1] % (10 ** int(np.log10(conf_array[2]) - 1))
-                    else:
-                        Qc = params[1]
-                    if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
-                        Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) - (
-                                1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) % (
-                                        10 ** int(np.log10(conf_array[3]) - 1))
-                    else:
-                        Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3]))))
-                    if conf_array[4] > 10 ** -10 and conf_array[4] != float('inf'):
-                        phi = params[3] - params[3] % (10 ** int(np.log10(conf_array[4]) - 1))
-                    else:
-                        phi = params[3]
-                    if conf_array[5] > 10 ** -10 and conf_array[5] != float('inf'):
-                        f_c = params[2] - params[2] % (10 ** int(np.log10(conf_array[5]) - 1))
-                    else:
-                        f_c = params[2]
-                    textstr = 'Q = ' + '%s' % float('{0:.10g}'.format(Q)) + r"$\pm$" + '%s' % float(
-                        '{0:.1g}'.format(conf_array[0])) + \
-                              '\n' + r'$Q_i$ = ' + '%s' % float('{0:.10g}'.format(Qi)) + r"$\pm$" + '%s' % float(
-                        '{0:.1g}'.format(conf_array[1])) + \
-                              '\n' + r'$Q_c$ = ' + '%s' % float('{0:.10g}'.format(Qc)) + r"$\pm$" + '%s' % float(
-                        '{0:.1g}'.format(conf_array[2])) + \
-                              '\n' + r'$\phi$ = ' + '%s' % float('{0:.10g}'.format(phi)) + r"$\pm$" + '%s' % float(
-                        '{0:.2g}'.format(conf_array[4])) + ' radians' + \
-                              '\n' + r'$f_c$ = ' + '%s' % float('{0:.7g}'.format(f_c)) + r"$\pm$" + '%s' % float(
-                        '{0:.1g}'.format(conf_array[5])) + ' GHz'
-                    plt.gcf().text(0.7, 0.09, textstr, fontsize=18)
-                    Qc_str = r'1/Re[1/$Q_c$] = ' + '%s' % float('{0:.10g}'.format(Qc_Re)) + r"$\pm$" + '%s' % float(
-                        '{0:.1g}'.format(conf_array[3]))
-                    plt.gcf().text(0.7, 0.245, Qc_str, fontsize=18, color='red')
-
-                else:
-                    if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
-                        Q = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
-                    else:
-                        Q = params[0]
-                    if conf_array[1] > 10 ** -10 and conf_array[1] != float('inf'):
-                        Qi = Qi - Qi % (10 ** int(np.log10(conf_array[1]) - 1))
-                    if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
-                        Qc = params[1] - params[1] % (10 ** int(np.log10(conf_array[2]) - 1))
-                    else:
-                        Qc = params[1]
-                    if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
-                        Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) - (
-                                1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) % (
-                                        10 ** int(np.log10(conf_array[3]) - 1))
-                    else:
-                        Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3]))))
-                    if conf_array[4] > 10 ** -10 and conf_array[4] != float('inf'):
-                        phi = params[3] - params[3] % (10 ** int(np.log10(conf_array[4]) - 1))
-                    else:
-                        phi = params[3]
-                    if conf_array[5] > 10 ** -10 and conf_array[5] != float('inf'):
-                        f_c = params[2] - params[2] % (10 ** int(np.log10(conf_array[5]) - 1))
-                    else:
-                        f_c = params[2]
-
-                    reports = ['Q', r'$Q_i$', r'$Q_c$', r'1/Re[1/$Q_c$]', r'$\phi$', r'$f_c$']
-                    p_ref = [Q, Qi, Qc, Qc_Re, phi, f_c]
-                    textstr = ''
-                    for val in reports:
-                        textstr += val + f' = {p_ref[reports.index(val)]:0.10g}'
-
-                        if conf_array[reports.index(val)] > 0:
-                            textstr += r'$\pm$' + f'{conf_array[reports.index(val)]:5.3f}'
-
-                        if val == r'$\phi$':
-                            textstr += ' radians'
-                        elif val == r'$f_c$':
-                            textstr += ' GHz'
-                        textstr += '\n'
-                    plt.gcf().text(0.63, 0.05, textstr, fontsize=18)
-
-            # write to output csv file
-            with open(output_path + "fit_params.csv", "w", newline='') as file:
-                writer = csv.writer(file)
-                if func == ff.cavity_inverse:
-                    fields = ['Qi', 'Qc*', 'phi', 'fc']
-                    vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(phi)),
-                             float('{0:.10g}'.format(f_c))],
-                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
-                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
-
-                elif func == ff.cavity_CPZM:
-                    fields = ['Qi', 'Qc', 'Qa', 'fc']
-                    vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(Qa)),
-                             float('{0:.10g}'.format(f_c))],
-                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
-                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
-                else:
-
-                    fields = ['Q', 'Qi', 'Qc', '1/Re[1/Qc]', 'phi', 'fc']
-                    vals = [[float('{0:.10g}'.format(Q)), float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)),
-                             float('{0:.10g}'.format(Qc_Re)), float('{0:.10g}'.format(phi)), float('{0:.10g}'.format(f_c))],
-                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
-                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3])),
-                             float('{0:.1g}'.format(conf_array[4])), float('{0:.1g}'.format(conf_array[5]))]]
-                writer.writerow(fields)
-                writer.writerows(vals)
-                file.close()
-    except:
-        print(">Error when trying to write parameters on plot")
-        quit()
-    return fig
-
-
 def monte_carlo_fit(xdata=None, ydata=None, parameter=None, Method=None):
+    # check if all parameters are defined
+    assert xdata is not None, "xdata is not defined"
+    assert ydata is not None, "ydata is not defined"
+    assert parameter is not None, "parameter is not defined"
+    assert Method is not None, "Method is not defined"
+
     try:
         ydata_1stfit = Method.func(xdata, *parameter)  # set of S21 data based on initial guess parameters
 
@@ -907,201 +484,6 @@ def monte_carlo_fit(xdata=None, ydata=None, parameter=None, Method=None):
     return parameter, stop_MC, error
 
 
-@attr.s
-class VNASweep(object):
-    """A container to hold data from a vna frequency sweep."""
-
-    freqs = attr.ib(type=np.ndarray)
-    amps = attr.ib(type=np.ndarray)
-    phases = attr.ib(type=np.ndarray)
-    linear_amps = attr.ib(type=np.ndarray)
-    s_col = None
-
-    @classmethod
-    def from_file(cls, filepath, data_column=None, fscale=1e9):
-        if data_column is not None:
-            cls.s_col = data_column
-        filename, extension = os.path.splitext(filepath)
-        if extension.startswith('.s') and extension.endswith('p'):
-            try:
-                snp_file = open(filepath, 'r')
-            except OSError as e:
-                print(f'ERROR {e} when opening file')
-                print(f'Data file: {filepath} could not be found/read')
-            file, inline, options, frequency_units, data_format = cls.header_parse(cls, file=snp_file)
-            freqs, amps, phases, linear_amps = cls.data_parse(cls, inline, frequency_units, data_format, file, options)
-            print(frequency_units)
-            if frequency_units == 'hz':
-                fscale = fscale / 1e9
-            elif frequency_units == 'mhz':
-                fscale = fscale / 1e3
-            elif frequency_units == 'khz':
-                fscale = fscale / 1e6
-            freqs = freqs / fscale
-
-            return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
-        elif 'txt' in extension or 'csv' in extension:
-            try:
-                txt_file = open(filepath, 'r')
-                file, line, options, frequency_units, data_format = cls.header_parse(cls, file=txt_file)
-                data_lines = []
-                while line:
-                    if 'END' in line:
-                        break
-                    data_lines.append(line)
-                    line = file.readline().strip()
-                data = np.loadtxt(data_lines, delimiter=',')
-            except Exception as e:
-                print(f'Exception: **{e}** encountered when attempting to load data file as .txt/.csv')
-                print(f'Are you using a comma as your delimiter?')
-
-            freqs = data.T[0] / fscale
-            amps = data.T[1]
-            phases = data.T[2] * np.pi / 180
-            linear_amps = 10 ** (amps / 20)
-            return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
-
-    def header_parse(self, file):
-        data_format = None
-        frequency_units = None
-        comment_line = ['!']
-        option_line = ['#']
-        metadata = ['s21', 's11', 's12', 's22']
-        dformats = ['db', 'ma', 'ri']
-        nums = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '.']
-
-        options = []
-        inline = file.readline()
-        while any(comment in inline.lower() for comment in comment_line) \
-                or any(option_lead in inline for option_lead in option_line) \
-                or not any(number in inline.lower()[0] for number in nums):
-            if any(option_lead in inline.lower() for option_lead in option_line) \
-                    or any(dformat in inline.lower() for dformat in dformats) \
-                    or any(measure in inline.lower() for measure in metadata):
-                options.append(inline)
-
-            inline = file.readline()
-
-        for val in options:
-            if 'db' in val.lower():
-                data_format = 'db'
-            elif 'ma' in val.lower():
-                data_format = 'ma'
-            elif 'ri' in val.lower():
-                data_format = 'ri'
-
-            if 'hz' in val.lower():
-                frequency_units = 'hz'
-            elif 'khz' in val.lower():
-                frequency_units = 'khz'
-            elif 'mhz' in val.lower():
-                frequency_units = 'mhz'
-            elif 'ghz' in val.lower():
-                frequency_units = 'ghz'
-
-        return file, inline, options, frequency_units, data_format
-
-    def data_parse(self, line, frequency_units, data_format, file, options):
-        row = line.split()
-        data_rows = [3, 4]
-        if len(row) == 0:
-            print("Data not found in file.")
-            quit()
-
-        if len(row) > 3:
-            # If too many rows, use info from header to pull correct column
-            # s_col has potential focus column
-            if isinstance(self.s_col, int):
-                data_rows[0] = self.s_col
-                data_rows[1] = self.c_col + 1
-            elif isinstance(self.s_col, (tuple, list, np.ndarray)):
-                data_rows[0] = self.s_col[0]
-                data_rows[1] = self.s_col[1]
-            elif isinstance(self.s_col, str):
-                for metadata in options:
-                    if 'Measurements: ' in metadata:
-                        measurements = metadata.rsplit('Measurements: ')[1].strip('.:\n').lower().split(', ')
-                        idx = (measurements.index(self.s_col.lower()) * 2) + 1
-                        data_rows[0] = idx
-                        data_rows[1] = idx + 1
-                        break
-            else:
-                print("Could not interpret which data columns to use, using default")
-
-        freqs = np.array(float(row[0]))
-        if data_format == "db":
-            amps = np.array(float(row[data_rows[0]]))
-            phases = np.array(float(row[data_rows[1]]))
-            line = file.readline().strip()
-
-            while line:
-                row = line.split()
-                freqs = np.append(freqs, float(row[0]))
-                amps = np.append(amps, float(row[data_rows[0]]))
-                phases = np.append(phases, float(row[data_rows[1]]))
-                line = file.readline().strip()
-            phases = phases * np.pi / 180
-            linear_amps = 10 ** (amps / 20)
-
-        elif data_format == "ma":
-            linear_amps = np.array(float(row[data_rows[0]]))
-            phases = np.array(float(row[data_rows[1]]))
-            line = file.readline().strip()
-
-            while line:
-                row = line.split()
-                freqs = np.append(freqs, float(row[0]))
-                linear_amps = np.append(linear_amps, float(row[data_rows[0]]))
-                phases = np.append(phases, float(row[data_rows[1]]))
-                line = file.readline().strip()
-
-            phases = phases * np.pi / 180
-            amps = np.log10(linear_amps) * 20
-
-        elif data_format == "ri":
-            real = np.array(float(row[data_rows[0]]))
-            imaginary = np.array(float(row[data_rows[1]]))
-            line = file.readline().strip()
-
-            while line:
-                row = line.split()
-                freqs = np.append(freqs, float(row[0]))
-                real = np.append(real, float(row[data_rows[0]]))
-                imaginary = np.append(imaginary, float(row[data_rows[1]]))
-                line = file.readline().strip()
-            linear_amps = np.absolute(real + imaginary)
-            phases = np.angle(real + 1j * imaginary, deg=True)
-            amps = np.log10(linear_amps) * 20
-
-        else:
-            print("Data type in file not supported. Please use DB, MA, or RI.")
-            quit()
-
-        if frequency_units == "hz":
-            freqs = freqs / 10 ** 9
-        elif frequency_units == "khz":
-            freqs = freqs / 10 ** 6
-        elif frequency_units == "mhz":
-            freqs = freqs / 10 ** 3
-        elif frequency_units != "ghz":
-            print(
-                "Units for the frequency not found. Please include units for frequency in the header of the file.")
-        return freqs, amps, phases, linear_amps
-
-    @classmethod
-    def from_columns(cls, freqs, amps, phases):
-        """Load data from columns provided individually."""
-        linear_amps = 10 ** (amps / 20)
-        return cls(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
-
-
-@attr.s
-class ComplexData:
-    """Container for normalized data"""
-    freqs = attr.ib(type=np.ndarray)
-    complex_s21 = attr.ib(type=np.ndarray)
-
-
 def phase_centered(f, fr, Ql, theta, delay=0.):
     """
         Yields the phase response of a strongly overcoupled (Qi >> Qc) resonator
@@ -1130,8 +512,7 @@ def phase_dist(angle):
 def fit_phase(f_data, z_data, guesses=None):
     """
         Fits the phase response of a strongly overcoupled (Qi >> Qc) resonator
-        in reflection which corresponds to a circle centered around the origin
-        (cf‌. phase_centered()).
+        in reflection which corresponds to a circle centered around the origin.
 
         Args:
             z_data: Scattering data of which the phase should be fit. Data must be
@@ -1223,12 +604,12 @@ def fit_delay(xdata: np.ndarray, ydata: np.ndarray):
     # Translate data to origin
     xc, yc, r0 = find_circle(np.real(ydata), np.imag(ydata))
     z_data = ydata - complex(xc, yc)
-    # Find first estimate of parameters
     fr, Ql, theta, delay = fit_phase(xdata, z_data)
 
     # Do not overreact (see end of for loop)
     delay *= 0.05
-
+    delay_corr = 0
+    residuals = 0
     # Iterate to improve result for delay
     for i in range(5):
         # Translate new best fit data to origin
@@ -1252,7 +633,6 @@ def fit_delay(xdata: np.ndarray, ydata: np.ndarray):
             if abs(delay_corr) > abs(delay):
                 delay *= 0.5
             else:
-                # delay += 0.1*delay_corr
                 delay += 0.1 * np.sign(delay_corr) * 5e-11
         else:  # same direction -> can converge faster
             if abs(delay_corr) >= 1e-8:
@@ -1263,17 +643,13 @@ def fit_delay(xdata: np.ndarray, ydata: np.ndarray):
                 delay += delay_corr
 
     if 2 * np.pi * (xdata[-1] - xdata[0]) * delay_corr > np.std(residuals):
-        logging.warning(
-            "Delay could not be fit properly!"
-        )
+        logging.warning("Delay could not be fit properly!")
 
     return delay
 
 
 def periodic_boundary(angle):
-    """
-        Maps arbitrary angle to interval [-np.pi, np.pi)
-        """
+    # Maps arbitrary angle to interval [-np.pi, np.pi)
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
 
@@ -1291,7 +667,6 @@ def calibrate(x_data: np.ndarray, z_data: np.ndarray):
     # Find off-resonant point by fitting offset phase
     # (centered circle corresponds to lossless resonator in reflection)
     fr, Ql, theta, delay_remaining = fit_phase(x_data, z_data2)
-    theta_interval = periodic_boundary(theta)
     beta = periodic_boundary(theta - np.pi)
     offrespoint = zc + r * np.cos(beta) + 1j * r * np.sin(beta)
     a = np.absolute(offrespoint)
@@ -1319,7 +694,7 @@ def preprocess_linear(xdata: np.ndarray, ydata: np.ndarray, normalize: int, outp
     Data Preprocessing. Get rid of cable delay and normalize phase/magnitude of S21 by linear fit of normalize # of endpoints
     """
     if plot_extra:
-        plot(np.real(ydata), np.imag(ydata), "Normalize_1", output_path)
+        fp.plot(np.real(ydata), np.imag(ydata), "Normalize_1", output_path)
 
     if normalize * 2 > len(ydata):
         print(
@@ -1337,12 +712,12 @@ def preprocess_linear(xdata: np.ndarray, ydata: np.ndarray, normalize: int, outp
     angle = np.subtract(phase, slope * xdata)  # remove cable delay
     y_test = np.multiply(np.abs(ydata), np.exp(1j * angle))
     if plot_extra:
-        plot(np.real(y_test), np.imag(y_test), "Normalize_2", output_path)
+        fp.plot(np.real(y_test), np.imag(y_test), "Normalize_2", output_path)
 
     angle = np.subtract(angle, intercept)  # rotate off resonant point to (1,0i) in complex plane
     y_test = np.multiply(np.abs(ydata), np.exp(1j * angle))
     if plot_extra:
-        plot(np.real(y_test), np.imag(y_test), "Normalize_3", output_path)
+        fp.plot(np.real(y_test), np.imag(y_test), "Normalize_3", output_path)
 
     # normalize magnitude of S21 using linear fit
     y_db = np.log10(np.abs(ydata)) * 20
@@ -1353,7 +728,7 @@ def preprocess_linear(xdata: np.ndarray, ydata: np.ndarray, normalize: int, outp
 
     preprocessed_data = np.multiply(magnitude, np.exp(1j * angle))
     if plot_extra:
-        plot(np.real(preprocessed_data), np.imag(preprocessed_data), "Normalize_4", output_path)
+        fp.plot(np.real(preprocessed_data), np.imag(preprocessed_data), "Normalize_4", output_path)
 
     return preprocessed_data, slope, intercept, slope2, intercept2
 
@@ -1367,26 +742,26 @@ def preprocess_circle(xdata: np.ndarray, ydata: np.ndarray, output_path: str, pl
     # ydata = np.abs(ydata) * np.exp(1j * phase)
 
     if plot_extra:
-        plot(np.real(ydata), np.imag(ydata), "Normalize_1", output_path)
+        fp.plot(np.real(ydata), np.imag(ydata), "Normalize_1", output_path)
 
     # remove cable delay
     delay = fit_delay(xdata, ydata)
     z_data = ydata * np.exp(2j * np.pi * delay * xdata)
 
     if plot_extra:
-        plot(np.real(z_data), np.imag(z_data), "Normalize_2", output_path)
+        fp.plot(np.real(z_data), np.imag(z_data), "Normalize_2", output_path)
 
     # calibrate and normalize
     delay_remaining, a, alpha, theta, phi, fr, Ql = calibrate(xdata, z_data)
     z_norm = normalize(xdata, z_data, delay_remaining, a, alpha)
 
     if plot_extra:
-        plot(np.real(z_norm), np.imag(z_norm), "Normalize_3", output_path)
+        fp.plot(np.real(z_norm), np.imag(z_norm), "Normalize_3", output_path)
 
     return z_norm
 
 
-def background_removal(databg: VNASweep, linear_amps: np.ndarray, 
+def background_removal(databg, linear_amps: np.ndarray, 
                        phases: np.ndarray, output_path: str):
     x_bg = databg.freqs
     linear_amps_bg = databg.linear_amps
@@ -1397,9 +772,9 @@ def background_removal(databg: VNASweep, linear_amps: np.ndarray,
     fmag = interp1d(x_bg, linear_amps_bg, kind='cubic')
     fang = interp1d(x_bg, phases_bg, kind='cubic')
 
-    plot2(databg.freqs, databg.linear_amps, x_bg, linear_amps_bg, "VS_mag", output_path)
-    plot2(databg.freqs, databg.phases, x_bg, phases_bg, "VS_ang", output_path)
-
+    fp.plot2(databg.freqs, databg.linear_amps, x_bg, linear_amps_bg, "VS_mag", output_path)
+    fp.plot2(databg.freqs, databg.phases, x_bg, phases_bg, "VS_ang", output_path)
+    
     linear_amps = np.divide(linear_amps, linear_amps_bg)
     phases = np.subtract(phases, phases_bg)
 
@@ -1421,13 +796,18 @@ def min_fit(params, xdata, ydata, Method):
     """
     try:
         if Method.method == 'DCM' or Method.method == 'PHI':
-            minner = Minimizer(ff.min_one_Cavity_dip, params, fcn_args=(xdata, ydata))
+            minner = lmfit.Minimizer(ff.min_one_Cavity_dip, params, fcn_args=(xdata, ydata))
         elif Method.method == 'DCM REFLECTION':
-            minner = Minimizer(ff.min_one_Cavity_DCM_REFLECTION, params, fcn_args=(xdata, ydata))
+            minner = lmfit.Minimizer(ff.min_one_Cavity_DCM_REFLECTION, params, fcn_args=(xdata, ydata))
         elif Method.method == 'INV':
-            minner = Minimizer(ff.min_one_Cavity_inverse, params, fcn_args=(xdata, ydata))
+            minner = lmfit.Minimizer(ff.min_one_Cavity_inverse, params, fcn_args=(xdata, ydata))
         elif Method.method == 'CPZM':
-            minner = Minimizer(ff.min_one_Cavity_CPZM, params, fcn_args=(xdata, ydata))
+            minner = lmfit.Minimizer(ff.min_one_Cavity_CPZM, params, fcn_args=(xdata, ydata))
+
+        else:
+            print(">Method is not defined. Please choose a method: DCM, ",
+                  "DCM REFLECTION, PHI, INV or CPZM")
+            quit()
 
         result = minner.minimize(method='least_squares')
 
@@ -1487,6 +867,7 @@ def min_fit(params, xdata, ydata, Method):
                     Qc_Re_conf = min(np.abs(Qc_Re - Qc_Re_neg), np.abs(Qc_Re - Qc_Re_pos))
             else:
                 Qc_conf = 0
+                Qc_Re_conf = 0
             # confidence interval for phi
             if 'phi' in p_names:
                 phi_neg = ci['phi'][0][1]
@@ -1610,8 +991,6 @@ def fit(resonator):
     Method = resonator.method_class
     normalize = resonator.normalize
     data = resonator.data
-    background = resonator.background
-    background_array = resonator.background_array
     plot_extra = resonator.plot_extra
     preprocess_method = resonator.preprocess_method
 
@@ -1635,31 +1014,11 @@ def fit(resonator):
 
     except Exception as e:
         print(f'Exception: {e}')
-        print("When trying to read data from VNASweep class")
+        print("When trying to read data")
         quit()
 
     # make a folder to put all output in
-    result = time.localtime(time.time())
-    output = str(result.tm_year)
-    output = str(Method.method) + '_' + output
-    if len(str(result.tm_mon)) < 2:
-        output = output + '0' + str(result.tm_mon)
-    else:
-        output = output + str(result.tm_mon)
-    if len(str(result.tm_mday)):
-        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour)\
-             + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
-    else:
-        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' \
-            + str(result.tm_min) + '_' + str(result.tm_sec)
-
-    output_path = dir + '/' + output + '/'
-
-    count = 2
-    path = output_path
-    while os.path.isdir(output_path):
-        output_path = path[0:-1] + '_' + str(count) + '/'
-        count = count + 1
+    output_path = fp.name_folder(dir, str(Method.method))
     os.mkdir(output_path)
 
     # original data before normalization
@@ -1688,7 +1047,6 @@ def fit(resonator):
         ydata = preprocess_circle(xdata, ydata, output_path, plot_extra)
     else:
         pass
-    print(f'preprocess_method: {preprocess_method}')
 
     # a copy of data before modification for plotting
     y_raw = ydata
@@ -1740,13 +1098,16 @@ def fit(resonator):
                     if Method.method == 'PHI':
                         manual_init[0] = 1 / (1 / manual_init[0] + np.abs(1 / Qc))
                     else:
-                        manual_init[0] = 1 / (1 / manual_init[0] + np.real(1 / Qc))
-                    kappa = manual_init[2] / manual_init[0]
+                        manual_init[0] = 1 / (1 / manual_init[0] + np.real(1 / Qc))   
+                    kappa = manual_init[2] / manual_init[0] 
                 elif Method.method == 'CPZM':
                     Q = 1 / (1 / manual_init[0] + 1 / manual_init[1])
                     kappa = manual_init[2] / Q
                     manual_init[1] = manual_init[0] / manual_init[1]
                     manual_init[3] = manual_init[0] / manual_init[3]
+                else:
+                    # Potential solution to divide-by-zero erro without leaving kappa unbound
+                    kappa = init[2] / (init[0])
 
                 init = manual_init
                 freq = init[2]
@@ -1891,152 +1252,19 @@ def fit(resonator):
     extract_factor = [xstart, xend]
 
     # plot fit
-    if Method.method == 'DCM':
-        title = 'Diameter Correction Method Fit'
-        figurename = " DCM with Monte Carlo Fit and Raw data\nPower: " + filename
-        fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
-                      slope2, intercept2, output_params, Method, ff.cavity_DCM, 
+    try:
+        title = f'{Method.method} fit for {filename}'
+        figurename = f"{Method.method} with Monte Carlo Fit and Raw data\nPower: {filename}"
+        fig = fp.PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
+                      slope2, intercept2, output_params, Method, 
                       error, figurename, x_c, y_c, r, output_path, conf_array, 
                       extract_factor, title=title, manual_params=Method.manual_init)
-    elif Method.method == 'PHI':
-        try:
-            title = 'PHI fit for ' + filename
-            figurename = "PHI with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
-                      slope2, intercept2, output_params, Method, ff.cavity_DCM, 
-                      error, figurename, x_c, y_c, r, output_path, conf_array, 
-                      extract_factor, title=title, manual_params=Method.manual_init)
-        except Exception as e:
-            print(f'Exception: {e}')
-            print(f'Failed to plot PHI fit for {data}')
-            quit()
-    elif Method.method == 'DCM REFLECTION':
-        try:
-            title = 'DCM REFLECTION fit for ' + filename
-            figurename = " DCM REFLECTION with Monte Carlo Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
-                      slope2, intercept2, output_params, Method, ff.cavity_DCM_REFLECTION,
-                      error, figurename, x_c, y_c, r, output_path, conf_array, 
-                      extract_factor, title=title, manual_params=Method.manual_init)
-        except:
-            print(">Failed to plot DCM fit for data")
-            quit()
-    elif Method.method == 'INV':
-        try:
-            title = 'INV fit for ' + filename
-            figurename = " Inverse with MC Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
-                      slope2, intercept2, output_params, Method, ff.cavity_inverse, 
-                      error, figurename, x_c, y_c, r, output_path, conf_array, 
-                      extract_factor, title=title, manual_params=Method.manual_init)
-        except Exception as e:
-            print(f'Exception: {e}')
-            print(f'Failed to plot INV fit for {data}')
-            quit()
-    elif Method.method == 'CPZM':
-        try:
-            title = 'CPZM fit for ' + filename
-            figurename = " CPZM with MC Fit and Raw data\nPower: " + filename
-            fig = PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
-                      slope2, intercept2, output_params, Method, ff.cavity_CPZM, 
-                      error, figurename, x_c, y_c, r, output_path, conf_array, 
-                      extract_factor, title=title, manual_params=Method.manual_init)
-        except Exception as e:
-            print(f'Exception: {e}')
-            print(f'Failed to plot CPZM fit for {data}')
-            quit()
+    except Exception as e:
+        print(f'Exception: {e}')
+        print(f'Failed to plot {Method.method} fit for {data}')
+        quit()
 
-    fig.savefig(name_plot(filename, str(Method.method), output_path),
+    fig.savefig(fp.name_plot(filename, str(Method.method), output_path),
                 format='pdf')
     
-    ######################### CODE TO BE MOVED TO INDEPENDENT FUNCTION IN SOFTWARE REDESIGN #####################
-
-    repo = Repo(ROOT_DIR)
-    sha = repo.head.object.hexsha
-    # write input parameters to metadata file
-    with open(output_path + "metadata.csv", "w", newline='') as file:
-        writer = csv.writer(file)
-        fields = ['Method', 'MC_iteration', 'MC_rounds',
-                  'MC_weight', 'MC_weightvalue', 'MC_fix',
-                  'MC_step_const', 'manual_init',
-                  'preprocess_method', 'Current Git Commit']
-        vals = [resonator.method_class.method, resonator.method_class.MC_iteration, 
-                resonator.method_class.MC_rounds,resonator.method_class.MC_weight, 
-                resonator.method_class.MC_weightvalue, resonator.method_class.MC_fix,
-                resonator.method_class.MC_step_const, resonator.method_class.manual_init,
-                resonator.method_class.preprocess_method, sha]
-        writer.writerow(fields)
-        writer.writerow(vals)
-        file.close()
-
-    #############################################################################################################
-
     return output_params, conf_array, fig, error, init
-
-
-def plot(x,
-         y,
-         name,
-         output_path,
-         x_c=None,
-         y_c=None,
-         r=None,
-         p_x=None,
-         p_y=None):
-    # plot any given set of x and y data
-    fig = plt.figure('raw_data', figsize=(10, 10))
-    gs = GridSpec(2, 2)
-    ax = plt.subplot(gs[0:2, 0:2])  ## plot
-    # plot axies
-    ax.plot(x, y, 'bo', label='raw data', markersize=3)
-    # plot guide circle if it applies
-    if x_c is not None and y_c is not None and r is not None:
-        circle = Circle((x_c, y_c), r, facecolor='none', \
-                        edgecolor=(0, 0.8, 0.8), linewidth=3, alpha=0.5)
-        ax.add_patch(circle)
-    # plot a red point to represent something if it applies (resonance or off resonance for example)
-    if p_x is not None and p_y is not None:
-        ax.plot(p_x, p_y, '*', color='red', markersize=5)
-    fig.savefig(output_path + name + '.pdf', format='pdf')
-
-
-def plot2(x, y, x2, y2, name, output_path):
-    # plot any given set of x and y data
-    fig = plt.figure('raw_data', figsize=(10, 10))
-    gs = GridSpec(2, 2)
-    ax = plt.subplot(gs[0:2, 0:2])  ## plot
-    ax.plot(x, y, 'bo', label='raw data', markersize=3)
-    ax.plot(x2, y2, 'bo', label='raw data', markersize=3, color='red')
-    fig.savefig(output_path + name + '.pdf', format='pdf')
-
-
-def name_folder(dir, strmethod):
-    result = time.localtime(time.time())
-    output = strmethod + '_' + str(result.tm_year)
-    if len(str(result.tm_mon)) < 2:
-        output = output + '0' + str(result.tm_mon)
-    else:
-        output = output + str(result.tm_mon)
-    if len(str(result.tm_mday)):
-        output = output + '0' + str(result.tm_mday) + '_' + str(result.tm_hour) \
-            + '_' + str(result.tm_min) + '_' + str(result.tm_sec)
-    else:
-        output = output + str(result.tm_mday) + '_' + str(result.tm_hour) + '_' \
-            + str(result.tm_min) + '_' + str(result.tm_sec)
-    if dir is not None:
-        output_path = dir + '/' + output + '/'
-    else:
-        output_path = output + '/'
-    count = 2
-    path = output_path
-    while os.path.isdir(output_path):
-        output_path = path[0:-1] + '_' + str(count) + '/'
-        count = count + 1
-    return output_path
-
-
-def name_plot(filename, strmethod, output_path, format='.pdf'):
-    if filename.endswith('.csv'):
-        filename = filename[:-4]
-    filename = filename.replace('.', 'p')
-    return output_path + strmethod + '_' + filename + format

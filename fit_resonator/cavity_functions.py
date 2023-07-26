@@ -1,7 +1,4 @@
 """Analytic fit functions"""
-import attr
-import enum
-
 import numpy as np
 
 def cavity_DCM(x, Q, Qc, w1, phi):
@@ -31,11 +28,12 @@ def one_cavity_peak_abs_REFLECTION(x, Q, Qc, w1):
 
 #############################################################################
 def fit_raw_compare(x,y,params,method):
+    #Compare fit to raw data
+    yfit = np.zeros(len(x))
     if method == 'DCM':
-        func = cavity_DCM
+        yfit = cavity_DCM(x,*params)
     if method == 'INV':
-        func = cavity_inverse
-    yfit = func(x,*params)
+        yfit = cavity_inverse(x,*params)
     ym = np.abs(y-yfit)/np.abs(y)
     return ym
 ############################################################################
@@ -114,3 +112,4 @@ def min_one_Cavity_CPZM(parameter, x, data=None):
     resid_re = real_model - real_data
     resid_im = imag_model - imag_data
     return np.concatenate((resid_re,resid_im))
+
