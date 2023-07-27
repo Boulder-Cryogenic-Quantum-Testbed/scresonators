@@ -27,7 +27,7 @@ import fit_resonator.resonator as resonator
 Documentation
 -------------
 
-For scresonators documentation visit our [readthedocs](https://boulder-cryogenic-quantum-testbed.github.io/scresonators-docs/)
+For scresonators documentation visit our [readthedocs](https://boulder-cryogenic-quantum-testbed.github.io/scresonators-docs/) (Doccumentation has not yet been checked for outdated information)
 
 The documentation source code is located at https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators-docs
 
