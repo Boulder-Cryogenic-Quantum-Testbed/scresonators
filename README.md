@@ -54,7 +54,7 @@ We invite you to contribute to the continued development of scresonators by fork
 Even if you do not contribute to the code yourself, please support us by alerting us to problems you encounter or improvements we can make by making a new issue [here](https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/issues).
 
 
-If you make a contribution, feel free to add yourself to our [list of contributors](https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/blob/master/contrib/HELLO.md)
+If you make a contribution, feel free to add yourself to our [list of contributors](https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/blob/master/contrib/HELLO.md).
 
 All contributions are expected to be consistent with [PEP 8 -- Style Guide for Python Code](https://www.python.org/dev/peps/pep-0008/).
 
