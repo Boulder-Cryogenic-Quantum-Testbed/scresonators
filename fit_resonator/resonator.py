@@ -171,7 +171,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         if self.background_array is not None and self.databg is None:
             self.init_background_array(self.background_array)
 
-    def init_background(self, filepath=background, fscale=1e9):
+    def init_background(self, filepath=background, fscale=1):
         if self.background is None and filepath is not None:
             self.background = filepath
         self.databg = from_file(self.background, fscale)
@@ -189,7 +189,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
         else:
             self.data = from_columns(freqs, amps, phases)
 
-    def from_file(self, filepath=filepath, measurement=None, fscale=1e9):
+    def from_file(self, filepath=filepath, measurement=None, fscale=1):
         if self.filepath is None and filepath is not None:
             self.filepath = filepath
         if self.measurement is None and measurement is not None:
@@ -304,7 +304,7 @@ def from_columns(freqs, amps, phases):
     linear_amps = 10 ** (amps / 20)
     return ResonatorData(freqs=freqs, amps=amps, phases=phases, linear_amps=linear_amps)
 
-def from_file(filepath, data_column=None, fscale=1e9):
+def from_file(filepath, data_column=None, fscale=1):
     if data_column is not None:
         s_col = data_column
     else:
@@ -321,10 +321,10 @@ def from_file(filepath, data_column=None, fscale=1e9):
         freqs, amps, phases, linear_amps = data_parse(s_col, inline, frequency_units, data_format, file, options)
         if frequency_units == 'hz':
             fscale = fscale / 1e9
-        elif frequency_units == 'mhz':
-            fscale = fscale / 1e3
         elif frequency_units == 'khz':
             fscale = fscale / 1e6
+        elif frequency_units == 'mhz':
+            fscale = fscale / 1e3
         freqs = freqs / fscale
 
         return ResonatorData(freqs, amps, phases, linear_amps)
@@ -383,14 +383,14 @@ def header_parse(file):
         elif 'ri' in val.lower():
             data_format = 'ri'
 
-        if 'hz' in val.lower():
-            frequency_units = 'hz'
+        if 'ghz' in val.lower():
+            frequency_units = 'ghz'
         elif 'khz' in val.lower():
             frequency_units = 'khz'
         elif 'mhz' in val.lower():
             frequency_units = 'mhz'
-        elif 'ghz' in val.lower():
-            frequency_units = 'ghz'
+        elif 'hz' in val.lower():
+            frequency_units = 'hz'
 
     return file, inline, options, frequency_units, data_format
 

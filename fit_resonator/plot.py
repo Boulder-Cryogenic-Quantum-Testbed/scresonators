@@ -10,6 +10,18 @@ import os
 import fit_resonator.fit as fit
 import fit_resonator.cavity_functions as ff
 
+params = {'legend.fontsize': 20,
+          'figure.figsize': (10, 8),
+          'axes.labelsize': 20,
+          'axes.titlesize': 20,
+          'xtick.labelsize': 20,
+          'ytick.labelsize': 20,
+          'lines.markersize': 1,
+          'lines.linewidth': 2,
+          'font.size': 20
+          }
+
+plt.rcParams.update(params)
 
 def name_plot(filename, strmethod, output_path, format='.pdf'):
     if filename.endswith('.csv'):
@@ -169,24 +181,18 @@ def PlotFit(x,
     # S21 data for graphing
     y_fit = func(x_fit, *params)
 
-    fig = plt.figure(figurename, figsize=(15, 10))
-    fig.set_tight_layout(True)
+    fig = plt.figure(figurename, figsize=(18, 12))
     gs = GridSpec(11, 10)
-    ax = plt.subplot(gs[0:11, 0:6])
+    ax0 = plt.subplot(gs[1:10, 0:6])
     ax1 = plt.subplot(gs[0:4, 6:10])
     ax2 = plt.subplot(gs[4:8, 6:10])
+    fig.set_tight_layout(True)
+
     # Marker sizes
     msize1, msize2 = msizes
 
-    # add title
-    if len(title) > 77:
-        plot_title = title[0:40] + "\n" + title[40:76] + '...'
-        plt.gcf().text(0.05, 0.9, plot_title, fontsize=30)
-    if len(title) > 40:
-        plot_title = title[0:40] + "\n" + title[40:]
-        plt.gcf().text(0.05, 0.9, plot_title, fontsize=30)
-    else:
-        plt.gcf().text(0.05, 0.92, title, fontsize=30)
+    # Add title to figure
+    plt.gcf().text(0.05, 0.92, title, fontsize=30)
 
     # manual parameters
     textstr = ''
@@ -223,15 +229,8 @@ def PlotFit(x,
         x_fit = np.copy(x_fit_full)
         y_fit = np.copy(y_fit_full)
 
-    if func == ff.cavity_inverse:
-        ax1.set_ylabel('Mag[1/S21]')
-        ax2.set_ylabel('Ang[1/S21]')
-    else:
-        ax1.set_ylabel('Mag[S21]')
-        ax2.set_ylabel('Ang[S21]')
-
     for i in range(len(x_initial)):
-        x_initial[i] = round(x_initial[i], 8)
+        x_initial[i] = round(x_initial[i], 8) 
 
     """
     ax1.plot(x_initial[0::dfac],
@@ -266,25 +265,35 @@ def PlotFit(x,
     ax1.plot(x_fit, np.log10(np.abs(y_fit)) * 20, 'r-',
              lw=3, label='fit function')
     ax1.set_xlim(left=x[0], right=x[-1])
-    ax1.set_xlabel(xstr, fontsize=17)
+    ax1.set_xlabel(xstr)
     for tick in ax1.xaxis.get_major_ticks():
         tick.label.set_fontsize(fsize)
 
     ax2.plot(x, np.angle(y), 'bo', label='normalized data', markersize=msize2)
     ax2.plot(x_fit, np.angle(y_fit), 'r-', label='fit function', lw=3)
     ax2.set_xlim(left=x[0], right=x[-1])
-    ax2.set_xlabel(xstr, fontsize=17)
+    ax2.set_xlabel(xstr)
     for tick in ax2.xaxis.get_major_ticks():
         tick.label.set_fontsize(fsize)
 
-    line1 = ax.plot(np.real(y), np.imag(y), 'bo',
-                    label='normalized data', markersize=msize2)
-    line2 = ax.plot(np.real(y_fit), np.imag(y_fit), 'r-', label='fit function',
-                    linewidth=3)
-    if x_c == 0 and y_c == 0 and radius == 0:
-        pass
+    if func == ff.cavity_inverse:
+        ax1.set_ylabel('Mag[1/S21]')
+        ax2.set_ylabel('Ang[1/S21]')
     else:
-        pass
+        ax1.set_ylabel('Mag[S21]')
+        ax2.set_ylabel('Ang[S21]')
+
+
+    ax0.plot(np.real(y), np.imag(y), 'bo', label='normalized data', markersize=msize2)
+    ax0.plot(np.real(y_fit), np.imag(y_fit), 'r-', label='fit function', linewidth=3)
+    if func == ff.cavity_inverse:
+        ax0.set_ylabel('Im[$S_{21}^{-1}$]')
+        ax0.set_xlabel("Re[$S_{21}^{-1}$]")
+    else:
+        ax0.set_ylabel('Im[S21]')
+        ax0.set_xlabel("Re[S21]")
+    # add legend
+    leg = ax0.legend(loc="center", fancybox=True, shadow=True, fontsize=20)
 
     # plot resonance
     if func == ff.cavity_inverse:
@@ -299,20 +308,12 @@ def PlotFit(x,
         resonance = 1 / (1 + params[1] + 1j * params[3])
     else:
         resonance = 1 + 1j * 0
-    ax.plot(np.real(resonance), np.imag(resonance), '*', color='red', label=
+    ax0.plot(np.real(resonance), np.imag(resonance), '*', color='red', label=
     'resonance', markersize=10)
     ax1.plot(params[2], np.log10(np.abs(resonance)) * 20, '*', color='red', 
              label='resonance', markersize=msize1)
     ax2.plot(params[2], np.angle(resonance), '*', color='red', label=
     'resonance', markersize=msize1)
-
-    plt.axis('square')
-    plt.ylabel('Im[S21]')
-    plt.xlabel("Re[S21]")
-    if func == ff.cavity_inverse:
-        plt.ylabel('Im[$S_{21}^{-1}$]')
-        plt.xlabel("Re[$S_{21}^{-1}$]")
-    leg = plt.legend()
 
     # get the individual lines inside legend and set line width
     for line in leg.get_lines():

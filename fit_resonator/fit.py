@@ -17,18 +17,6 @@ import fit_resonator.resonator as res
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)  # Path to Fit_Cavity
 
-params = {'legend.fontsize': 20,
-          'figure.figsize': (10, 8),
-          'axes.labelsize': 20,
-          'axes.titlesize': 20,
-          'xtick.labelsize': 20,
-          'ytick.labelsize': 20,
-          'lines.markersize': 1,
-          'lines.linewidth': 2,
-          'font.size': 20
-          }
-
-pylab.rcParams.update(params)
 
 np.set_printoptions(precision=4, suppress=True)
 p = inflect.engine()  # search ordinal
@@ -1253,7 +1241,8 @@ def fit(resonator):
 
     # plot fit
     try:
-        title = f'{Method.method} fit for {filename}'
+        #title = f'{Method.method} fit for {filename}'
+        title = f'{Method.method} Method Fit'
         figurename = f"{Method.method} with Monte Carlo Fit and Raw data\nPower: {filename}"
         fig = fp.PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
                       slope2, intercept2, output_params, Method, 
@@ -1266,5 +1255,7 @@ def fit(resonator):
 
     fig.savefig(fp.name_plot(filename, str(Method.method), output_path),
                 format='pdf')
+    fig.savefig(fp.name_plot(filename, str(Method.method), output_path, format='.png'),
+                format='png')
     
     return output_params, conf_array, fig, error, init
