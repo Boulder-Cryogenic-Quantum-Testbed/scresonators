@@ -2,7 +2,7 @@ scresonators-fit: fitting superconducting resonator data using Python
 ===========================================
 
 [![CodeFactor](https://www.codefactor.io/repository/github/boulder-cryogenic-quantum-testbed/scresonators/badge/master)](https://www.codefactor.io/repository/github/boulder-cryogenic-quantum-testbed/scresonators/overview/master)
-![pytest](https://github.com/boulder-cryogenic-quantum-testbed/scresonators/actions/workflows/python-package.yml/badge.svg)
+![Tests](https://github.com/boulder-cryogenic-quantum-testbed/scresonators/actions/workflows/tests.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 scresonators code is made to fit complex S21 data for hangar mode resonators. The scresonators library supports fitting using the Diameter Correction Method (DCM), Inverse S21 method (INV), Closest Pole and Zero Method (CPZM), and Phi Rotation Method (PHI). Additionally, the code is able to fit reflection type geometry resonators with an altered version of the Diameter Correction Method (DCM REFLECTION).
@@ -37,11 +37,13 @@ Citation
 --------
 If you use scresonators to fit data or generate plots used in a publication you can cite it as follows:
 
->  @misc{scresonators,
->    title        = {{boulder-cryogenic-quantum-testbed/scresonators}},
->    year         = 2023,
->    howpublished = {\url{https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators}}
->  }
+```latex
+@misc{scresonators,
+  title        = {{boulder-cryogenic-quantum-testbed/scresonators}},
+  year         = 2023,
+  howpublished = {\url{https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators}}
+}
+```
 
 
 
