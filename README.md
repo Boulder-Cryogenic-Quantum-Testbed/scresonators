@@ -2,7 +2,7 @@ scresonators-fit: fitting superconducting resonator data using Python
 ===========================================
 
 [![CodeFactor](https://www.codefactor.io/repository/github/boulder-cryogenic-quantum-testbed/scresonators/badge/master)](https://www.codefactor.io/repository/github/boulder-cryogenic-quantum-testbed/scresonators/overview/master)
-![Tests](https://github.com/boulder-cryogenic-quantum-testbed/scresonators/actions/workflows/python-package.yml/badge.svg)
+![Tests](https://github.com/boulder-cryogenic-quantum-testbed/scresonators/actions/workflows/tests.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 scresonators code is made to fit complex S21 data for hangar mode resonators. The scresonators library supports fitting using the Diameter Correction Method (DCM), Inverse S21 method (INV), Closest Pole and Zero Method (CPZM), and Phi Rotation Method (PHI). Additionally, the code is able to fit reflection type geometry resonators with an altered version of the Diameter Correction Method (DCM REFLECTION).
@@ -54,7 +54,7 @@ We invite you to contribute to the continued development of scresonators by fork
 Even if you do not contribute to the code yourself, please support us by alerting us to problems you encounter or improvements we can make by making a new issue [here](https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/issues).
 
 
-If you make a contribution, feel free to add yourself to our [list of contributors](https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/blob/master/contrib/HELLO.md)
+If you make a contribution, feel free to add yourself to our [list of contributors](https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators/blob/master/contrib/HELLO.md).
 
 All contributions are expected to be consistent with [PEP 8 -- Style Guide for Python Code](https://www.python.org/dev/peps/pep-0008/).
 
