@@ -38,9 +38,8 @@ setup(
         "scikit-rf>=0.24.*",
         "uncertainties>=3.1.*"],
     classifiers = [
-        'Development Status :: 4 - Beta',
+        'Development Status :: Alpha',
         'Intended Audience :: Science/Research',
-        'License :: OSI Approved :: MIT License',
         'Programming Language :: Python',
         'Topic :: Scientific/Engineering :: Visualization'
     ],
