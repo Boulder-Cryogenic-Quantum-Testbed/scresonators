@@ -50,7 +50,7 @@ class JanisCtrl(object):
         Class constructor
         """
         # Set the defaults for the TCP address and ports
-        self.TCP_IP   = 'localhost'
+        self.TCP_IP = 'localhost'
         self.TCP_PORT = 5559
         self.init_socket = True
 
@@ -59,13 +59,13 @@ class JanisCtrl(object):
 
         # Set as True to start the PID controller, then set to False to allow
         # for updates to the PID values from the previous temperature set point
-        self.is_pid_init  = True
-        self.pid_values   = None
+        self.is_pid_init = True
+        self.pid_values = None
         self.bypass_janis = False
 
         # Default thermalization time
-        self.therm_time  = 300. # Wait extra 5 minutes to thermalize [s]
-        self.T_eps       = 1e-2 # Temperature settling threshold [mK]
+        self.therm_time = 300. # Wait extra 5 minutes to thermalize [s]
+        self.T_eps = 1e-2 # Temperature settling threshold [mK]
         self.T_sweep_list_spacing = 'linear'
         self.adaptive_averaging = False
 
@@ -105,7 +105,7 @@ class JanisCtrl(object):
             self.T_sweep_list = np.linspace(Tstart, Tstop, NT)
         elif self.T_sweep_list_spacing == 'linear':
             Tstart_log10 = np.log10(Tstart)
-            Tstop_log10  = np.log10(Tstop)
+            Tstop_log10 = np.log10(Tstop)
             self.T_sweep_list = np.linspace(Tstart_log10, Tstop_log10, NT)
         else:
             tsls = self.T_sweep_list_spacing
@@ -183,8 +183,8 @@ class JanisCtrl(object):
             raise RuntimeError(f'tcp_recv: {error}')
 
         buffer = int.from_bytes(buffer, 'big')
-        data   = self.socket.recv(buffer)
-        data   = data.decode('ascii')
+        data = self.socket.recv(buffer)
+        data = data.decode('ascii')
         return data
     
     def read_cmn(self):
@@ -433,9 +433,9 @@ class JanisCtrl(object):
         Z, T, tstamp = self.read_cmn()
 
         # Get the initial values from all sensors
-        Iout        = self.pid(T)
-        P, I, D     = self.pid.components
-        _, flow, _  = self.read_flow_meter()
+        Iout = self.pid(T)
+        P, I, D = self.pid.components
+        _, flow, _ = self.read_flow_meter()
 
         print(f'Heating to {Tset * 1e3} mK from {T * 1e3} mK ...')
         tin = t
@@ -460,22 +460,22 @@ class JanisCtrl(object):
                 tstart = time.time()
                 while time.time() < (therm_time + tstart):
                     Z, T, tstamp = self.read_cmn()
-                    _, flow, _   = self.read_flow_meter()
-                    Iout         = self.pid(T)
-                    P, I, D      = self.pid.components
+                    _, flow, _ = self.read_flow_meter()
+                    Iout = self.pid(T)
+                    P, I, D = self.pid.components
 
                     # Wait the update time
                     time.sleep(self.pid.sample_time)
                     tin += self.pid.sample_time
                     out[flo_key] = flow
-                    out[tsidx]   = tstamp
-                    out[Tidx]    = T * 1e3
-                    out[tidx]    = tin 
-                    out[Ikey]    = Iout
-                    out['PID']   = [P, I, D]
-                    tsout        = out[tsidx]
-                    tout         = out[tidx]
-                    Tout         = out[Tidx]
+                    out[tsidx] = tstamp
+                    out[Tidx] = T * 1e3
+                    out[tidx] = tin 
+                    out[Ikey] = Iout
+                    out['PID'] = [P, I, D]
+                    tsout = out[tsidx]
+                    tout = out[tidx]
+                    Tout = out[Tidx]
                     self.set_current(Iout)
                     print(f'{tstamp}, {1e3 * T:.2f} mK, {flow:.1f} umol/s, {Iout:.2f} mA, {P:.2f}, {I:.2f}, {D:.2f}, {tout} s')
                     fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}\n')
@@ -493,7 +493,7 @@ class JanisCtrl(object):
                 P, I, D = self.pid.components
 
                 # Read the flow meter
-                _, flow, _       = self.read_flow_meter()
+                _, flow, _ = self.read_flow_meter()
 
                 print(f'{tstamp}, {1e3 * T:.2f} mK, {flow:.1f} umol/s, {Iout:.2f} mA, {P:.2f}, {I:.2f}, {D:.2f}, {tin} s')
                 self.set_current(Iout)
@@ -504,39 +504,39 @@ class JanisCtrl(object):
             
                 # Write the time stamp, temperature, and impedance to file
                 tin += self.sample_time
-                out[flo_key]    = flow
-                out[tsidx]      = tstamp
-                out[Tidx]       = T * 1e3
-                out[tidx]       = tin + self.therm_time
-                out[Ikey]       = Iout
-                tsout           = out[tsidx]
-                tout            = out[tidx]
-                Tout            = out[Tidx]
-                out['PID']      = [P, I, D]
+                out[flo_key] = flow
+                out[tsidx] = tstamp
+                out[Tidx] = T * 1e3
+                out[tidx] = tin + self.therm_time
+                out[Ikey] = Iout
+                tsout = out[tsidx]
+                tout = out[tidx]
+                Tout = out[Tidx]
+                out['PID'] = [P, I, D]
             else:
-                Iout            = None
-                flow            = None
-                out[flo_key]    = None
-                out[tsidx]      = None
-                out[Tidx]       = None
-                out[tidx]       = None
-                out[Ikey]       = None
-                out['PID']      = None
-                tsout           = out[tsidx]
-                tout            = out[tidx]
-                Tout            = out[Tidx]
+                Iout = None
+                flow = None
+                out[flo_key] = None
+                out[tsidx] = None
+                out[Tidx] = None
+                out[tidx] = None
+                out[Ikey] = None
+                out['PID'] = None
+                tsout = out[tsidx]
+                tout = out[tidx]
+                Tout = out[Tidx]
 
             # Write the timestamp, elapsed time, temperature, current,
             # P, I, D values to file
             fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}\n')
 
         # Write the outputs for file writing
-        out[tsidx]      = tstamp
-        out[Tidx]       = T * 1e3
-        out[tidx]       = tin
-        out[Ikey]       = Iout
-        out['PID']      = [P, I, D]
-        out[flo_key]    = flow
+        out[tsidx] = tstamp
+        out[Tidx] = T * 1e3
+        out[tidx] = tin
+        out[Ikey] = Iout
+        out['PID'] = [P, I, D]
+        out[flo_key] = flow
         fid.write(f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}\n')
 
 
@@ -651,17 +651,17 @@ class JanisCtrl(object):
 
         else:
             outputfile = sampleid+'_'+str(self.vna_centerf)+'GHz'
-            PNA.get_data(centerf    = self.vna_centerf,
-                         span       = self.vna_span,
-                         temp       = temp,
-                         averages   = self.vna_averages,
-                         power      = self.vna_startpower,
-                         edelay     = self.vna_edelay,
-                         ifband     = self.vna_ifband,
-                         points     = self.vna_points,
+            PNA.get_data(centerf = self.vna_centerf,
+                         span = self.vna_span,
+                         temp = temp,
+                         averages = self.vna_averages,
+                         power = self.vna_startpower,
+                         edelay = self.vna_edelay,
+                         ifband = self.vna_ifband,
+                         points = self.vna_points,
                          outputfile = outputfile,
-                         sparam     = self.sparam,
-                         cal_set    = calset,
+                         sparam = self.sparam,
+                         cal_set = calset,
                          instr_addr = self.vna_addr)
 
         out[idx] = 0
@@ -687,17 +687,17 @@ class JanisCtrl(object):
             # Set the center frequency
             centerf = f0 + 0.5 * frequency_chunk_size / 1e9
             print(f'{f0} GHz to {f0 + (frequency_chunk_size/1e9)} GHz ...')
-            PNA.get_data(centerf    = centerf,
-                         span       = frequency_chunk_size / 1e6, # MHz
-                         temp       = temp * 1e3,
-                         averages   = self.vna_averages,
-                         power      = power, 
-                         edelay     = self.vna_edelay,
-                         ifband     = self.vna_ifband,
-                         points     = max(max_pts, self.vna_points), 
+            PNA.get_data(centerf = centerf,
+                         span = frequency_chunk_size / 1e6, # MHz
+                         temp = temp * 1e3,
+                         averages = self.vna_averages,
+                         power = power, 
+                         edelay = self.vna_edelay,
+                         ifband = self.vna_ifband,
+                         points = max(max_pts, self.vna_points), 
                          outputfile = sampleid+'.csv',
-                         sparam     = self.sparam,
-                         cal_set    = cal_set,
+                         sparam = self.sparam,
+                         cal_set = cal_set,
                          instr_addr = self.vna_addr)
 
             # Move to the next starting position
@@ -764,12 +764,12 @@ class JanisCtrl(object):
                                                     Tset, fid, out) 
                         print(f'out:\n{out}')
                         # Update the time stamp, elapsed time, temperature
-                        flow      = out[flo_key]
-                        tsout     = out['tstamp [HH:MM:SS]']
-                        tout      = out['t [s]']
-                        Tout      = out['T [mK]']
-                        Iout      = out['Iout [mA]']
-                        P, I, D   = out['PID']
+                        flow = out[flo_key]
+                        tsout = out['tstamp [HH:MM:SS]']
+                        tout = out['t [s]']
+                        Tout = out['T [mK]']
+                        Iout = out['Iout [mA]']
+                        P, I, D = out['PID']
                         data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}'
                         fid.write(data + '\n')
 
@@ -780,10 +780,10 @@ class JanisCtrl(object):
 
                         # Update the time stamp, elapsed time, temperature
                         print(f'out:\n{out}')
-                        tsout   = out['tstamp [HH:MM:SS]']
-                        tout    = out['t [s]']
-                        Tout    = out['T [mK]']
-                        Iout    = out['Iout [mA]']
+                        tsout = out['tstamp [HH:MM:SS]']
+                        tout = out['t [s]']
+                        Tout = out['T [mK]']
+                        Iout = out['Iout [mA]']
                         P, I, D = out['PID']
                         data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}'
                         fid.write(data + '\n')
@@ -795,11 +795,11 @@ class JanisCtrl(object):
                 # Graceful exit on Ctrl-C interrupt by the user
                 except (KeyboardInterrupt, Exception) as ex:
                     # Write the last result to file
-                    flow    = out[flo_key]
-                    tsout   = out['tstamp [HH:MM:SS]']
-                    tout    = out['t [s]']
-                    Tout    = out['T [mK]']
-                    Iout    = out['Iout [mA]']
+                    flow = out[flo_key]
+                    tsout = out['tstamp [HH:MM:SS]']
+                    tout = out['t [s]']
+                    Tout = out['T [mK]']
+                    Iout = out['Iout [mA]']
                     P, I, D = out['PID']
                     data = f'{tsout}, {tout}, {Tout}, {Iout}, {P}, {I}, {D}, {flow}'
                     fid.write(data + '\n')
@@ -829,14 +829,14 @@ class JanisCtrl(object):
 
         # Iterate over each frequency
         for idx, f in enumerate(freqs):
-            self.vna_edelay     = delays[idx]
-            self.vna_ifband     = ifbws[idx]
-            self.vna_centerf    = f
-            self.vna_averages   = avgs[idx]
-            self.vna_span       = spans[idx]
-            self.vna_numsweeps  = num_powers[idx]
+            self.vna_edelay = delays[idx]
+            self.vna_ifband = ifbws[idx]
+            self.vna_centerf = f
+            self.vna_averages = avgs[idx]
+            self.vna_span = spans[idx]
+            self.vna_numsweeps = num_powers[idx]
             self.vna_startpower = start_powers[idx]
-            self.vna_endpower   = end_powers[idx]
+            self.vna_endpower = end_powers[idx]
             print(f'Running {sparam} measurement of {f:.2f} GHz resonator ...')
             Z, T, tstamp = self.read_cmn()
             out = {}

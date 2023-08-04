@@ -10,7 +10,7 @@ Date:   220728
 import sys
 # sys.path.append(r'C:\Users\Lehnert Lab\GitHub\measurement\instrument_control')
 # Need to test relative path, otherwise try the above
-sys.path.append(r'..\')
+sys.path.append(r'../')
 from anritsu import AnritsuCtrl
 import numpy as np
 import sys
@@ -139,6 +139,5 @@ if __name__ == '__main__':
     tests = ['test_instantiate_class',
              # 'test_power_sweep_with_vna',
              # 'test_frequency_sweep_with_vna',
-             'test_frequency_power_sweep_with_vna'
-             ]
+             'test_frequency_power_sweep_with_vna']
     run_tests(tests)

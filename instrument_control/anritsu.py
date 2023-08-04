@@ -24,7 +24,7 @@ class AnritsuCtrl(object):
         """
         # Default instrument addresses GPIB, TCPIP
         self.anritsu_addr = 'GPIB::5::INSTR'
-        self.vna_addr     = 'TCPIP0::K-N5222B-21927::hislip0,4880::INSTR'
+        self.vna_addr = 'TCPIP0::K-N5222B-21927::hislip0,4880::INSTR'
 
         # Open the pyvisa resource manager 
         self.rm = pyvisa.ResourceManager()
@@ -87,17 +87,17 @@ class AnritsuCtrl(object):
         # four characters and removes them when manipulating strings and
         # directories
         outputfile = sampleid+'_'+str(vna_dict['centerf'])+'GHz'
-        pna.get_data(centerf    = vna_dict['centerf'],
-                     span       = vna_dict['span'],
-                     temp       = vna_dict['temp'],
-                     averages   = vna_dict['avg'],
-                     power      = vna_dict['power'],
-                     edelay     = vna_dict['edelay'],
-                     ifband     = vna_dict['ifbw'],
-                     points     = vna_dict['npts'],
+        pna.get_data(centerf = vna_dict['centerf'],
+                     span = vna_dict['span'],
+                     temp = vna_dict['temp'],
+                     averages = vna_dict['avg'],
+                     power = vna_dict['power'],
+                     edelay = vna_dict['edelay'],
+                     ifband = vna_dict['ifbw'],
+                     points = vna_dict['npts'],
                      outputfile = outputfile,
-                     sparam     = vna_dict['sparam'],
-                     cal_set    = vna_dict['cal_set'],
+                     sparam = vna_dict['sparam'],
+                     cal_set = vna_dict['cal_set'],
                      instr_addr = self.vna_addr)
 
     def write_check(self, cmd : str):
