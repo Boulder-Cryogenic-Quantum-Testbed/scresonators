@@ -36,7 +36,7 @@ import numpy as np
 import errno
 
 import sys
-sys.path.append(r'C:\Users\Lehnert Lab\GitHub\measurement\pna_control')
+sys.path.append(r'C:\Users\Lehnert Lab\GitHub\scresonators\pna_control')
 import pna_control as PNA
 import os
 

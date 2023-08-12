@@ -1257,5 +1257,7 @@ def fit(resonator):
                 format='pdf')
     fig.savefig(fp.name_plot(filename, str(Method.method), output_path, format='.png'),
                 format='png')
+    fig.savefig(fp.name_plot(filename, str(Method.method), output_path, format='.svg'),
+                format='svg')
     
     return output_params, conf_array, fig, error, init
