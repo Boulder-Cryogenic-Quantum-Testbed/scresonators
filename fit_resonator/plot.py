@@ -255,8 +255,8 @@ def PlotFit(x,
     ph = 1. # np.exp(1j*phi)
     ax0.plot(np.real(y*ph), np.imag(y*ph), 'bo', label='normalized data',
             markersize=msize1)
-    ax0.plot(np.real(y_fit*ph), np.imag(y_fit*ph), 'r-', label='fit function',
-            linewidth=3)
+    ax0.plot(np.real(y_fit*ph), np.imag(y_fit*ph), 'lightblue',
+            label='fit function', linewidth=4)
     ax0.axhline(y=0., color='k')
     ax0.axvline(x=1., color='k')
 
@@ -267,8 +267,8 @@ def PlotFit(x,
         ax0.set_ylabel(r'Im[$S_{21}$]')
         ax0.set_xlabel(r'Re[$S_{21}$]')
     leg = ax0.legend(loc="upper left", fancybox=True, shadow=True, fontsize=20)
-    ax0.set_xlim([0, 1.1])
-    ax0.set_ylim([-0.55, 0.55])
+    ax0.set_xlim([None, 1.1])
+    ax0.set_ylim([-1, 1])
     ax0.set_aspect(1.)
 
     # plot resonance point
@@ -284,18 +284,18 @@ def PlotFit(x,
         resonance = 1 / (1 + params[1] + 1j * params[3])
     else:
         resonance = 1 + 1j * 0
-    ax0.plot(np.real(resonance), np.imag(resonance), '*', color='red', 
+    ax0.plot(np.real(resonance), np.imag(resonance), '*', color='lightblue', 
             label= 'resonance', markersize=msize2)
-    ax1.plot(0, np.log10(np.abs(resonance)) * 20, '*', color='red', 
+    ax1.plot(0, np.log10(np.abs(resonance)) * 20, '*', color='lightblue', 
              label='resonance', markersize=msize2)
-    ax2.plot(0, np.angle(resonance), '*', color='red',
+    ax2.plot(0, np.angle(resonance), '*', color='lightblue',
             label= 'resonance', markersize=msize2)
 
     # Subtract the resonance to label as f-f0
     ax1.plot((x-params[2]) / fscale, np.log10(np.abs(y)) * 20, 'bo',
             label='normalized data', markersize=msize1)
-    ax1.plot((x_fit-params[2]) / fscale, np.log10(np.abs(y_fit)) * 20, 'r-',
-             lw=3, label='fit function')
+    ax1.plot((x_fit-params[2]) / fscale, np.log10(np.abs(y_fit)) * 20,
+            color='lightblue', lw=4, label='fit function')
     ax1.set_xlim(left=(x[0]-params[2]) / fscale,
                  right=(x[-1]-params[2]) / fscale)
     ax1.set_xlabel(xstr)
@@ -306,7 +306,7 @@ def PlotFit(x,
     ax2.plot((x - params[2]) / fscale, np.angle(y), 'bo', 
         label='normalized data', markersize=msize1)
     ax2.plot((x_fit - params[2]) / fscale, np.angle(y_fit),
-            'r-', label='fit function', lw=3)
+            color='lightblue', label='fit function', lw=4)
     ax2.set_xlim(left=(x[0] - params[2]) / fscale,
             right=(x[-1] - params[2]) / fscale)
     ax2.set_xlabel(xstr)
