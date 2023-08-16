@@ -299,26 +299,6 @@ def PlotFit(x,
     #ax0.set_ylim([-1, 1])
     ax0.set_aspect(1.)
 
-    # plot resonance point
-    if func == ff.cavity_inverse:
-        resonance = (1 + params[0] / params[1] * np.exp(1j * params[3]) / (
-                1 + 1j * 2 * params[0] * (params[2] - params[2]) / params[2]))
-    elif func == ff.cavity_DCM:
-        resonance = 1 - params[0] / params[1] * np.exp(1j * params[3])
-    elif func == ff.cavity_DCM_REFLECTION:
-        resonance = (1 - 2 * params[0] / params[1] * np.exp(1j * params[3]) / (
-                1 + 1j * (params[2] - params[2]) / params[2] * 2 * params[0]))
-    elif func == ff.cavity_CPZM:
-        resonance = 1 / (1 + params[1] + 1j * params[3])
-    else:
-        resonance = 1 + 1j * 0
-    ax0.plot(np.real(resonance), np.imag(resonance), '*', color='cadetblue', 
-            label= 'resonance', markersize=msize2)
-    ax1.plot(0, np.log10(np.abs(resonance)) * 20, '*', color='cadetblue', 
-             label='resonance', markersize=msize2)
-    ax2.plot(0, np.angle(resonance), '*', color='cadetblue',
-            label= 'resonance', markersize=msize2)
-
     # Subtract the resonance to label as f-f0
     ax1.plot((x-params[2]) / fscale, np.log10(np.abs(y)) * 20, 'bo',
             label='normalized data', markersize=msize1)
@@ -338,6 +318,26 @@ def PlotFit(x,
     ax2.set_xlim(left=(x[0] - params[2]) / fscale,
             right=(x[-1] - params[2]) / fscale)
     ax2.set_xlabel(xstr)
+
+    # plot resonance point
+    if func == ff.cavity_inverse:
+        resonance = (1 + params[0] / params[1] * np.exp(1j * params[3]) / (
+                1 + 1j * 2 * params[0] * (params[2] - params[2]) / params[2]))
+    elif func == ff.cavity_DCM:
+        resonance = 1 - params[0] / params[1] * np.exp(1j * params[3])
+    elif func == ff.cavity_DCM_REFLECTION:
+        resonance = (1 - 2 * params[0] / params[1] * np.exp(1j * params[3]) / (
+                1 + 1j * (params[2] - params[2]) / params[2] * 2 * params[0]))
+    elif func == ff.cavity_CPZM:
+        resonance = 1 / (1 + params[1] + 1j * params[3])
+    else:
+        resonance = 1 + 1j * 0
+    ax0.plot(np.real(resonance), np.imag(resonance), '*', color='cadetblue', 
+            label= 'resonance', markersize=msize2)
+    ax1.plot(0, np.log10(np.abs(resonance)) * 20, '*', color='cadetblue', 
+             label='resonance', markersize=msize2)
+    ax2.plot(0, np.angle(resonance), '*', color='cadetblue',
+            label= 'resonance', markersize=msize2)
 
     for tick in ax2.xaxis.get_major_ticks():
         tick.label.set_fontsize(fsize)
