@@ -154,6 +154,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
     normalize: int = 10
     background: str = None
     background_array: np.ndarray = None
+    plot: str = 'pdf'
     plot_extra: bool = False
     preprocess_method: str = "circle"
     power = 0
@@ -211,8 +212,9 @@ class Resonator:  # Object is auto-initialized with @attr annotation
                 MC_weight, MC_weightvalue, MC_fix, MC_step_const, manual_init,
                 vary, preprocess_method)
 
-    def fit(self):
-        fit.fit(self)
+    def fit(self, plot: str = 'pdf'):
+        self.plot = plot
+        return fit.fit(self)
 
     def load_params(self, method: str, params: np.ndarray, chi):
         """

@@ -31,12 +31,12 @@ jobs:
         pip install pylint
         pip install pytest
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Lint with pylint
-      run: |
-        pylint $(git ls-files '*.py')
     - name: Test with pytest
       run: |
         pytest
     - name: Test pip-install
       run: |
         python -m pip install scresonators-fit
+    - name: Lint with pylint
+      run: |
+        pylint $(git ls-files '*.py')

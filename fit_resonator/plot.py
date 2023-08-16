@@ -109,6 +109,34 @@ def create_metadata(Method, output_path):
         writer.writerow(vals)
         file.close()
 
+def output_params(output_path, func, Q, Qi, Qc, Qc_Re, phi, f_c, conf_array):
+# write to output csv file
+    with open(output_path + "fit_params.csv", "w", newline='') as file:
+        writer = csv.writer(file)
+        if func == ff.cavity_inverse:
+            fields = ['Qi', 'Qc*', 'phi', 'fc']
+            vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(phi)),
+                        float('{0:.10g}'.format(f_c))],
+                    [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
+                        float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
+
+        elif func == ff.cavity_CPZM:
+            fields = ['Qi', 'Qc', 'Qa', 'fc']
+            vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(Qa)),
+                        float('{0:.10g}'.format(f_c))],
+                    [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
+                        float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
+        else:
+            fields = ['Q', 'Qi', 'Qc', '1/Re[1/Qc]', 'phi', 'fc']
+            vals = [[float('{0:.10g}'.format(Q)), float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)),
+                        float('{0:.10g}'.format(Qc_Re)), float('{0:.10g}'.format(phi)), float('{0:.10g}'.format(f_c))],
+                    [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
+                        float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3])),
+                        float('{0:.1g}'.format(conf_array[4])), float('{0:.1g}'.format(conf_array[5]))]]
+        writer.writerow(fields)
+        writer.writerows(vals)
+        file.close()
+
 def PlotFit(x,
             y,
             x_initial,
@@ -130,7 +158,7 @@ def PlotFit(x,
             title="Fit",
             manual_params=None,
             dfac: int = 1,
-            msizes: list = [12, 20],
+            msizes: list = [12, 24],
             xstr: str = r'$(f-f_c)$ [kHz]',
             fscale: float = 1e3,
             fsize: float = 20.):
@@ -284,11 +312,11 @@ def PlotFit(x,
         resonance = 1 / (1 + params[1] + 1j * params[3])
     else:
         resonance = 1 + 1j * 0
-    ax0.plot(np.real(resonance), np.imag(resonance), '*', color='lightblue', 
+    ax0.plot(np.real(resonance), np.imag(resonance), '*', color='cadetblue', 
             label= 'resonance', markersize=msize2)
-    ax1.plot(0, np.log10(np.abs(resonance)) * 20, '*', color='lightblue', 
+    ax1.plot(0, np.log10(np.abs(resonance)) * 20, '*', color='cadetblue', 
              label='resonance', markersize=msize2)
-    ax2.plot(0, np.angle(resonance), '*', color='lightblue',
+    ax2.plot(0, np.angle(resonance), '*', color='cadetblue',
             label= 'resonance', markersize=msize2)
 
     # Subtract the resonance to label as f-f0
@@ -493,34 +521,8 @@ def PlotFit(x,
                             textstr += ' GHz'
                         textstr += '\n'
                     plt.gcf().text(0.63, 0.05, textstr, fontsize=20)
-
-            # write to output csv file
-            with open(output_path + "fit_params.csv", "w", newline='') as file:
-                writer = csv.writer(file)
-                if func == ff.cavity_inverse:
-                    fields = ['Qi', 'Qc*', 'phi', 'fc']
-                    vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(phi)),
-                             float('{0:.10g}'.format(f_c))],
-                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
-                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
-
-                elif func == ff.cavity_CPZM:
-                    fields = ['Qi', 'Qc', 'Qa', 'fc']
-                    vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(Qa)),
-                             float('{0:.10g}'.format(f_c))],
-                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
-                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
-                else:
-
-                    fields = ['Q', 'Qi', 'Qc', '1/Re[1/Qc]', 'phi', 'fc']
-                    vals = [[float('{0:.10g}'.format(Q)), float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)),
-                             float('{0:.10g}'.format(Qc_Re)), float('{0:.10g}'.format(phi)), float('{0:.10g}'.format(f_c))],
-                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
-                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3])),
-                             float('{0:.1g}'.format(conf_array[4])), float('{0:.1g}'.format(conf_array[5]))]]
-                writer.writerow(fields)
-                writer.writerows(vals)
-                file.close()
+            # Write parameters to output file
+            output_params(output_path, func, Q, Qi, Qc, Qc_Re, phi, f_c, conf_array)
     except Exception as e:
         print(">Error when trying to write parameters on plot")
         print(f">{e}")
