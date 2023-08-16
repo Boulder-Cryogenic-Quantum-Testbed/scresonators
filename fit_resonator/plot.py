@@ -295,8 +295,8 @@ def PlotFit(x,
         ax0.set_ylabel(r'Im[$S_{21}$]')
         ax0.set_xlabel(r'Re[$S_{21}$]')
     leg = ax0.legend(loc="upper left", fancybox=True, shadow=True, fontsize=20)
-    ax0.set_xlim([None, 1.1])
-    ax0.set_ylim([-1, 1])
+    #ax0.set_xlim([None, 1.1])
+    #ax0.set_ylim([-1, 1])
     ax0.set_aspect(1.)
 
     # plot resonance point
