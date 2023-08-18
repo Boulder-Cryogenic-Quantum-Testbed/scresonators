@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-import fit_resonator.functions as ff
-import fit_resonator.Sdata as fs
+import fit_resonator.cavity_functions as ff
+import fit_resonator.fit as fit
 import fit_resonator.resonator as res
 
 """Tests for analysis."""

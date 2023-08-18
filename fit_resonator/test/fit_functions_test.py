@@ -1,4 +1,4 @@
-import fit_resonator.functions as ff
+import fit_resonator.cavity_functions as ff
 import pytest
 
 def test_model_params():
