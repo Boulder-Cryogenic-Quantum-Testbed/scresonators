@@ -1229,7 +1229,7 @@ def fit(resonator):
                   "please manually input a guess for parameters")
         quit()
 
-    if resonator.plot in ['pdf', 'png', 'svg']:
+    if resonator.plot is not None:
         # make a folder to put all output in
         if not os.path.exists(output_path):
             os.mkdir(output_path)
@@ -1256,8 +1256,11 @@ def fit(resonator):
             print(f'Exception: {e}')
             print(f'Failed to plot {Method.method} fit for {data}')
             quit()
-
-        fig.savefig(fp.name_plot(filename, str(Method.method), output_path, 
-                                 format=f'.{resonator.plot}'), format=f'{resonator.plot}')
+        try:
+            fig.savefig(fp.name_plot(filename, str(Method.method), output_path, 
+                                    format=f'.{resonator.plot}'), format=f'{resonator.plot}')
+        except: 
+            print(f'Unrecognized file format: {resonator.plot}\n Please use png, pdf, ps, eps or svg.')
+            quit()
     
     return output_params, conf_array, error, init
