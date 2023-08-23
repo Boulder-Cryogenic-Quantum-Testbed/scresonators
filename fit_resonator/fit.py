@@ -1005,9 +1005,9 @@ def fit(resonator):
         print("When trying to read data")
         quit()
 
-    # make a folder to put all output in
     output_path = fp.name_folder(dir, str(Method.method))
-    os.mkdir(output_path)
+    if plot_extra:
+        os.mkdir(output_path)
 
     # original data before normalization
     x_initial = xdata
@@ -1229,35 +1229,38 @@ def fit(resonator):
                   "please manually input a guess for parameters")
         quit()
 
-    # set the range to plot for 1 3dB bandwidth
-    if Method.method == 'CPZM':
-        Q = 1 / (1 / output_params[0] + output_params[1] / output_params[0])
-        kappa = output_params[2] / Q
-    else:
-        kappa = output_params[2] / output_params[0]
-    xstart = output_params[2] - kappa / 2  # starting resonance to add to fit
-    xend = output_params[2] + kappa / 2
-    extract_factor = [xstart, xend]
+    if resonator.plot is not None:
+        # make a folder to put all output in
+        if not os.path.exists(output_path):
+            os.mkdir(output_path)
+        # set the range to plot for 1 3dB bandwidth
+        if Method.method == 'CPZM':
+            Q = 1 / (1 / output_params[0] + output_params[1] / output_params[0])
+            kappa = output_params[2] / Q
+        else:
+            kappa = output_params[2] / output_params[0]
+        xstart = output_params[2] - kappa / 2  # starting resonance to add to fit
+        xend = output_params[2] + kappa / 2
+        extract_factor = [xstart, xend]
 
-    # plot fit
-    try:
-        #title = f'{Method.method} fit for {filename}'
-        title = f'{Method.method} Method Fit'
-        figurename = f"{Method.method} with Monte Carlo Fit and Raw data\nPower: {filename}"
-        fig = fp.PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
-                      slope2, intercept2, output_params, Method, 
-                      error, figurename, x_c, y_c, r, output_path, conf_array, 
-                      extract_factor, title=title, manual_params=Method.manual_init)
-    except Exception as e:
-        print(f'Exception: {e}')
-        print(f'Failed to plot {Method.method} fit for {data}')
-        quit()
-
-    fig.savefig(fp.name_plot(filename, str(Method.method), output_path),
-                format='pdf')
-    fig.savefig(fp.name_plot(filename, str(Method.method), output_path, format='.png'),
-                format='png')
-    fig.savefig(fp.name_plot(filename, str(Method.method), output_path, format='.svg'),
-                format='svg')
+        # plot fit
+        try:
+            #title = f'{Method.method} fit for {filename}'
+            title = f'{Method.method} Method Fit'
+            figurename = f"{Method.method} with Monte Carlo Fit and Raw data\nPower: {filename}"
+            fig = fp.PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
+                        slope2, intercept2, output_params, Method, 
+                        error, figurename, x_c, y_c, r, output_path, conf_array, 
+                        extract_factor, title=title, manual_params=Method.manual_init)
+        except Exception as e:
+            print(f'Exception: {e}')
+            print(f'Failed to plot {Method.method} fit for {data}')
+            quit()
+        try:
+            fig.savefig(fp.name_plot(filename, str(Method.method), output_path, 
+                                    format=f'.{resonator.plot}'), format=f'{resonator.plot}')
+        except: 
+            print(f'Unrecognized file format: {resonator.plot}\n Please use png, pdf, ps, eps or svg.')
+            quit()
     
-    return output_params, conf_array, fig, error, init
+    return output_params, conf_array, error, init
