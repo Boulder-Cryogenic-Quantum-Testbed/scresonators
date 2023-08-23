@@ -109,35 +109,6 @@ def create_metadata(Method, output_path):
         writer.writerow(vals)
         file.close()
 
-def output_params(output_path, conf_array, func, **kwargs):
-    print(kwargs)
-# write to output csv file
-    with open(output_path + "fit_params.csv", "w", newline='') as file:
-        writer = csv.writer(file)
-        if func == ff.cavity_inverse:
-            fields = ['Qi', 'Qc*', 'phi', 'fc']
-            vals = [[float('{0:.10g}'.format(kwargs['Qi'])), float('{0:.10g}'.format(kwargs['Qc'])), float('{0:.10g}'.format(kwargs['phi'])),
-                        float('{0:.10g}'.format(kwargs['f_c']))],
-                    [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
-                        float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
-
-        elif func == ff.cavity_CPZM:
-            fields = ['Qi', 'Qc', 'Qa', 'fc']
-            vals = [[float('{0:.10g}'.format(kwargs['Qi'])), float('{0:.10g}'.format(kwargs['Qc'])), float('{0:.10g}'.format(kwargs['Qa'])),
-                        float('{0:.10g}'.format(kwargs['f_c']))],
-                    [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
-                        float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
-        else:
-            fields = ['Q', 'Qi', 'Qc', '1/Re[1/Qc]', 'phi', 'fc']
-            vals = [[float('{0:.10g}'.format(kwargs['Q'])), float('{0:.10g}'.format(kwargs['Qi'])), float('{0:.10g}'.format(kwargs['Qc'])),
-                        float('{0:.10g}'.format(kwargs['Qc_Re'])), float('{0:.10g}'.format(kwargs['phi'])), float('{0:.10g}'.format(kwargs['f_c']))],
-                    [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
-                        float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3])),
-                        float('{0:.1g}'.format(conf_array[4])), float('{0:.1g}'.format(conf_array[5]))]]
-        writer.writerow(fields)
-        writer.writerows(vals)
-        file.close()
-
 def PlotFit(x,
             y,
             x_initial,
@@ -284,7 +255,7 @@ def PlotFit(x,
     ph = 1. # np.exp(1j*phi)
     ax0.plot(np.real(y*ph), np.imag(y*ph), 'bo', label='normalized data',
             markersize=msize1)
-    ax0.plot(np.real(y_fit*ph), np.imag(y_fit*ph), 'lightblue',
+    ax0.plot(np.real(y_fit*ph), np.imag(y_fit*ph), 'cadetblue',
             label='fit function', linewidth=4)
     ax0.axhline(y=0., color='k')
     ax0.axvline(x=1., color='k')
@@ -300,7 +271,27 @@ def PlotFit(x,
     #ax0.set_ylim([-1, 1])
     ax0.set_aspect(1.)
 
-    # plot resonance point
+    # Subtract the resonance to label as f-f0
+    ax1.plot((x-params[2]) / fscale, np.log10(np.abs(y)) * 20, 'bo',
+            label='normalized data', markersize=msize1)
+    ax1.plot((x_fit-params[2]) / fscale, np.log10(np.abs(y_fit)) * 20,
+            color='cadetblue', lw=4, label='fit function')
+    ax1.set_xlim(left=(x[0]-params[2]) / fscale,
+                 right=(x[-1]-params[2]) / fscale)
+    ax1.set_xlabel(xstr)
+
+    for tick in ax1.xaxis.get_major_ticks():
+        tick.label.set_fontsize(fsize)
+
+    ax2.plot((x - params[2]) / fscale, np.angle(y), 'bo', 
+        label='normalized data', markersize=msize1)
+    ax2.plot((x_fit - params[2]) / fscale, np.angle(y_fit),
+            color='cadetblue', label='fit function', lw=4)
+    ax2.set_xlim(left=(x[0] - params[2]) / fscale,
+            right=(x[-1] - params[2]) / fscale)
+    ax2.set_xlabel(xstr)
+
+     # plot resonance points
     if func == ff.cavity_inverse:
         resonance = (1 + params[0] / params[1] * np.exp(1j * params[3]) / (
                 1 + 1j * 2 * params[0] * (params[2] - params[2]) / params[2]))
@@ -313,32 +304,12 @@ def PlotFit(x,
         resonance = 1 / (1 + params[1] + 1j * params[3])
     else:
         resonance = 1 + 1j * 0
-    ax0.plot(np.real(resonance), np.imag(resonance), '*', color='cadetblue', 
+    ax0.plot(np.real(resonance), np.imag(resonance), '*', color='darkorange', 
             label= 'resonance', markersize=msize2)
-    ax1.plot(0, np.log10(np.abs(resonance)) * 20, '*', color='cadetblue', 
+    ax1.plot(0, np.log10(np.abs(resonance)) * 20, '*', color='darkorange', 
              label='resonance', markersize=msize2)
-    ax2.plot(0, np.angle(resonance), '*', color='cadetblue',
+    ax2.plot(0, np.angle(resonance), '*', color='darkorange',
             label= 'resonance', markersize=msize2)
-
-    # Subtract the resonance to label as f-f0
-    ax1.plot((x-params[2]) / fscale, np.log10(np.abs(y)) * 20, 'bo',
-            label='normalized data', markersize=msize1)
-    ax1.plot((x_fit-params[2]) / fscale, np.log10(np.abs(y_fit)) * 20,
-            color='lightblue', lw=4, label='fit function')
-    ax1.set_xlim(left=(x[0]-params[2]) / fscale,
-                 right=(x[-1]-params[2]) / fscale)
-    ax1.set_xlabel(xstr)
-
-    for tick in ax1.xaxis.get_major_ticks():
-        tick.label.set_fontsize(fsize)
-
-    ax2.plot((x - params[2]) / fscale, np.angle(y), 'bo', 
-        label='normalized data', markersize=msize1)
-    ax2.plot((x_fit - params[2]) / fscale, np.angle(y_fit),
-            color='lightblue', label='fit function', lw=4)
-    ax2.set_xlim(left=(x[0] - params[2]) / fscale,
-            right=(x[-1] - params[2]) / fscale)
-    ax2.set_xlabel(xstr)
 
     for tick in ax2.xaxis.get_major_ticks():
         tick.label.set_fontsize(fsize)
@@ -349,121 +320,207 @@ def PlotFit(x,
 
     try:
         if params:
-            output = {}
-            if params[0] < 0:
-                print(r"Q_i is less than zero. Please make sure data is of"
-                        " correct format: decibals (log10*20 version), and "
-                        "radians. Otherwise, it is quite likely that the "
-                        "resonator being fit is not a Notch type resonator. "
-                        "For reflection type geometry, "
-                        "please use DCM REFLECTION.")
-    
             if func == ff.cavity_inverse:
+                if params[0] < 0:
+                    print("Qi is less than zero. Please make sure data is of"
+                          " correct format: decibals (log10*20 version), and "
+                          "radians. Otherwise, it is quite likely that the "
+                          "resonator being fit is not a Notch type resonator. "
+                          "For reflection type geometry, "
+                          "please use DCM REFLECTION.")
+                if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
+                    Qi = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
+                else:
+                    Qi = params[0]
                 if conf_array[1] > 10 ** -10 and conf_array[1] != float('inf'):
                     Qc = params[1] - params[1] % (10 ** int(np.log10(conf_array[1]) - 1))
                 else:
                     Qc = params[1]
+                if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
+                    phi = params[3] - params[3] % (10 ** int(np.log10(conf_array[2]) - 1))
+                else:
+                    phi = params[3]
+                if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
+                    f_c = params[2] - params[2] % (10 ** int(np.log10(conf_array[3]) - 1))
+                else:
+                    f_c = params[2]
+                textstr = r'$Q_i$ = ' + '%s' % float('{0:.10g}'.format(Qi)) + r"$\pm$" + '%s' % float(
+                    '{0:.1g}'.format(conf_array[0])) + \
+                          '\n' + r'$Q_c^*$ = ' + '%s' % float('{0:.10g}'.format(Qc)) + r"$\pm$" + '%s' % float(
+                    '{0:.1g}'.format(conf_array[1])) + \
+                          '\n' + r'$\phi$ = ' + '%s' % float('{0:.10g}'.format(phi)) + r"$\pm$" + '%s' % float(
+                    '{0:.1g}'.format(conf_array[2])) + ' radians' + \
+                          '\n' + r'$f_c$ = ' + '%s' % float('{0:.10g}'.format(f_c / fcscale)) + r"$\pm$" + '%s' % float(
+                    '{0:.1g}'.format(conf_array[3])) + ' GHz'
+                plt.gcf().text(0.7, 0.11, textstr, fontsize=18)
             elif func == ff.cavity_CPZM:
+                if params[0] < 0:
+                    print("Qi is less than zero. Please make sure data is "
+                          "of correct format: decibals (log10*20 version), "
+                          "and radians. Otherwise, it is quite likely that the "
+                          "resonator being fit is not a Notch type resonator. "
+                          "For reflection type geometry, "
+                          "please use DCM REFLECTION.")
+                if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
+                    Qi = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
+                else:
+                    Qi = params[0]
                 if conf_array[1] > 10 ** -10 and conf_array[1] != float('inf'):
                     Qc = (params[0] * params[1] ** -1) - (params[0] * params[1] ** -1) % (
                             10 ** int(np.log10(conf_array[1]) - 1))
                 else:
                     Qc = (params[0] * params[1] ** -1)
-            else:
-                Qc = params[1] / np.exp(1j * params[3])
-            assert 1/np.real(1 / Qc) >= 0; f"1/Real[1/Qc] is less than 0. Calculating Qi anyway"
-            output['Qc'] = Qc
-
-            if func == ff.cavity_inverse or func == ff.cavity_CPZM:
-                if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
-                    Qi = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
-                else:
-                    Qi = params[0]
-                output['Qi'] = Qi
-            else:
-                if Method.method == 'PHI':
-                    Qi = (params[0] ** -1 - np.abs(Qc ** -1)) ** -1
-                else:
-                    Qi = (params[0] ** -1 - np.real(Qc ** -1)) ** -1
-                output['Qi'] = Qi
-                if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
-                    Q = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
-                else:
-                    Q = params[0]
-                output['Q'] = Q
-
-            if func == ff.cavity_inverse:
-                if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
-                    phi = params[3] - params[3] % (10 ** int(np.log10(conf_array[2]) - 1))
-                else:
-                    phi = params[3]
-                output['phi'] = phi
-            elif func == ff.cavity_CPZM:
                 if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
                     Qa = (params[0] * params[3] ** -1) - (params[0] * params[3] ** -1) % (
                             10 ** int(np.log10(conf_array[2]) - 1))
                 else:
                     Qa = (params[0] * params[3] ** -1)
-                output['Qa'] = Qa
-            
-            if func == ff.cavity_inverse or func == ff.cavity_CPZM:
                 if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
                     f_c = params[2] - params[2] % (10 ** int(np.log10(conf_array[3]) - 1))
                 else:
                     f_c = params[2]
-                output['f_c'] = f_c
-            else:
-                if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
-                    Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) - (
-                            1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) % (
-                                    10 ** int(np.log10(conf_array[3]) - 1))
-                else:
-                    Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3]))))
-                output['Qc_Re'] = Qc_Re
-            
-            if func != ff.cavity_inverse and func != ff.cavity_CPZM:
-                if conf_array[4] > 10 ** -10 and conf_array[4] != float('inf'):
-                    phi = params[3] - params[3] % (10 ** int(np.log10(conf_array[4]) - 1))
-                else:
-                    phi = params[3]
-                output['phi'] = phi
-                if conf_array[5] > 10 ** -10 and conf_array[5] != float('inf'):
-                    f_c = params[2] - params[2] % (10 ** int(np.log10(conf_array[5]) - 1))
-                else:
-                    f_c = params[2]
-                output['f_c'] = f_c                    
-
-                reports = output.keys()
-                p_ref = output.values()
-
+                reports = ['$Q_i$', '$Q_c$', '$Q_a$', '$f_c$']
+                p_ref = [Qi, Qc, Qa, f_c]
                 textstr = ''
+
                 for val in reports:
-                    if val == r'$f_c$':
-                        vscale = fcscale
+                    textstr += val + f' = {p_ref[reports.index(val)]:.10f}' + r'$\pm$' + f'{conf_array[reports.index(val)]:.1f} UNITS'
+
+                plt.gcf().text(0.7, 0.11, textstr, fontsize=18)
+
+            else:
+                Qc = params[1] / np.exp(1j * params[3])
+                if Method.method == 'PHI':
+                    Qi = (params[0] ** -1 - np.abs(Qc ** -1)) ** -1
+                else:
+                    Qi = (params[0] ** -1 - np.real(Qc ** -1)) ** -1
+
+                if Qi < 0 and Method.method != 'DCM REFLECTION':
+                    print(
+                        "Qi is less than zero. Please make sure data is of correct format: decibals (log10*20 version), and radians. Otherwise, it is quite likely that the resonator being fit is not a Notch type resonator. Other types of resonators will not work with this code.")
+                if 1 / np.real(1 / Qc) < 0:
+                    print("Warning: 1/Real[1/Qc] is less than 0. Calculating Qi anyway")
+                    if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
+                        Q = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
                     else:
-                        vscale = 1.
+                        Q = params[0]
+                    if conf_array[1] > 10 ** -10 and conf_array[1] != float('inf'):
+                        Qi = Qi - Qi % (10 ** int(np.log10(conf_array[1]) - 1))
+                    if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
+                        Qc = params[1] - params[1] % (10 ** int(np.log10(conf_array[2]) - 1))
+                    else:
+                        Qc = params[1]
+                    if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
+                        Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) - (
+                                1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) % (
+                                        10 ** int(np.log10(conf_array[3]) - 1))
+                    else:
+                        Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3]))))
+                    if conf_array[4] > 10 ** -10 and conf_array[4] != float('inf'):
+                        phi = params[3] - params[3] % (10 ** int(np.log10(conf_array[4]) - 1))
+                    else:
+                        phi = params[3]
+                    if conf_array[5] > 10 ** -10 and conf_array[5] != float('inf'):
+                        f_c = params[2] - params[2] % (10 ** int(np.log10(conf_array[5]) - 1))
+                    else:
+                        f_c = params[2]
+                    textstr = 'Q = ' + '%s' % float('{0:.10g}'.format(Q)) + r"$\pm$" + '%s' % float(
+                        '{0:.1g}'.format(conf_array[0])) + \
+                              '\n' + r'$Q_i$ = ' + '%s' % float('{0:.10g}'.format(Qi)) + r"$\pm$" + '%s' % float(
+                        '{0:.1g}'.format(conf_array[1])) + \
+                              '\n' + r'$Q_c$ = ' + '%s' % float('{0:.10g}'.format(Qc)) + r"$\pm$" + '%s' % float(
+                        '{0:.1g}'.format(conf_array[2])) + \
+                              '\n' + r'$\phi$ = ' + '%s' % float('{0:.10g}'.format(phi)) + r"$\pm$" + '%s' % float(
+                        '{0:.2g}'.format(conf_array[4])) + ' radians' + \
+                              '\n' + r'$qqqf_c$ = ' + '%s' % float('{0:.7g}'.format(f_c / fcscale)) + r"$\pm$" + '%s' % float(
+                        '{0:.1g}'.format(conf_array[5])) + ' GHz'
+                    plt.gcf().text(0.7, 0.09, textstr, fontsize=18)
+                    Qc_str = r'1/Re[1/$Q_c$] = ' + '%s' % float('{0:.10g}'.format(Qc_Re)) + r"$\pm$" + '%s' % float(
+                        '{0:.1g}'.format(conf_array[3]))
+                    plt.gcf().text(0.7, 0.245, Qc_str, fontsize=18, color='red')
 
-                    # Round to one significant figure
+                else:
+                    if conf_array[0] > 10 ** -10 and conf_array[0] != float('inf'):
+                        Q = params[0] - params[0] % (10 ** int(np.log10(conf_array[0]) - 1))
+                    else:
+                        Q = params[0]
+                    if conf_array[1] > 10 ** -10 and conf_array[1] != float('inf'):
+                        Qi = Qi - Qi % (10 ** int(np.log10(conf_array[1]) - 1))
+                    if conf_array[2] > 10 ** -10 and conf_array[2] != float('inf'):
+                        Qc = params[1] - params[1] % (10 ** int(np.log10(conf_array[2]) - 1))
+                    else:
+                        Qc = params[1]
+                    if conf_array[3] > 10 ** -10 and conf_array[3] != float('inf'):
+                        Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) - (
+                                1 / np.real(1 / (params[1] / np.exp(1j * params[3])))) % (
+                                        10 ** int(np.log10(conf_array[3]) - 1))
+                    else:
+                        Qc_Re = (1 / np.real(1 / (params[1] / np.exp(1j * params[3]))))
+                    if conf_array[4] > 10 ** -10 and conf_array[4] != float('inf'):
+                        phi = params[3] - params[3] % (10 ** int(np.log10(conf_array[4]) - 1))
+                    else:
+                        phi = params[3]
+                    if conf_array[5] > 10 ** -10 and conf_array[5] != float('inf'):
+                        f_c = params[2] - params[2] % (10 ** int(np.log10(conf_array[5]) - 1))
+                    else:
+                        f_c = params[2]
 
-                    # PROBLEM HERE NEED TO FIGURE OUT HOW TO ROUND UNCERTAINTIES without indexing
-                    err = round_sigfig(conf_array[reports.index(val)] / vscale, 1)
-                    v = p_ref[reports.index(val)] / vscale
+                    reports = ['Q', r'$Q_i$', r'$Q_c$', r'$\phi$', r'$f_c$']
+                    p_ref = [Q, Qi, Qc, phi, f_c]
 
-                    # Report the uncertainties using the LaTeX format
-                    un = uncertainties.ufloat(v, err)
-                    latexstr = f'{un:L}'
-                    textstr += r'%s: $%s$' % (val, latexstr)
 
-                    # if conf_array[reports.index(val)] > 0:
-                    #     textstr += r'$\pm$' + f'{conf_array[reports.index(val)] / vscale:.1g}'
-                    if val == r'$\phi$':
-                        textstr += ' radians'
-                    elif val == r'$f_c$':
-                        textstr += ' GHz'
-                    textstr += '\n'
-                plt.gcf().text(0.63, 0.05, textstr, fontsize=20)
-        # Write parameters to output file
-        output_params(output_path, conf_array, func, output)
+                    textstr = ''
+                    for val in reports:
+                        if val == r'$f_c$':
+                            vscale = fcscale
+                        else:
+                            vscale = 1.
+
+                        # Round to one significant figure
+                        err = round_sigfig(conf_array[reports.index(val)] / vscale, 1)
+                        v = p_ref[reports.index(val)] / vscale
+
+                        # Report the uncertainties using the LaTeX format
+                        un = uncertainties.ufloat(v, err)
+                        latexstr = f'{un:L}'
+                        textstr += r'%s: $%s$' % (val, latexstr)
+
+                        # if conf_array[reports.index(val)] > 0:
+                        #     textstr += r'$\pm$' + f'{conf_array[reports.index(val)] / vscale:.1g}'
+                        if val == r'$\phi$':
+                            textstr += ' radians'
+                        elif val == r'$f_c$':
+                            textstr += ' GHz'
+                        textstr += '\n'
+                    plt.gcf().text(0.63, 0.05, textstr, fontsize=20)
+
+            # write to output csv file
+            with open(output_path + "fit_params.csv", "w", newline='') as file:
+                writer = csv.writer(file)
+                if func == ff.cavity_inverse:
+                    fields = ['Qi', 'Qc*', 'phi', 'fc']
+                    vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(phi)),
+                             float('{0:.10g}'.format(f_c))],
+                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
+                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
+
+                elif func == ff.cavity_CPZM:
+                    fields = ['Qi', 'Qc', 'Qa', 'fc']
+                    vals = [[float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)), float('{0:.10g}'.format(Qa)),
+                             float('{0:.10g}'.format(f_c))],
+                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
+                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3]))]]
+                else:
+
+                    fields = ['Q', 'Qi', 'Qc', '1/Re[1/Qc]', 'phi', 'fc']
+                    vals = [[float('{0:.10g}'.format(Q)), float('{0:.10g}'.format(Qi)), float('{0:.10g}'.format(Qc)),
+                             float('{0:.10g}'.format(Qc_Re)), float('{0:.10g}'.format(phi)), float('{0:.10g}'.format(f_c))],
+                            [float('{0:.1g}'.format(conf_array[0])), float('{0:.1g}'.format(conf_array[1])),
+                             float('{0:.1g}'.format(conf_array[2])), float('{0:.1g}'.format(conf_array[3])),
+                             float('{0:.1g}'.format(conf_array[4])), float('{0:.1g}'.format(conf_array[5]))]]
+                writer.writerow(fields)
+                writer.writerows(vals)
+                file.close()
     except Exception as e:
         print(">Error when trying to write parameters on plot")
         print(f">{e}")
