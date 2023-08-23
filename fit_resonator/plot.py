@@ -444,6 +444,8 @@ def PlotFit(x,
                         vscale = 1.
 
                     # Round to one significant figure
+
+                    # PROBLEM HERE NEED TO FIGURE OUT HOW TO ROUND UNCERTAINTIES without indexing
                     err = round_sigfig(conf_array[reports.index(val)] / vscale, 1)
                     v = p_ref[reports.index(val)] / vscale
 
