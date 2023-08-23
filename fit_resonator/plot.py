@@ -300,26 +300,6 @@ def PlotFit(x,
     #ax0.set_ylim([-1, 1])
     ax0.set_aspect(1.)
 
-    # Subtract the resonance to label as f-f0
-    ax1.plot((x-params[2]) / fscale, np.log10(np.abs(y)) * 20, 'bo',
-            label='normalized data', markersize=msize1)
-    ax1.plot((x_fit-params[2]) / fscale, np.log10(np.abs(y_fit)) * 20,
-            color='lightblue', lw=4, label='fit function')
-    ax1.set_xlim(left=(x[0]-params[2]) / fscale,
-                 right=(x[-1]-params[2]) / fscale)
-    ax1.set_xlabel(xstr)
-
-    for tick in ax1.xaxis.get_major_ticks():
-        tick.label.set_fontsize(fsize)
-
-    ax2.plot((x - params[2]) / fscale, np.angle(y), 'bo', 
-        label='normalized data', markersize=msize1)
-    ax2.plot((x_fit - params[2]) / fscale, np.angle(y_fit),
-            color='lightblue', label='fit function', lw=4)
-    ax2.set_xlim(left=(x[0] - params[2]) / fscale,
-            right=(x[-1] - params[2]) / fscale)
-    ax2.set_xlabel(xstr)
-
     # plot resonance point
     if func == ff.cavity_inverse:
         resonance = (1 + params[0] / params[1] * np.exp(1j * params[3]) / (
@@ -339,6 +319,26 @@ def PlotFit(x,
              label='resonance', markersize=msize2)
     ax2.plot(0, np.angle(resonance), '*', color='cadetblue',
             label= 'resonance', markersize=msize2)
+
+    # Subtract the resonance to label as f-f0
+    ax1.plot((x-params[2]) / fscale, np.log10(np.abs(y)) * 20, 'bo',
+            label='normalized data', markersize=msize1)
+    ax1.plot((x_fit-params[2]) / fscale, np.log10(np.abs(y_fit)) * 20,
+            color='lightblue', lw=4, label='fit function')
+    ax1.set_xlim(left=(x[0]-params[2]) / fscale,
+                 right=(x[-1]-params[2]) / fscale)
+    ax1.set_xlabel(xstr)
+
+    for tick in ax1.xaxis.get_major_ticks():
+        tick.label.set_fontsize(fsize)
+
+    ax2.plot((x - params[2]) / fscale, np.angle(y), 'bo', 
+        label='normalized data', markersize=msize1)
+    ax2.plot((x_fit - params[2]) / fscale, np.angle(y_fit),
+            color='lightblue', label='fit function', lw=4)
+    ax2.set_xlim(left=(x[0] - params[2]) / fscale,
+            right=(x[-1] - params[2]) / fscale)
+    ax2.set_xlabel(xstr)
 
     for tick in ax2.xaxis.get_major_ticks():
         tick.label.set_fontsize(fsize)
