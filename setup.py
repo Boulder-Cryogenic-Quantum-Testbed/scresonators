@@ -36,7 +36,8 @@ setup(
         "scipy>=1.9.*",
         "sympy>=1.11.*",
         "scikit-rf>=0.24.*",
-        "uncertainties>=3.1.*"],
+        "uncertainties>=3.1.*",
+        "gitpython>=3.1*"],
     classifiers = [
         'Development Status :: Alpha',
         'Intended Audience :: Science/Research',
