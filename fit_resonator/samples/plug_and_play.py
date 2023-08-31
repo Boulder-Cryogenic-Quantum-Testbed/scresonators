@@ -1,3 +1,11 @@
+"""
+This code is designed to be a quick example of the scresonators package. It will use data hosted on 
+the scresonators github to perform a fit and output the results to a local file. Just put this
+file in the same directory as your clone of the scresonators repo and run it.
+
+i.e. `python plug_and_play.py`
+"""
+
 import sys  # update paths
 import os  # import os in order to find relative path
 import glob
@@ -35,7 +43,8 @@ my_resonator.preprocess_method = 'circle' # Preprocess method: default = linear
 my_resonator.filepath = './' # Path to fit output
 
 # Perform a fit on the data with given parameters
-my_resonator.fit_method(fit_type, MC_iteration, MC_rounds=MC_rounds, MC_fix=MC_fix, manual_init=manual_init, MC_step_const=0.3)
+my_resonator.fit_method(fit_type, MC_iteration, MC_rounds=MC_rounds, MC_fix=MC_fix, 
+                        manual_init=manual_init, MC_step_const=0.3)
 my_resonator.fit('png')
 
 # Remove sample data
