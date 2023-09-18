@@ -1023,12 +1023,12 @@ def fit(resonator):
     elif preprocess_method == "linear":
         t_ydata, t_slope, t_intercept, t_slope2, t_intercept2 = preprocess_linear(xdata, ydata, normalize, output_path,
                                                                                   plot_extra)
-        # Logic check for error'd linear preprocessing
-        if t_ydata == "circle":
-            preprocess_method = "circle"
-            ydata = preprocess_circle(xdata, ydata, output_path, plot_extra)
-        else:
-            ydata, slope, intercept, slope2, intercept2 = t_ydata, t_slope, t_intercept, t_slope2, t_intercept2
+        # # Logic check for error'd linear preprocessing
+        # if t_ydata == "circle":
+        #     preprocess_method = "circle"
+        #     ydata = preprocess_circle(xdata, ydata, output_path, plot_extra)
+        # else:
+        ydata, slope, intercept, slope2, intercept2 = t_ydata, t_slope, t_intercept, t_slope2, t_intercept2
 
 
     elif preprocess_method == "circle":
