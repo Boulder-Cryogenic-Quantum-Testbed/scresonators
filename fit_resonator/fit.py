@@ -1,7 +1,6 @@
 import lmfit
-import matplotlib.pylab as pylab
 import scipy.optimize as spopt
-from scipy.ndimage.filters import gaussian_filter1d
+from scipy.ndimage import gaussian_filter1d
 from scipy.interpolate import interp1d
 from scipy import stats
 import numpy as np
