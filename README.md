@@ -22,7 +22,10 @@ To use the module lead your Python code with
 ```
 import fit_resonator.resonator as resonator
 ```
-
+For minimum working example with sample data, clone the repository and run
+```
+python scresonators/example.py
+```
 
 Documentation
 -------------
