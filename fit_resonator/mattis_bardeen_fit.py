@@ -14,6 +14,7 @@ import resonator as scr
 from scipy.optimize import least_squares
 from scipy.optimize import curve_fit
 import os
+import mattisbardeen as mb
 
 class MBFitTemperatureSweep(object):
     """
