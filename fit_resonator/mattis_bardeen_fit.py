@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 """
 Functions to fit Mattis-Bardeen temperature dependence of Qi, fc
 using the asymptotic expressions for the surface impedance and superconducting
@@ -8,13 +7,14 @@ BCS gap as a function of temperature.
 import numpy as np
 import scipy.constants as sc
 from scipy.special import i0, k0
-from plot_mb import MPLPlotWrapper
 import uncertainties
-import resonator as scr
+
+from fit_resonator.plot_mb import MPLPlotWrapper
+import fit_resonator.resonator as scr
+
 from scipy.optimize import least_squares
 from scipy.optimize import curve_fit
 import os
-import mattisbardeen as mb
 
 class MBFitTemperatureSweep(object):
     """
@@ -35,9 +35,11 @@ class MBFitTemperatureSweep(object):
         """
         # London penetration depth -- can determine separately by using alpha
         # from simulations in HFSS and fitting for Xs = mu0 wc lambda_{L0}
-        self.lambda0 = 65e-9
+        self.lambda0 = 16e-9 # pure Al
         self.d = 5e-3
         self.output_fit_figures = None
+
+        # Quantities relevant to Al
         self.init_fit_guess = {'Tc' : 1.2, 'alpha' : 1e-5,
                                'lambda' : self.lambda0}
         self.use_jordans_rule = False
@@ -50,6 +52,7 @@ class MBFitTemperatureSweep(object):
 
         # https://www.nde-ed.org/NDETechniques/EddyCurrent/
         # ET_Tables/standardsmethods.xhtml
+        # Aluminum -- TODO: fit for this quantity
         self.sigma_n = 3.767e7
 
         self.__dict__.update(locals())
@@ -432,6 +435,34 @@ class MBFitTemperatureSweep(object):
         upper, lower = np.quantile(predictions, [1 - a, a], axis = 0)
 
         return TT_dense, datapred, upper, lower, label 
+
+    def get_Rs_gseam(self, qitotinv : list, pcond : list, yseam : list,
+            lambdaL : float, fc : list) -> list:
+        """
+        Fits the total loss of two cavity resonances to extract the surface
+        resistance Rs and seam conductance gseam
+        """
+        # Qitot,1^-1 = pcond,1 Rs / (mu0 wc1 lambdaL) + yseam,1 / gseam
+        # Qitot,2^-1 = pcond,2 Rs / (mu0 wc2 lambdaL) + yseam,2 / gseam
+        y1 = qitotinv[0] / yseam[0]
+        y2 = qitotinv[1] / yseam[1]
+        x1 = pcond[0] / (sc.mu_0 * 2 * np.pi * fc[0] * lambdaL * yseam[0])
+        x2 = pcond[1] / (sc.mu_0 * 2 * np.pi * fc[1] * lambdaL * yseam[1])
+
+        # b = 1 / gseam, a = Rs
+        b = (y2 - y1 * (x2 / x1)) / (1 - (x2 / x1))
+        a = (y1 - b) / x1
+
+        return a, 1. / b
+
+    def get_dwalls_dseam(self, Rs, gseam, pcond, yseam, lambdaL, fc):
+        """
+        Computes the wall and seam losses of the resonance at fc
+        """
+        dwalls = pcond * Rs / (2 * np.pi * fc * sc.mu_0 * lambdaL)
+        dseam = yseam / gseam
+
+        return dwalls, dseam
 
     def plot_qi_vs_temperature(self, filename : str, plot_fit : bool = True,
             use_yerrs : bool = True, use_alpha_sim : bool = False):
