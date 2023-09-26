@@ -13,6 +13,9 @@ import logging
 import fit_resonator.cavity_functions as ff
 import fit_resonator.plot as fp
 import fit_resonator.resonator as res
+# import cavity_functions as ff
+# import plot as fp
+# import resonator as res
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)  # Path to Fit_Cavity
