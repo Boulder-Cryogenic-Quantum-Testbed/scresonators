@@ -8,6 +8,9 @@ import numpy as np
 import fit_resonator.cavity_functions as ff
 import fit_resonator.fit as fit
 
+# import cavity_functions as ff
+# import fit as fit
+
 
 class FitMethod(object):
     """

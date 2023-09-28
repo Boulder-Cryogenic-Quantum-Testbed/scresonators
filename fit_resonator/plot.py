@@ -11,6 +11,9 @@ import uncertainties
 import fit_resonator.fit as fit
 import fit_resonator.cavity_functions as ff
 
+# import fit as fit
+# import cavity_functions as ff
+
 params = {'legend.fontsize': 20,
           'figure.figsize': (10, 8),
           'axes.labelsize': 20,
