@@ -1,7 +1,7 @@
 scresonators-fit: fitting superconducting resonator data using Python
 ===========================================
 
-[![CodeFactor](https://www.codefactor.io/repository/github/boulder-cryogenic-quantum-testbed/scresonators/badge/master)](https://www.codefactor.io/repository/github/boulder-cryogenic-quantum-testbed/scresonators/overview/master)
+[![CodeFactor](https://www.codefactor.io/repository/github/boulder-cryogenic-quantum-testbed/scresonators/badge)](https://www.codefactor.io/repository/github/boulder-cryogenic-quantum-testbed/scresonators)
 ![Tests](https://github.com/boulder-cryogenic-quantum-testbed/scresonators/actions/workflows/tests.yml/badge.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
