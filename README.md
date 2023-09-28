@@ -43,7 +43,7 @@ If you use scresonators to fit data or generate plots used in a publication you 
 ```latex
 @misc{scresonators,
   title        = {{boulder-cryogenic-quantum-testbed/scresonators}},
-  year         = 2023,
+  year         = {2023},
   howpublished = {\url{https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators}}
 }
 ```
