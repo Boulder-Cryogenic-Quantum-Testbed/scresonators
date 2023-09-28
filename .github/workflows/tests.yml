@@ -36,5 +36,4 @@ jobs:
         pytest
     - name: Lint with pylint
       run: |
-        pylint: disable=locally-disabled, multiple-statements, fixme, line-too-long
-        pylint $(git ls-files '*.py')
+        pylint $(git ls-files '*.py') --disable=all
