@@ -24,17 +24,17 @@ class MPLPlotWrapper(object):
         Class constructor sets the default operations for the class
         """
         # Initialize the fontsizes and the figure, axes class members
-        self.fsize          = 20
-        self.tight_layout   = True
-        self.leg            = None
+        self.fsize = 20
+        self.tight_layout = True
+        self.leg = None
         self.is_leg_outside = True
-        self._xlabel        = ''
-        self._ylabel        = ''
-        self._xlim          = None
-        self._ylim          = None
-        self._xscale        = None
-        self._yscale        = None
-        self.plot           = None
+        self._xlabel = ''
+        self._ylabel = ''
+        self._xlim = None
+        self._ylim = None
+        self._xscale = None
+        self._yscale = None
+        self.plot = None
 
         # Dimensions of the subplots
         self.xdim = 1
@@ -229,8 +229,8 @@ class MPLPlotWrapper(object):
     
         # Get the color cycler as a hex
         color_cycle_hex = plt.rcParams['axes.prop_cycle'].by_key()['color']
-        hex2rgb = lambda hx: [int(hx[0:2],16)/256., \
-                              int(hx[2:4],16)/256., \
+        hex2rgb = lambda hx: [int(hx[0:2],16)/256.,
+                              int(hx[2:4],16)/256.,
                               int(hx[4:6],16)/256.]
         color_cycle_rgb = [hex2rgb(cc[1:]) for cc in color_cycle_hex]
 

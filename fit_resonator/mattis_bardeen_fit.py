@@ -7,6 +7,7 @@ BCS gap as a function of temperature.
 import numpy as np
 import scipy.constants as sc
 from scipy.special import i0, k0
+from scipy.optimize import curve_fit
 import uncertainties
 
 from fit_resonator.plot_mb import MPLPlotWrapper
@@ -119,12 +120,11 @@ class MBFitTemperatureSweep(object):
         D0 = 1.762 * kB * Tc
         if self.use_jordans_rule:
             xsci = sc.h * fc / (2 * sc.k * T)
-            s1 = (4 * D0 / (sc.h * fc / sc.e)) * np.exp(-1.762 * Tc / T) \
-                    * np.sinh(xsci) * k0(xsci)
-            s2 = np.pi * D0 / (sc.h * fc / sc.e)  \
-                    * (1 - np.sqrt((2 * kB * T) / D0)\
-                    * np.exp(-1.762 * Tc / T) \
-                    - 2 * np.exp(-1.762 * Tc / T) * np.exp(-xsci) * i0(xsci))
+            s1 = ((4 * D0 / (sc.h * fc / sc.e)) * np.exp(-1.762 * Tc / T) *
+                    np.sinh(xsci) * k0(xsci))
+            s2 = (np.pi * D0 / (sc.h * fc / sc.e)
+                    * (1 - np.sqrt((2 * kB * T) / D0) * np.exp(-1.762 * Tc / T)
+                    - 2 * np.exp(-1.762 * Tc / T) * np.exp(-xsci) * i0(xsci)))
             sigma = self.sigma_n * (s1  - 1j * s2)
             Zs = np.sqrt(1j * sc.mu_0 * fc * 2 * np.pi / sigma)
         else:
@@ -140,8 +140,8 @@ class MBFitTemperatureSweep(object):
         """
         # Uncertainty formatting
         ## Rounding to n significant figures
-        round_sigfig = lambda x, n \
-                : round(x, n - int(np.floor(np.log10(abs(x)))) - 1)
+        round_sigfig = lambda x, n : round(x, n -
+                int(np.floor(np.log10(abs(x)))) - 1)
 
         # Handle inf case
         if np.isclose(val_err, np.inf):
@@ -428,32 +428,152 @@ class MBFitTemperatureSweep(object):
         # XXX: Does not work, need to address with bootstrapping, other
         #      approaches to accurately estimate confidence intervals
         noise = np.std(data - datapred0)
-        predictions = np.array([np.random.normal(datapred, noise) \
-                for j in range(10_000)])
+        predictions = np.array([np.random.normal(datapred, noise) for j in
+            range(10_000)])
         
         a = self.confidence_level
         upper, lower = np.quantile(predictions, [1 - a, a], axis = 0)
 
         return TT_dense, datapred, upper, lower, label 
 
-    def get_Rs_gseam(self, qitotinv : list, pcond : list, yseam : list,
-            lambdaL : float, fc : list) -> list:
+    def get_Rs_gseam(self, qitotinv : np.ndarray, pcond : np.ndarray,
+            yseam : np.ndarray, lambdaL : float, fc : np.ndarray,
+            plot_fit : bool = True, fnames : list = None,
+            qierr : np.ndarray = None,
+            constrain_fit : bool = False) -> list:
         """
         Fits the total loss of two cavity resonances to extract the surface
         resistance Rs and seam conductance gseam
         """
-        # Qitot,1^-1 = pcond,1 Rs / (mu0 wc1 lambdaL) + yseam,1 / gseam
-        # Qitot,2^-1 = pcond,2 Rs / (mu0 wc2 lambdaL) + yseam,2 / gseam
-        y1 = qitotinv[0] / yseam[0]
-        y2 = qitotinv[1] / yseam[1]
-        x1 = pcond[0] / (sc.mu_0 * 2 * np.pi * fc[0] * lambdaL * yseam[0])
-        x2 = pcond[1] / (sc.mu_0 * 2 * np.pi * fc[1] * lambdaL * yseam[1])
+        # XXX: Depreciated two-point implementation
+        # # Qitot,1^-1 = pcond,1 Rs / (mu0 wc1 lambdaL) + yseam,1 / gseam
+        # # Qitot,2^-1 = pcond,2 Rs / (mu0 wc2 lambdaL) + yseam,2 / gseam
+        # y1 = qitotinv[0] / yseam[0]
+        # y2 = qitotinv[1] / yseam[1]
+        # x1 = pcond[0] / (sc.mu_0 * 2 * np.pi * fc[0] * lambdaL * yseam[0])
+        # x2 = pcond[1] / (sc.mu_0 * 2 * np.pi * fc[1] * lambdaL * yseam[1])
+        # # b = 1 / gseam, a = Rs
+        # b = (y2 - y1 * (x2 / x1)) / (1 - (x2 / x1))
+        # a = (y1 - b) / x1
+        # 
+        # return a, 1. / b
 
-        # b = 1 / gseam, a = Rs
-        b = (y2 - y1 * (x2 / x1)) / (1 - (x2 / x1))
-        a = (y1 - b) / x1
+        # Setup the linear problem
+        y = qitotinv / yseam
+        x = pcond / (sc.mu_0 * 2 * np.pi * fc * lambdaL * yseam)
+        
+        def fitfun(x, a, b):
+            return a * x + b
+        def fitfuncons(x, a, b):
+            """
+            Crediting stackoverflow for this idea, adding a penalty to the fit
+            function to zero out the terms to be conserved:
 
-        return a, 1. / b
+            https://stackoverflow.com/questions/16541171/
+            how-do-i-put-a-constraint-on-scipy-curve-fit
+
+            """
+            dwalls, dseam = self.get_dwalls_dseam(a, 1./b, pcond, yseam,
+                    lambdaL, fc)
+            penalty = np.sum([(dw + ds - qit) * 10000 for dw, ds, qit in
+                zip(dwalls, dseam, qitotinv)])
+            return a * x + b + penalty
+
+        p0 = (1e-6, 1e3)
+        if qierr is not None:
+            qiinverr = qierr * qitotinv**2
+        #     popt, pcov = curve_fit(fitfun, x, y, p0=p0, sigma=qiinverr,
+        #             absolute_sigma=True)
+        # else:
+        #     popt, pcov = curve_fit(fitfun, x, y)
+        bounds = ((0., 0.), (1e-2, 1e9))
+        if constrain_fit:
+            popt, pcov = curve_fit(fitfuncons, x, y, p0=p0, bounds=bounds)
+        else:
+            popt, pcov = curve_fit(fitfun, x, y, p0=p0, bounds=bounds)
+
+        # Extract the parameters and errors
+        Rs = popt[0]
+        gseam = 1. / popt[1]
+
+        err = np.sqrt(np.diag(pcov))
+        Rs_err = err[0]
+        gseam_err = err[1] * gseam**2
+
+        if plot_fit and fnames:
+            # Plot the Qi vs. yseam data
+            self.plot_qi_vs_yseam(yseam, 1./qitotinv, fnames[0], qierr=qierr)
+
+            # Plot the Qi^-1 vs. yseam data with the fit line
+            yseams = np.linspace(yseam.min(), yseam.max(), 1001)
+            xs = np.linspace(x.min(), x.max(), 1001)
+
+            # Include the denser yseam data, the fit data, and the confidence
+            # intervals from the fit covariance matrix
+            yfit = yseams * fitfun(xs, *popt)
+            yupper = yseams * fitfun(xs, *(popt + err))
+            ylower = yseams * fitfun(xs, *(popt - err))
+            Rs_str = self.format_error_strings(r'R_s', Rs, Rs_err)
+            gseam_str = self.format_error_strings(r'g_{\mathrm{seam}}', gseam,
+                                       gseam_err)
+            fit_str = Rs_str + '\n' + gseam_str
+            fitline = {'yseam' : yseams, 'yfit' : yfit, 'ylower' : ylower,
+                    'yupper' : yupper, 'fit_str' : fit_str}
+
+            self.plot_qinv_vs_yseam(yseam, qitotinv, fnames[1], 
+                    qiinverr=qiinverr, fitline=fitline)
+
+        return Rs, gseam, Rs_err, gseam_err
+
+    def plot_qi_vs_yseam(self, yseam : np.ndarray, qi : np.ndarray, fname : str,
+            qierr : np.ndarray = None):
+        """
+        Plot the total internal quality factor vs. yseam
+        """
+        # Plotting commands --- plot 1./qi - 1./qi[0] with error bars, the fit
+        # function, and prediction intervals
+        myplt = MPLPlotWrapper()
+        colors = myplt.get_set_alpha_color_cycler(alpha=1.)
+        color = colors[0]
+        myplt.xlabel = r'$y_{\mathrm{seam}}$ [S/m]'
+        myplt.ylabel = r'$Q_{i,\mathrm{tot}}$'
+        if qierr is not None:
+            myplt.ax.errorbar(yseam, qi, yerr=qierr, ls='', marker='o', ms=10,
+                    color=colors[0], capsize=5)
+        else:
+            myplt.plot(yseam, qi, ls='', marker='o', ms=10, color=colors[0])
+        myplt.xscale = 'log'
+        myplt.yscale = 'log'
+        myplt.set_leg_hdls_lbs()
+        myplt.write_fig_to_file(fname)
+
+    def plot_qinv_vs_yseam(self, yseam : np.ndarray, qinv : np.ndarray,
+                            fname : str, qiinverr : np.ndarray = None,
+                            fitline : dict = None):
+        """
+        Plot the total loss vs. yseam
+        """
+        # Plotting commands --- plot 1./qi - 1./qi[0] with error bars, the fit
+        # function, and prediction intervals
+        myplt = MPLPlotWrapper()
+        colors = myplt.get_set_alpha_color_cycler(alpha=1.)
+        color = colors[0]
+        myplt.xlabel = r'$y_{\mathrm{seam}}$ [S/m]'
+        myplt.ylabel = r'$Q^{-1}_{i,\mathrm{tot}}$'
+        if qiinverr is not None:
+            myplt.ax.errorbar(yseam, qinv, yerr=qiinverr, ls='', marker='o',
+                    ms=10, color=colors[0], capsize=5)
+            if fitline is not None:
+                myplt.plot(fitline['yseam'], fitline['yfit'], ls='-',
+                        color=colors[0], label=fitline['fit_str'])
+                myplt.ax.fill_between(fitline['yseam'], fitline['ylower'], 
+                        fitline['yupper'], alpha=0.25, color=colors[0])
+        else:
+            myplt.plot(yseam, qi, ls='', marker='o', ms=10, color=colors[0])
+        myplt.xscale = 'linear'
+        myplt.yscale = 'linear'
+        myplt.set_leg_hdls_lbs()
+        myplt.write_fig_to_file(fname)
 
     def get_dwalls_dseam(self, Rs, gseam, pcond, yseam, lambdaL, fc):
         """
@@ -474,8 +594,8 @@ class MBFitTemperatureSweep(object):
         oQi = 1. / Qi  - 1. / Qi[0]
         Qierr = self.Qierr
         oQierr = Qierr / Qi**2
-        T_dense, oQipred, upper, lower, label \
-                = self.fit_qi_vs_temperature(use_alpha_sim=use_alpha_sim)
+        T_dense, oQipred, upper, lower, label = self.fit_qi_vs_temperature(
+                use_alpha_sim=use_alpha_sim)
         print(label)
 
         # Plotting commands --- plot 1./Qi - 1./Qi[0] with error bars, the fit
@@ -510,8 +630,8 @@ class MBFitTemperatureSweep(object):
         ofc = (fc - fc[0]) / fc[0] 
         fcerr = self.fcerr
         ofcerr = fcerr / fc[0]
-        T_dense, ofcpred, upper, lower, label \
-                = self.fit_fc_vs_temperature(use_alpha_sim=use_alpha_sim)
+        T_dense, ofcpred, upper, lower, label = self.fit_fc_vs_temperature(
+                use_alpha_sim=use_alpha_sim)
         print(label)
 
         # Plotting commands --- plot 1./Qi - 1./Qi[0] with error bars, the fit
