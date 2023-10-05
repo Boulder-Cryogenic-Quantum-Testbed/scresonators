@@ -36,4 +36,4 @@ jobs:
         pytest
     - name: Lint with pylint
       run: |
-        pylint $(git ls-files '*.py') --disable=all
+        find . -type f -name "*.py" | xargs pylint --disable=all
