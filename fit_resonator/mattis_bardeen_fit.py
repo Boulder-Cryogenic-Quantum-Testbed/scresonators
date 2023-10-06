@@ -127,6 +127,7 @@ class MBFitTemperatureSweep(object):
         sigma = self.sigma_n * (s1  - 1j * s2)
         Zs = np.sqrt(1j * sc.mu_0 * fc * 2 * np.pi / sigma)
 
+
         return Zs
 
     def format_error_strings(self, param_str : str, val, val_err):
