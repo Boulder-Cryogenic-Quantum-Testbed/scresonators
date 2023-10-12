@@ -118,19 +118,15 @@ class MBFitTemperatureSweep(object):
         # surface impedance
         kB = sc.k / sc.e
         D0 = 1.762 * kB * Tc
-        if self.use_jordans_rule:
-            xsci = sc.h * fc / (2 * sc.k * T)
-            s1 = ((4 * D0 / (sc.h * fc / sc.e)) * np.exp(-1.762 * Tc / T) *
-                    np.sinh(xsci) * k0(xsci))
-            s2 = (np.pi * D0 / (sc.h * fc / sc.e)
-                    * (1 - np.sqrt((2 * kB * T) / D0) * np.exp(-1.762 * Tc / T)
-                    - 2 * np.exp(-1.762 * Tc / T) * np.exp(-xsci) * i0(xsci)))
-            sigma = self.sigma_n * (s1  - 1j * s2)
-            Zs = np.sqrt(1j * sc.mu_0 * fc * 2 * np.pi / sigma)
-        else:
-            Zs = mb.surface_impedance(fc, self.d, T, D, method='mb',
-                sigma_n=self.sigma_n, Tc=Tc, Vgap0=D0,
-                lambda0=self.lambda0)
+        xsci = sc.h * fc / (2 * sc.k * T)
+        s1 = ((4 * D0 / (sc.h * fc / sc.e)) * np.exp(-1.762 * Tc / T) *
+                np.sinh(xsci) * k0(xsci))
+        s2 = (np.pi * D0 / (sc.h * fc / sc.e)
+                * (1 - np.sqrt((2 * kB * T) / D0) * np.exp(-1.762 * Tc / T)
+                - 2 * np.exp(-1.762 * Tc / T) * np.exp(-xsci) * i0(xsci)))
+        sigma = self.sigma_n * (s1  - 1j * s2)
+        Zs = np.sqrt(1j * sc.mu_0 * fc * 2 * np.pi / sigma)
+
 
         return Zs
 
