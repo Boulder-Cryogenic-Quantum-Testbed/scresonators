@@ -9,7 +9,7 @@ from setuptools import setup, find_packages
 # Get the long description from the README file
 long_description = open('README.md').read()
 # Get the version number from the VERSION file
-version_number = open('VERSION.txt').read().strip()
+version_number = open('VERSION').read().strip()
 
 setup(
     name="scresonators-fit",
