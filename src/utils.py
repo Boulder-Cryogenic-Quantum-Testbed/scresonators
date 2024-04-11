@@ -28,6 +28,16 @@ def find_circle(x: np.ndarray, y: np.ndarray) -> tuple:
     x, y = np.asarray(x), np.asarray(y)
     x_mean, y_mean = np.mean(x), np.mean(y)
 
+    # Check if there are at least three unique points
+    if len(np.unique(x)) < 3 or len(np.unique(y)) < 3:
+        raise ValueError("At least three unique points are required to define a circle.")
+
+    # Check for collinearity by calculating the area of the triangle formed by the first three unique points
+    if len(x) >= 3:
+        area = 0.5 * abs(x[0] * (y[1] - y[2]) + x[1] * (y[2] - y[0]) + x[2] * (y[0] - y[1]))
+        if area == 0:
+            raise ValueError("The points are collinear and cannot define a circle.")
+
     # Center the data
     u, v = x - x_mean, y - y_mean
 
