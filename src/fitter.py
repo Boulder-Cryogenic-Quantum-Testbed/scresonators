@@ -20,12 +20,34 @@ class Fitter:
         
         self.fitting_method = fitting_method
         self.func = fitting_method.func
+        self.normalize = kwargs.get('normalize', 'circle')
         self.MC_rounds = kwargs.get('MC_rounds', 1000)
         self.MC_step_const = kwargs.get('MC_step_const', 0.05)
         self.MC_weight = kwargs.get('MC_weight', True)
         self.MC_fix = kwargs.get('MC_fix', [])
         self.databg = kwargs.get('databg', None)
 
+    def fit(self, xdata: np.ndarray, ydata: np.ndarray, manual_init=None):
+        if self.databg is not None:
+            ydata = self.background_removal(ydata)
+        elif self.normalize == "linear":
+            ydata, _, _, _, _ = self.preprocess_linear(xdata, ydata, self.normalize)
+        elif self.normalize == "circle":
+            ydata = self.preprocess_circle(xdata, ydata)
+
+        if manual_init:
+            init_guess = manual_init
+        else:
+            init_guess, x_c, y_c, r = self.fit_method.find_initial_guess(xdata, np.real(ydata), np.imag(ydata))
+
+        fit_params, conf_intervals = self.fit_method.min_fit(init_guess, xdata, ydata)
+
+        for _ in range(self.MC_rounds):
+            new_params, improved, error = self.monte_carlo_fit(xdata, ydata, fit_params)
+            if improved:
+                fit_params = new_params
+
+        return fit_params, conf_intervals
 
     def _extract_near_res(self, x_raw: np.ndarray, y_raw: np.ndarray, f_res: float, kappa: float, extract_factor: int = 1) -> tuple:
         """Extracts portions of the spectrum within a specified width of the resonance frequency.
