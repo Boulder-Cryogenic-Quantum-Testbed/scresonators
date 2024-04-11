@@ -21,7 +21,8 @@ setup(
     long_description=long_description,
     long_description_content_type="text/markdown",
     keywords="scresonators, superconducting resonators, resonator fit",
-    packages=find_packages(include=["fit_resonator"]),  # Required
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
     python_requires = ">=3.9",
     install_requires=[
         "attrs>=21.0",  # Updated from "attr>=0.3.*"
