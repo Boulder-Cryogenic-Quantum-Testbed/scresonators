@@ -9,17 +9,17 @@ from .utils import find_circle, phase_dist, phase_centered, periodic_boundary, n
 
 
 class Fitter:
-    def __init__(self, fitting_method=None, **kwargs):
+    def __init__(self, fit_method=None, **kwargs):
         """Initializes the Fitter with a fitting method that includes the fitting function.
 
         Args:
-            fitting_method (object): An instance of a fitting method class that contains the `func` method.
+            fit_method (object): An instance of a fitting method class that contains the `func` method.
         """
-        if fitting_method is None or not hasattr(fitting_method, 'func'):
+        if fit_method is None or not hasattr(fit_method, 'func'):
             raise ValueError("A fitting method with a valid 'func' attribute must be provided.")
         
-        self.fitting_method = fitting_method
-        self.func = fitting_method.func
+        self.fit_method = fit_method
+        self.func = fit_method.func
         self.normalize = kwargs.get('normalize', 'circle')
         self.MC_rounds = kwargs.get('MC_rounds', 1000)
         self.MC_step_const = kwargs.get('MC_step_const', 0.05)
@@ -27,7 +27,12 @@ class Fitter:
         self.MC_fix = kwargs.get('MC_fix', [])
         self.databg = kwargs.get('databg', None)
 
-    def fit(self, xdata: np.ndarray, ydata: np.ndarray, manual_init=None):
+    def fit(self, freqs: np.ndarray, phases: np.ndarray, amps: np.ndarray, manual_init=None):
+        linear_amps = 10 ** (amps / 20)
+        phases = np.unwrap(phases)
+        xdata = freqs
+        ydata = np.multiply(linear_amps, np.exp(1j * phases))
+
         if self.databg is not None:
             ydata = self.background_removal(ydata)
         elif self.normalize == "linear":
