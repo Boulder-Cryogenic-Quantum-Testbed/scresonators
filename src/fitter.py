@@ -27,9 +27,10 @@ class Fitter:
         self.MC_fix = kwargs.get('MC_fix', [])
         self.databg = kwargs.get('databg', None)
 
-    def fit(self, freqs: np.ndarray, phases: np.ndarray, amps: np.ndarray, manual_init=None):
+    def fit(self, freqs: np.ndarray, amps: np.ndarray, phases: np.ndarray, manual_init=None):
         linear_amps = 10 ** (amps / 20)
         phases = np.unwrap(phases)
+        
         xdata = freqs
         ydata = np.multiply(linear_amps, np.exp(1j * phases))
 

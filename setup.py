@@ -12,7 +12,7 @@ long_description = open('README.md').read()
 version_number = open('VERSION').read().strip()
 
 setup(
-    name="scresonators-fit",
+    name="scresonators",
     version=version_number,
     author="CU Boulder Cryogenic Quantum Testbed",
     url="https://github.com/Boulder-Cryogenic-Quantum-Testbed/scresonators",
