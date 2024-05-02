@@ -36,7 +36,8 @@ setup(
         "sympy>=1.8",  # Updated from "sympy>=1.11.*"
         "scikit-rf>=0.17",  # Updated from "scikit-rf>=0.24.*"
         "uncertainties>=3.1",  # No change
-        "GitPython>=3.1"  # Updated from "gitpython>=3.1*"
+        "GitPython>=3.1",  # Updated from "gitpython>=3.1*"
+        "emcee>=3.0"
     ],
     classifiers = [
         'Development Status :: Alpha',

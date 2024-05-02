@@ -49,7 +49,8 @@ class Fitter:
 
         # Create the model and fit
         model = self.fit_method.create_model()
-        result = model.fit(ydata, params, x=xdata)
+        result = model.fit(ydata, params, x=xdata, method='leastsq')
+        conf_intervals = lmfit.conf_interval(result, result)
         
         if self.verbose: 
             print(result.fit_report())
@@ -59,18 +60,15 @@ class Fitter:
         if self.MC_weight:
             emcee_kwargs = {
                 'steps': self.MC_rounds,
+                'thin':10,
                 'burn': int(self.MC_rounds * 0.3),
                 'is_weighted': self.MC_weight,
-                'params': result.params
+                'workers': 1
             }
-            emcee_result = model.fit(data=ydata, x=xdata, method='emcee', **emcee_kwargs)
-            
+            emcee_result = model.fit(data=ydata, params=result.params, x=xdata, method='emcee', fit_kws=emcee_kwargs)            
             if self.verbose:
                 print(emcee_result.fit_report())
-
-            return emcee_result.params, lmfit.conf_interval(emcee_result, emcee_result)
-        else: 
-            conf_intervals = lmfit.conf_interval(result, result)
+            return emcee_result.params, conf_intervals           
         
         return result.params, conf_intervals
     
