@@ -1,6 +1,6 @@
 import numpy as np
 import logging
-
+import lmfit
 import scipy.optimize as spopt
 from scipy.ndimage import gaussian_filter1d
 from scipy.stats import linregress
@@ -19,41 +19,160 @@ class Fitter:
             raise ValueError("A fitting method with a valid 'func' attribute must be provided.")
         
         self.fit_method = fit_method
-        self.func = fit_method.func
-        self.normalize = kwargs.get('normalize', 'circle')
+        self.verbose = kwargs.get('verbose', False)
+        self.preprocess = kwargs.get('preprocess', 'circle')
+        self.normalize = kwargs.get('normalize', 4)
         self.MC_rounds = kwargs.get('MC_rounds', 1000)
         self.MC_step_const = kwargs.get('MC_step_const', 0.05)
-        self.MC_weight = kwargs.get('MC_weight', True)
+        self.MC_weight = kwargs.get('MC_weight', False)
         self.MC_fix = kwargs.get('MC_fix', [])
         self.databg = kwargs.get('databg', None)
 
     def fit(self, freqs: np.ndarray, amps: np.ndarray, phases: np.ndarray, manual_init=None):
+        """Fit resonator data using the provided method using lmfit's Monte Carlo."""
         linear_amps = 10 ** (amps / 20)
         phases = np.unwrap(phases)
-        
-        xdata = freqs
-        ydata = np.multiply(linear_amps, np.exp(1j * phases))
+        xdata, ydata = freqs, np.multiply(linear_amps, np.exp(1j * phases))
 
-        if self.databg is not None:
+        if self.databg:
             ydata = self.background_removal(ydata)
-        elif self.normalize == "linear":
-            ydata, _, _, _, _ = self.preprocess_linear(xdata, ydata, self.normalize)
-        elif self.normalize == "circle":
+        elif self.preprocess == "circle":
             ydata = self.preprocess_circle(xdata, ydata)
+        elif self.preprocess == "linear":
+            ydata, _, _, _, _ = self.preprocess_linear(xdata, ydata, self.normalize)
 
+        # Setup the initial parameters or use provided manual_init
         if manual_init:
-            init_guess = manual_init
+            params = manual_init
         else:
-            init_guess, x_c, y_c, r = self.fit_method.find_initial_guess(xdata, np.real(ydata), np.imag(ydata))
+            params = self.fit_method.find_initial_guess(xdata, ydata)
 
-        fit_params, conf_intervals = self.fit_method.min_fit(init_guess, xdata, ydata)
+        # Create the model and fit
+        model = self.fit_method.create_model()
+        result = model.fit(ydata, params, x=xdata)
+        
+        if self.verbose: 
+            print(result.fit_report())
+            print(result.ci_report())        
+        
+        # Using Monte Carlo to explore parameter space if enabled
+        if self.MC_weight:
+            emcee_kwargs = {
+                'steps': self.MC_rounds,
+                'burn': int(self.MC_rounds * 0.3),
+                'is_weighted': self.MC_weight,
+                'params': result.params
+            }
+            emcee_result = model.fit(data=ydata, x=xdata, method='emcee', **emcee_kwargs)
+            
+            if self.verbose:
+                print(emcee_result.fit_report())
 
-        for _ in range(self.MC_rounds):
-            new_params, improved, error = self.monte_carlo_fit(xdata, ydata, fit_params)
-            if improved:
-                fit_params = new_params
+            return emcee_result.params, lmfit.conf_interval(emcee_result, emcee_result)
+        else: 
+            conf_intervals = lmfit.conf_interval(result, result)
+        
+        return result.params, conf_intervals
+    
+    
+    def preprocess_circle(self, xdata: np.ndarray, ydata: np.ndarray):
+        """
+        Data Preprocessing using Probst method for cable delay removal and normalization.
 
-        return fit_params, conf_intervals
+        Args:
+            xdata (np.ndarray): The frequency data.
+            ydata (np.ndarray): The complex S21 data to preprocess.
+
+        Returns:
+            np.ndarray: The preprocessed and normalized complex S21 data.
+        """
+
+        # Remove cable delay
+        delay = self.fit_delay(xdata, ydata)
+        z_data = ydata * np.exp(2j * np.pi * delay * xdata)
+
+        # Calibrate and normalize
+        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, z_data)
+        z_norm = normalize(xdata, z_data, delay_remaining, a, alpha)
+
+        return z_norm
+    
+    
+    def preprocess_linear(self, xdata: np.ndarray, ydata: np.ndarray, normalize: int):
+        """
+        Preprocesses S21 data linearly. Removes cable delay and normalizes 
+        phase/magnitude of S21 by linear fit of a specified number of endpoints.
+
+        Args:
+            xdata (np.ndarray): The frequency data.
+            ydata (np.ndarray): The complex S21 data to preprocess.
+            normalize (int): Number of endpoints to use for normalization.
+
+        Returns:
+            tuple: Preprocessed S21 data, phase slope, phase intercept,
+                   magnitude slope, and magnitude intercept.
+        """
+        if normalize * 2 > len(ydata):
+            raise ValueError(
+                "Not enough points to normalize. Please decrease the 'normalize' value or include more data points near resonance.")
+
+        # Unwrap phase for linear preprocessing
+        phase = np.unwrap(np.angle(ydata))
+
+        # Normalize phase using linear fit
+        slope, intercept, _, _, _ = linregress(
+            np.append(xdata[:normalize], xdata[-normalize:]),
+            np.append(phase[:normalize], phase[-normalize:])
+        )
+
+        # Adjust phase to remove cable delay and rotate off-resonant point to (1, 0i)
+        adjusted_phase = phase - (slope * xdata + intercept)
+        y_adjusted = np.abs(ydata) * np.exp(1j * adjusted_phase)
+
+        # Normalize magnitude using linear fit
+        y_db = 20 * np.log10(np.abs(ydata))
+        mag_slope, mag_intercept, _, _, _ = linregress(
+            np.append(xdata[:normalize], xdata[-normalize:]),
+            np.append(y_db[:normalize], y_db[-normalize:])
+        )
+        adjusted_magnitude = 10 ** ((y_db - (mag_slope * xdata + mag_intercept)) / 20)
+
+        preprocessed_data = adjusted_magnitude * np.exp(1j * adjusted_phase)
+
+        return preprocessed_data, slope, intercept, mag_slope, mag_intercept
+    
+
+    def background_removal(self, linear_amps: np.ndarray, phases: np.ndarray):
+        """
+        Removes background signal by interpolating and adjusting amplitude and phase,
+        using stored background data.
+
+        Args:
+            linear_amps (np.ndarray): Measured linear amplitudes to be corrected.
+            phases (np.ndarray): Measured phases to be corrected.
+
+        Returns:
+            np.ndarray: Corrected complex S21 data with background removed.
+        """
+        if not self.databg:
+            raise ValueError("Background data ('databg') not provided.")
+
+        # Extract background data
+        x_bg = self.databg.freqs
+        linear_amps_bg = self.databg.linear_amps
+        phases_bg = self.databg.phases
+
+        # Create interpolation functions for background amplitude and phase
+        fmag = interp1d(x_bg, linear_amps_bg, kind='cubic', fill_value="extrapolate")
+        fang = interp1d(x_bg, phases_bg, kind='cubic', fill_value="extrapolate")
+
+        # Correct measured data using interpolated background
+        linear_amps_corrected = np.divide(linear_amps, fmag(self.databg.freqs))
+        phases_corrected = np.subtract(phases, fang(self.databg.freqs))
+
+        # Return corrected data as complex S21 values
+        return np.multiply(linear_amps_corrected, np.exp(1j * phases_corrected))
+        
 
     def _extract_near_res(self, x_raw: np.ndarray, y_raw: np.ndarray, f_res: float, kappa: float, extract_factor: int = 1) -> tuple:
         """Extracts portions of the spectrum within a specified width of the resonance frequency.
@@ -84,71 +203,6 @@ class Fitter:
             raise ValueError("Failed to extract data from designated bandwidth.")
 
         return x_temp, y_temp
-    
-
-    def monte_carlo_fit(self, xdata: np.ndarray, ydata: np.ndarray, parameters: np.ndarray) -> tuple:
-        """Performs Monte Carlo optimization to refine fitting parameters.
-
-        Args:
-            xdata (np.ndarray): The independent variable data.
-            ydata (np.ndarray): The dependent variable data.
-            parameters (np.ndarray): Initial guess of the parameters.
-
-        Returns:
-            tuple: A tuple containing the optimized parameters, a boolean indicating
-                   if the fitting improved, and the final error.
-        """
-        assert all(param is not None for param in [xdata, ydata, parameters]), "One or more parameters are undefined."
-        
-        try:
-            _, error = self._calculate_weighted_error(xdata, ydata, parameters)
-        except Exception as e:
-            logging.error(f"Failed to initialize monte_carlo_fit: {e}")
-            raise  # Reraising the exception to handle it outside or halt the program
-
-        improved = False  # Flag to track if any improvement was made
-        for _ in range(self.MC_rounds):
-            new_parameters = self._generate_new_parameters(parameters)
-            _, new_error = self._calculate_weighted_error(xdata, ydata, new_parameters)
-            
-            if new_error < error:
-                parameters = new_parameters
-                error = new_error
-                improved = True  # Indicate an improvement was found
-
-        # Final status message to summarize the outcome
-        if improved:
-            logging.info('Monte Carlo simulation resulted in better fitting parameters.')
-        else:
-            logging.info('Monte Carlo simulation did not improve the parameters.')
-
-        return parameters, improved, error
-
-
-    def _calculate_weighted_error(self, xdata, ydata, parameters, weight_array=None):
-        """Calculates weighted error for given parameters."""
-        ydata_fit = self.func(xdata, *parameters)
-        if self.MC_weight:
-            if weight_array is None:
-                weight_array = 1 / np.abs(ydata)
-        else:
-            weight_array = np.ones_like(xdata)
-        
-        weighted_ydata = weight_array * ydata
-        weighted_ydata_fit = weight_array * ydata_fit
-        error = np.linalg.norm(weighted_ydata - weighted_ydata_fit) / len(xdata)
-        return weighted_ydata, error
-
-
-    def _generate_new_parameters(self, parameters):
-        """Generates a new set of parameters for Monte Carlo simulation."""
-        random_factors = self.MC_step_const * (np.random.random_sample(len(parameters)) - 0.5)
-        for i, fix in enumerate(['Q', 'Qi', 'Qc', 'w1', 'phi', 'Qa']):
-            if fix in self.MC_fix:
-                random_factors[i] = 0
-        
-        new_parameters = parameters * np.exp(random_factors)
-        return new_parameters
 
 
     def fit_phase(self, f_data, z_data, guesses=None):
@@ -191,35 +245,73 @@ class Fitter:
         delay_guess = -(np.ptp(phase) / (2 * np.pi * (f_data[-1] - f_data[0])))
         return fr_guess, Ql_guess, delay_guess
 
+    def _sequential_fitting(self, f_data: np.ndarray, phase: np.ndarray, fr_guess: float, Ql_guess: float, theta_guess: float, delay_guess: float):
+        """Refines initial parameter estimates using sequential fitting."""
 
-    def _sequential_fitting(self, f_data, phase, fr_guess, Ql_guess, theta_guess, delay_guess):
-        """Performs sequential fitting to refine initial parameter estimates."""
+        def residuals_Ql(Ql):
+            return np.array(self._phase_residuals(f_data, phase, fr=fr_guess, Ql=Ql, theta=theta_guess, delay=delay_guess), dtype=np.float64)
+
+        def residuals_fr_theta(params):
+            fr, theta = params
+            return np.array(self._phase_residuals(f_data, phase, fr=fr, Ql=Ql_guess, theta=theta, delay=delay_guess), dtype=np.float64)
+
+        def residuals_delay(delay):
+            return np.array(self._phase_residuals(f_data, phase, fr=fr_guess, Ql=Ql_guess, theta=theta_guess, delay=delay), dtype=np.float64)
+
+        def residuals_fr_Ql(params):
+            fr, Ql = params
+            return np.array(self._phase_residuals(f_data, phase, fr=fr, Ql=Ql, theta=theta_guess, delay=delay_guess), dtype=np.float64)
         
-        # Define residuals functions for partial fits
-        def residuals_Ql(Ql): return self._phase_residuals(f_data, phase, fr=fr_guess, Ql=Ql, theta=theta_guess, delay=delay_guess)
-        def residuals_fr_theta(fr, theta): return self._phase_residuals(f_data, phase, fr=fr, Ql=Ql_guess, theta=theta, delay=delay_guess)
-        def residuals_delay(delay): return self._phase_residuals(f_data, phase, fr=fr_guess, Ql=Ql_guess, theta=theta_guess, delay=delay)
-        def residuals_fr_Ql(fr, Ql): return self._phase_residuals(f_data, phase, fr=fr, Ql=Ql, theta=theta_guess, delay=delay_guess)
-        
-        # Sequential optimization steps
+        def residuals_final(params):
+            fr, Ql, theta, delay = params
+            return np.array(self._phase_residuals(f_data, phase, fr=fr, Ql=Ql, theta=theta, delay=delay), dtype=np.float64)
+
+        # Ensure the initial guesses are float arrays
+        initial_guesses = np.array([fr_guess, Ql_guess], dtype=np.float64)
+
+        # Perform the least squares fits
         Ql_guess = spopt.leastsq(residuals_Ql, Ql_guess)[0]
         fr_guess, theta_guess = spopt.leastsq(residuals_fr_theta, [fr_guess, theta_guess])[0]
         delay_guess = spopt.leastsq(residuals_delay, delay_guess)[0]
-        fr_guess, Ql_guess = spopt.leastsq(residuals_fr_Ql, [fr_guess, Ql_guess])[0]
-        
-        # Final full optimization with all parameters
-        p_final = spopt.leastsq(lambda params: self._phase_residuals(f_data, phase, *params),
-                                [fr_guess, Ql_guess, theta_guess, delay_guess])
+        fr_guess, Ql_guess = spopt.leastsq(residuals_fr_Ql, initial_guesses)[0]
 
-        return p_final[0]
-    
+        # Final optimization for all parameters together
+        try:
+            all_params_initial = np.array([fr_guess, Ql_guess, theta_guess, delay_guess], dtype=np.float64)
+            p_final = spopt.leastsq(residuals_final, all_params_initial)[0]
+        except Exception as e:
+            logging.error(f"Error during optimization: {e}")
+            raise
 
-    def _phase_residuals(self, f_data, phase, fr, Ql, theta, delay):
-        """Calculates residuals for phase fitting."""
+        return p_final
+
+
+    def _phase_residuals(self, f_data: np.ndarray, phase: np.ndarray, fr: float, Ql: float, theta: float, delay: float) -> np.ndarray:
+        """
+        Calculates the residuals for phase fitting.
+
+        Args:
+            f_data (np.ndarray): The frequency data points, an array of floats.
+            phase (np.ndarray): The unwrapped phase data points, an array of floats.
+            fr (float): The resonant frequency guess.
+            Ql (float): The loaded quality factor guess.
+            theta (float): The phase offset guess.
+            delay (float): The delay guess.
+
+        Returns:
+            np.ndarray: The residuals of the phase model compared to the actual phase data, as a NumPy array of floats.
+        """
+        # Calculate the model phase using the provided parameters
         model_phase = phase_centered(f_data, fr, Ql, theta, delay)
-        return phase_dist(phase - model_phase)
-    
 
+        # Compute the phase difference as residuals
+        residuals = phase_dist(phase - model_phase)
+
+        # Ensure the residuals are returned as a numpy array of type float
+        return residuals.astype(np.float64)
+
+
+    
     def fit_delay(self, xdata: np.ndarray, ydata: np.ndarray):
         """
         Finds the cable delay by centering the "circle" and fitting the slope
@@ -303,100 +395,3 @@ class Fitter:
         r /= a
 
         return delay_remaining, a, alpha, theta, phi, fr, Ql
-        
-    def preprocess_circle(self, xdata: np.ndarray, ydata: np.ndarray):
-        """
-        Data Preprocessing using Probst method for cable delay removal and normalization.
-
-        Args:
-            xdata (np.ndarray): The frequency data.
-            ydata (np.ndarray): The complex S21 data to preprocess.
-
-        Returns:
-            np.ndarray: The preprocessed and normalized complex S21 data.
-        """
-
-        # Remove cable delay
-        delay = self.fit_delay(xdata, ydata)
-        z_data = ydata * np.exp(2j * np.pi * delay * xdata)
-
-        # Calibrate and normalize
-        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, z_data)
-        z_norm = normalize(xdata, z_data, delay_remaining, a, alpha)
-
-        return z_norm
-    
-    def preprocess_linear(self, xdata: np.ndarray, ydata: np.ndarray, normalize: int):
-        """
-        Preprocesses S21 data linearly. Removes cable delay and normalizes 
-        phase/magnitude of S21 by linear fit of a specified number of endpoints.
-
-        Args:
-            xdata (np.ndarray): The frequency data.
-            ydata (np.ndarray): The complex S21 data to preprocess.
-            normalize (int): Number of endpoints to use for normalization.
-
-        Returns:
-            tuple: Preprocessed S21 data, phase slope, phase intercept,
-                   magnitude slope, and magnitude intercept.
-        """
-        if normalize * 2 > len(ydata):
-            raise ValueError(
-                "Not enough points to normalize. Please decrease the 'normalize' value or include more data points near resonance.")
-
-        # Unwrap phase for linear preprocessing
-        phase = np.unwrap(np.angle(ydata))
-
-        # Normalize phase using linear fit
-        slope, intercept, _, _, _ = linregress(
-            np.append(xdata[:normalize], xdata[-normalize:]),
-            np.append(phase[:normalize], phase[-normalize:])
-        )
-
-        # Adjust phase to remove cable delay and rotate off-resonant point to (1, 0i)
-        adjusted_phase = phase - (slope * xdata + intercept)
-        y_adjusted = np.abs(ydata) * np.exp(1j * adjusted_phase)
-
-        # Normalize magnitude using linear fit
-        y_db = 20 * np.log10(np.abs(ydata))
-        mag_slope, mag_intercept, _, _, _ = linregress(
-            np.append(xdata[:normalize], xdata[-normalize:]),
-            np.append(y_db[:normalize], y_db[-normalize:])
-        )
-        adjusted_magnitude = 10 ** ((y_db - (mag_slope * xdata + mag_intercept)) / 20)
-
-        preprocessed_data = adjusted_magnitude * np.exp(1j * adjusted_phase)
-
-        return preprocessed_data, slope, intercept, mag_slope, mag_intercept
-    
-
-    def background_removal(self, linear_amps: np.ndarray, phases: np.ndarray):
-        """
-        Removes background signal by interpolating and adjusting amplitude and phase,
-        using stored background data.
-
-        Args:
-            linear_amps (np.ndarray): Measured linear amplitudes to be corrected.
-            phases (np.ndarray): Measured phases to be corrected.
-
-        Returns:
-            np.ndarray: Corrected complex S21 data with background removed.
-        """
-        if not self.databg:
-            raise ValueError("Background data ('databg') not provided.")
-
-        # Extract background data
-        x_bg = self.databg.freqs
-        linear_amps_bg = self.databg.linear_amps
-        phases_bg = self.databg.phases
-
-        # Create interpolation functions for background amplitude and phase
-        fmag = interp1d(x_bg, linear_amps_bg, kind='cubic', fill_value="extrapolate")
-        fang = interp1d(x_bg, phases_bg, kind='cubic', fill_value="extrapolate")
-
-        # Correct measured data using interpolated background
-        linear_amps_corrected = np.divide(linear_amps, fmag(self.databg.freqs))
-        phases_corrected = np.subtract(phases, fang(self.databg.freqs))
-
-        # Return corrected data as complex S21 values
-        return np.multiply(linear_amps_corrected, np.exp(1j * phases_corrected))

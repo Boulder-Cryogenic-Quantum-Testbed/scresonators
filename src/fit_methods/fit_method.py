@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import numpy as np
+import lmfit
 
 class FitMethod(ABC):
     @abstractmethod
@@ -17,31 +18,25 @@ class FitMethod(ABC):
         pass
 
     @abstractmethod
-    def find_initial_guess(self, x: np.ndarray, y1: np.ndarray, y2: np.ndarray) -> tuple:
+    def find_initial_guess(self, x: np.ndarray, y: np.ndarray) -> lmfit.Parameters:
         """
         Finds an initial guess for the parameters based on the data.
 
         Args:
             x (np.ndarray): The independent variable data.
-            y1 (np.ndarray): The real part of the dependent variable data.
-            y2 (np.ndarray): The imaginary part of the dependent variable data.
+            y (np.ndarray): The dependent variable data.
 
         Returns:
-            tuple: The initial guess for the parameters, and optionally other relevant information.
+            Parameters: The initial guess for the parameters
         """
         pass
 
     @abstractmethod
-    def min_fit(self, params, xdata: np.ndarray, ydata: np.ndarray):
+    def create_model(self) -> lmfit.Model:
         """
-        Minimizes the parameters for the fit.
-
-        Args:
-            params: Initial guess for the parameters.
-            xdata (np.ndarray): The independent variable data.
-            ydata (np.ndarray): The dependent variable data.
+        Creates an lmfit model of the method function
 
         Returns:
-            tuple: The optimized parameters and their confidence intervals.
+            Model: object with minimizing methods
         """
         pass

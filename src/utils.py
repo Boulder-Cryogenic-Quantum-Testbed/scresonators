@@ -29,7 +29,6 @@ def find_circle(x: np.ndarray, y: np.ndarray) -> tuple:
     x_mean, y_mean = np.mean(x), np.mean(y)
 
     # Check if there are at least three unique points
-    print(x)
     if len(np.unique(x)) < 3 or len(np.unique(y)) < 3:
         raise ValueError("At least three unique points are required to define a circle.")
 
