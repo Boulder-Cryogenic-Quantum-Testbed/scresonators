@@ -19,7 +19,6 @@ class Fitter:
             raise ValueError("A fitting method with a valid 'func' attribute must be provided.")
         
         self.fit_method = fit_method
-        self.verbose = kwargs.get('verbose', False)
         self.preprocess = kwargs.get('preprocess', 'circle')
         self.normalize = kwargs.get('normalize', 4)
         self.MC_rounds = kwargs.get('MC_rounds', 1000)
@@ -28,7 +27,7 @@ class Fitter:
         self.MC_fix = kwargs.get('MC_fix', [])
         self.databg = kwargs.get('databg', None)
 
-    def fit(self, freqs: np.ndarray, amps: np.ndarray, phases: np.ndarray, manual_init=None):
+    def fit(self, freqs: np.ndarray, amps: np.ndarray, phases: np.ndarray, manual_init=None, verbose=False):
         """Fit resonator data using the provided method using lmfit's Monte Carlo."""
         linear_amps = 10 ** (amps / 20)
         phases = np.unwrap(phases)
@@ -50,11 +49,10 @@ class Fitter:
         # Create the model and fit
         model = self.fit_method.create_model()
         result = model.fit(ydata, params, x=xdata, method='leastsq')
-        conf_intervals = lmfit.conf_interval(result, result)
+        if verbose: print(result.fit_report())
+        # if verbose: print(result.ci_report())  
         
-        if self.verbose: 
-            print(result.fit_report())
-            print(result.ci_report())        
+        conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)              
         
         # Using Monte Carlo to explore parameter space if enabled
         if self.MC_weight:
@@ -66,11 +64,22 @@ class Fitter:
                 'workers': 1
             }
             emcee_result = model.fit(data=ydata, params=result.params, x=xdata, method='emcee', fit_kws=emcee_kwargs)            
-            if self.verbose:
+            if verbose:
                 print(emcee_result.fit_report())
             return emcee_result.params, conf_intervals           
         
         return result.params, conf_intervals
+    
+    def _bootstrap_conf_intervals(self, model, ydata, params, iterations=1000):
+        sampled_params = []
+        for _ in range(iterations):
+            indices = np.random.randint(0, len(ydata), len(ydata))
+            sample_ydata = ydata[indices]
+            res = model.fit(sample_ydata, params, x=ydata[indices])
+            sampled_params.append(res.params)
+            
+        conf_intervals = {key: np.percentile([p[key].value for p in sampled_params], [5, 95]) for key in params}
+        return conf_intervals
     
     
     def preprocess_circle(self, xdata: np.ndarray, ydata: np.ndarray):
