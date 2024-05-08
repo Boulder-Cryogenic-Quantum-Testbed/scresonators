@@ -1,6 +1,6 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
+!*.py[cod]
 *$py.class
 
 # C extensions
@@ -108,7 +108,6 @@ venv.bak/
 *.DS*
 
 # Figure and data files frm DCM fit runs
-*DCM*
 *.pdf
 
 # tar and gzip files
