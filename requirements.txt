@@ -1,4 +1,3 @@
-attr>=0.3.*
 attrs>=23.1.*
 inflect>=6.0.*
 lmfit>=1.1.*
