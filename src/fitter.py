@@ -34,6 +34,7 @@ class Fitter:
         xdata, ydata = freqs, np.multiply(linear_amps, np.exp(1j * phases))
 
         if self.databg:
+#  scott
             ydata = self.background_removal(ydata)
         elif self.preprocess == "circle":
             ydata = self.preprocess_circle(xdata, ydata)
@@ -46,13 +47,34 @@ class Fitter:
         else:
             params = self.fit_method.find_initial_guess(xdata, ydata)
 
+
+            # TODO: implement
+            # ydata = self.background_removal(ydata)
+            pass
+        elif self.preprocess == "circle":
+            ydata = self.preprocess_circle(xdata, ydata)
+        elif self.preprocess == "linear":
+            # TODO: implement
+            # ydata, _, _, _, _ = self.preprocess_linear(xdata, ydata, self.normalize)
+            pass
+
+        if manual_init:
+            # TODO: implement
+            # params = manual_init
+            pass
+        else:
+            params = self.fit_method.find_initial_guess(xdata, ydata)
+
+        
+# zach
         # Create the model and fit
         model = self.fit_method.create_model()
         result = model.fit(ydata, params, x=xdata, method='leastsq')
         if verbose: print(result.fit_report())
+# scott
         # if verbose: print(result.ci_report())  
         
-        conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)              
+        conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)           
         
         # Using Monte Carlo to explore parameter space if enabled
         if self.MC_weight:
@@ -68,6 +90,29 @@ class Fitter:
                 print(emcee_result.fit_report())
             return emcee_result.params, conf_intervals           
         
+        if verbose: print(result.ci_report())  
+        
+        # TODO: implement
+        # conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)              
+        conf_intervals = [None]
+        
+        # TODO: implement
+        # Using Monte Carlo to explore parameter space if enabled
+        # if self.MC_weight:
+        #     emcee_kwargs = {
+        #         'steps': self.MC_rounds,
+        #         'thin':10,
+        #         'burn': int(self.MC_rounds * 0.3),
+        #         'is_weighted': self.MC_weight,
+        #         'workers': 1
+        #     }
+        #     emcee_result = model.fit(data=ydata, params=result.params, x=xdata, method='emcee', fit_kws=emcee_kwargs)            
+        #     if verbose:
+        #         print(emcee_result.fit_report())
+        #     return emcee_result.params, conf_intervals           
+        
+        # TODO: implement
+# zach
         return result.params, conf_intervals
     
     def _bootstrap_conf_intervals(self, model, ydata, params, iterations=1000):
