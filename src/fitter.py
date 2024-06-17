@@ -34,23 +34,21 @@ class Fitter:
         xdata, ydata = freqs, np.multiply(linear_amps, np.exp(1j * phases))
 
         if self.databg:
-            # TODO: implement
-            # ydata = self.background_removal(ydata)
-            pass
+            ydata = self.background_removal(ydata)
         elif self.preprocess == "circle":
             ydata = self.preprocess_circle(xdata, ydata)
         elif self.preprocess == "linear":
             # TODO: implement
             # ydata, _, _, _, _ = self.preprocess_linear(xdata, ydata, self.normalize)
             pass
-
+        
+        # Setup the initial parameters or use provided manual_init
         if manual_init:
             # TODO: implement
             # params = manual_init
             pass
         else:
             params = self.fit_method.find_initial_guess(xdata, ydata)
-
         
         # Create the model and fit
         model = self.fit_method.create_model()
@@ -58,11 +56,11 @@ class Fitter:
         if verbose: print(result.fit_report())
         if verbose: print(result.ci_report())  
         
-        # TODO: implement
-        # conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)              
-        conf_intervals = [None]
+        # TODO: implement confidence intervals
+        # conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)           
+        conf_intervals = [None]  
         
-        # TODO: implement
+        # TODO: implement monte carlo
         # Using Monte Carlo to explore parameter space if enabled
         # if self.MC_weight:
         #     emcee_kwargs = {
@@ -77,7 +75,6 @@ class Fitter:
         #         print(emcee_result.fit_report())
         #     return emcee_result.params, conf_intervals           
         
-        # TODO: implement
         return result.params, conf_intervals
     
     def _bootstrap_conf_intervals(self, model, ydata, params, iterations=1000):
