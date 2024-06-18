@@ -15,8 +15,8 @@ class Fitter:
         Args:
             fit_method (object): An instance of a fitting method class that contains the `func` method.
         """
-        if fit_method is None or not hasattr(fit_method, 'func'):
-            raise ValueError("A fitting method with a valid 'func' attribute must be provided.")
+        # if fit_method is None or not hasattr(fit_method, 'func'): ## Why are you looking for func as an attribute instead of a method? Because func is an attribute of an instance of the class DCM.
+            # raise ValueError("A fitting method with a valid 'func' attribute must be provided.") ## Maybe it is checking the abstract class 'fit_method.py' instead of dcm.py? Or do I need to first run __init__.py within fit_methods folder?
         
         self.fit_method = fit_method
         self.preprocess = kwargs.get('preprocess', 'circle')
@@ -27,11 +27,11 @@ class Fitter:
         self.MC_fix = kwargs.get('MC_fix', [])
         self.databg = kwargs.get('databg', None)
 
-    def fit(self, freqs: np.ndarray, amps: np.ndarray, phases: np.ndarray, manual_init=None, verbose=False):
+    def fit(self, freqs: np.ndarray, amps: np.ndarray, phases: np.ndarray, manual_init=None, verbose=False): ## How can we preprocess such that this function can take pandas dataframes as input? 
         """Fit resonator data using the provided method using lmfit's Monte Carlo."""
         linear_amps = 10 ** (amps / 20)
         phases = np.unwrap(phases)
-        xdata, ydata = freqs, np.multiply(linear_amps, np.exp(1j * phases))
+        xdata, ydata = freqs, np.multiply(linear_amps, np.exp(1j * phases)) ## Why is ydata complex? Is xdata, ydata supposed to be making the complex circle? Or can ydata be split into real and imag? No, right? because we need to incorporate magnitude/amplitude into the complex circle, not JUST phase.
 
         if self.databg:
             ydata = self.background_removal(ydata)
