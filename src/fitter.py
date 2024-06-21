@@ -15,8 +15,8 @@ class Fitter:
         Args:
             fit_method (object): An instance of a fitting method class that contains the `func` method.
         """
-        # if fit_method is None or not hasattr(fit_method, 'func'): ## Why are you looking for func as an attribute instead of a method? Because func is an attribute of an instance of the class DCM.
-            # raise ValueError("A fitting method with a valid 'func' attribute must be provided.") ## Maybe it is checking the abstract class 'fit_method.py' instead of dcm.py? Or do I need to first run __init__.py within fit_methods folder?
+        if fit_method is None or not hasattr(fit_method, 'func'): ## Why are you looking for func as an attribute instead of a method? Because func is an attribute of an instance of the class DCM.
+            raise ValueError("A fitting method with a valid 'func' attribute must be provided.") ## Maybe it is checking the abstract class 'fit_method.py' instead of dcm.py? Or do I need to first run __init__.py within fit_methods folder?
         
         self.fit_method = fit_method
         self.preprocess = kwargs.get('preprocess', 'circle')
@@ -44,15 +44,14 @@ class Fitter:
         
         # Setup the initial parameters or use provided manual_init
         if manual_init:
-            # TODO: implement
-            # params = manual_init
+            params = manual_init
             pass
         else:
             params = self.fit_method.find_initial_guess(xdata, ydata)
         
         # Create the model and fit
         model = self.fit_method.create_model()
-        result = model.fit(ydata, params, x=xdata, method='leastsq')
+        result = model.fit(ydata, params, x=xdata, method='leastsq') ##Throwing an error "local variable 'params' referenced before assignment"
         if verbose: print(result.fit_report())
         if verbose: print(result.ci_report())  
         
@@ -286,7 +285,7 @@ class Fitter:
         # Perform the least squares fits
         Ql_guess = spopt.leastsq(residuals_Ql, Ql_guess)[0]
         fr_guess, theta_guess = spopt.leastsq(residuals_fr_theta, [fr_guess, theta_guess])[0]
-        delay_guess = spopt.leastsq(residuals_delay, delay_guess)[0]
+        delay_guess = spopt.leastsq(residuals_delay, delay_guess)[0][0] ## Used to throw an error because it only had a single [0] before
         fr_guess, Ql_guess = spopt.leastsq(residuals_fr_Ql, initial_guesses)[0]
 
         # Final optimization for all parameters together
