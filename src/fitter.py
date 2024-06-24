@@ -16,12 +16,13 @@ class Fitter:
             fit_method (object): An instance of a fitting method class that contains the `func` method.
         """
         if fit_method is None or not hasattr(fit_method, 'func'): ## Why are you looking for func as an attribute instead of a method? Because func is an attribute of an instance of the class DCM.
-            raise ValueError("A fitting method with a valid 'func' attribute must be provided.") ## Maybe it is checking the abstract class 'fit_method.py' instead of dcm.py? Or do I need to first run __init__.py within fit_methods folder?
+            #Because fit_method might not be a class (or instance thereof)
+            raise ValueError("A fitting method with a valid 'func' attribute must be provided.")
         
         self.fit_method = fit_method
-        self.preprocess = kwargs.get('preprocess', 'circle')
+        self.preprocess = kwargs.get('preprocess', 'circle') ## If preprocess is not set equal to something else in the argument line, the default value is 'circle'
         self.normalize = kwargs.get('normalize', 4)
-        self.MC_rounds = kwargs.get('MC_rounds', 1000)
+        self.MC_rounds = kwargs.get('MC_rounds', 1000) ## We might not want to use Monte Carlo stuff (MC)
         self.MC_step_const = kwargs.get('MC_step_const', 0.05)
         self.MC_weight = kwargs.get('MC_weight', False)
         self.MC_fix = kwargs.get('MC_fix', [])
@@ -50,10 +51,11 @@ class Fitter:
             params = self.fit_method.find_initial_guess(xdata, ydata)
         
         # Create the model and fit
-        model = self.fit_method.create_model()
+        model = self.fit_method.create_model() ## Creating model with instance of ____ class (instance is "fit_method") - at the moment only DCM is implemented. The blank on the left is "DCM"
         result = model.fit(ydata, params, x=xdata, method='leastsq') ##Throwing an error "local variable 'params' referenced before assignment"
-        if verbose: print(result.fit_report())
-        if verbose: print(result.ci_report())  
+        ## Above line is calling "fit" method from lmfit package. "model" is the instance of the lmfit.Model class
+        if verbose: print(result.fit_report()) ## Calling methods within lmfit package
+        if verbose: print(result.ci_report()) 
         
         # TODO: implement confidence intervals
         # conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)           
@@ -74,9 +76,21 @@ class Fitter:
         #         print(emcee_result.fit_report())
         #     return emcee_result.params, conf_intervals           
         
-        return result.params, conf_intervals
+        return result, conf_intervals
     
     def _bootstrap_conf_intervals(self, model, ydata, params, iterations=1000):
+        """
+        This method finds confidence intervals for each of the parameters in 'params'
+        
+        Args:
+            model (instance of a class): instance of lmfit.Model of chosen fit function
+            ydata (np.ndarray): complex S21 data, an array of complex numbers
+            params (dictionary of dictionaries): initial guess parameters
+            iterations (integer): number of iterations. Defaults to 1000.
+        
+        Returns:
+            conf_intervals (dictionary): dictionary containing confidence intervals for each type of fitted parameter in 'params' ##unsure about this...
+        """
         sampled_params = []
         for _ in range(iterations):
             indices = np.random.randint(0, len(ydata), len(ydata))
@@ -93,8 +107,8 @@ class Fitter:
         Data Preprocessing using Probst method for cable delay removal and normalization.
 
         Args:
-            xdata (np.ndarray): The frequency data.
-            ydata (np.ndarray): The complex S21 data to preprocess.
+            xdata (np.ndarray): frequency data (Hz), an array of floats
+            ydata (np.ndarray): The complex S21 data to preprocess, an array of complex numbers
 
         Returns:
             np.ndarray: The preprocessed and normalized complex S21 data.
@@ -223,15 +237,15 @@ class Fitter:
         Fits the phase response of a strongly overcoupled resonator in reflection.
 
         Args:
-            f_data (np.ndarray): Frequency data array.
-            z_data (np.ndarray): Complex scattering data from which to fit the phase.
+            f_data (np.ndarray): frequency data (Hz), an array of floats
+            z_data (np.ndarray): Complex scattering data from which to fit the phase, an array of complex numbers
             guesses (tuple, optional): Initial guesses for (fr, Ql, delay). If None,
                                        they will be automatically determined.
 
         Returns:
             tuple: Fitted parameters (fr, Ql, theta, delay).
         """
-        phase = np.unwrap(np.angle(z_data))
+        phase = np.unwrap(np.angle(z_data)) ## possibly redundant since this is called in 'fit' method
 
         # Check for sufficient data coverage
         if np.ptp(phase) <= 0.8 * 2 * np.pi:
@@ -251,15 +265,37 @@ class Fitter:
 
 
     def _estimate_initial_parameters(self, f_data, phase):
-        """Estimate initial parameters for the fitting process."""
-        phase_smooth = gaussian_filter1d(phase, 30)
+        """Estimate initial parameters for the fitting process.
+        
+        Args: 
+            f_data (np.ndarray): array of frequency data (Hz), an array of floats
+            phase (np.ndarray): phase data (radians), an array of floats
+
+        Returns:
+            fr_guess (float): guess of resonant frequency (Hz)
+            Ql_guess (float): guess of loaded quality factor 
+            delay_guess (float): guess of cable time delay (s) ## not sure about this...
+        """
+        phase_smooth = gaussian_filter1d(phase, 30) ## should we unwrap phases first or is that redundant?
         fr_guess = f_data[np.argmax(np.gradient(phase_smooth))]
         Ql_guess = 2 * fr_guess / (f_data[-1] - f_data[0])
         delay_guess = -(np.ptp(phase) / (2 * np.pi * (f_data[-1] - f_data[0])))
         return fr_guess, Ql_guess, delay_guess
 
     def _sequential_fitting(self, f_data: np.ndarray, phase: np.ndarray, fr_guess: float, Ql_guess: float, theta_guess: float, delay_guess: float):
-        """Refines initial parameter estimates using sequential fitting."""
+        """Refines initial parameter estimates using sequential fitting.
+        
+        Args: 
+            f_data (np.ndarray): frequency data (Hz), an array of floats
+            phase (np.ndarray): phase data (radians), an array of floats
+            fr_guess (float): guess of resonant frequency (Hz)
+            Ql_guess (float): guess of loaded quality factor
+            theta_guess (float): guess of asymmetry (radians) ## not sure about this...
+            delay_guess (float): guess of cable time delay (s) ## not sure about this...
+        
+        Returns:
+            p_final (dictionary): initial parameter guesses ## not sure about this...
+        """
 
         def residuals_Ql(Ql):
             return np.array(self._phase_residuals(f_data, phase, fr=fr_guess, Ql=Ql, theta=theta_guess, delay=delay_guess), dtype=np.float64)
@@ -329,6 +365,13 @@ class Fitter:
         """
         Finds the cable delay by centering the "circle" and fitting the slope
         of the phase response, iteratively refining the delay estimation.
+
+        Args: 
+            xdata (np.ndarray): frequency data (Hz), an array of floats.
+            ydata (np.ndarray): complex scattering data, an array of complex numbers.
+
+        Returns:
+            delay (float): cable delay time (s) ## not sure about this...
         """
         
         # Initial circle finding and translation to origin
@@ -359,14 +402,14 @@ class Fitter:
         
         return delay
 
-    def _is_correction_small(self, xdata, delay_corr, residuals, final_check=False):
+    def _is_correction_small(self, xdata, delay_corr, residuals, final_check=False): ## Consider moving into 'fit_delay' method 
         """
         Checks if the correction to the delay is smaller than measurable based on residuals.
         """
         condition = 2 * np.pi * (xdata[-1] - xdata[0]) * delay_corr <= np.std(residuals)
         return condition if not final_check else condition and delay_corr > 0
 
-    def _update_delay(self, delay, delay_corr):
+    def _update_delay(self, delay, delay_corr): ##Consider moving into 'fit_delay' method 
         """
         Updates the delay value based on the correction and current delay sign.
         """
@@ -381,16 +424,22 @@ class Fitter:
     def calibrate(self, x_data: np.ndarray, z_data: np.ndarray):
         """
         Finds parameters for normalization of scattering data.
-        
+        ## TO BE UPDATED FOR CONSISTENCY
+            ## needs data types on return data
+            ## needs clarification of units on return data
         Args:
-            x_data (np.ndarray): Independent variable data, typically frequency.
+            x_data (np.ndarray): Independent variable data, typically frequency (Hz).
             z_data (np.ndarray): Complex scattering data to be calibrated.
         
-        Returns:
-            tuple: Calibration parameters including delay_remaining, normalization
-                   amplitude (a), phase offset (alpha), resonator phase (theta),
-                   phase correction (phi), resonance frequency (fr), and loaded
-                   quality factor (Ql).
+        Returns: ## all units below are not verified
+            tuple: Calibration parameters
+                - delay_remaining (s)
+                - a: normalization amplitude (dB)
+                - alpha: phase offset (radians)
+                - theta: resonator phase (radians)
+                - phi: phase correction (radians)
+                - fr: resonance frequency (Hz)
+                - Ql: loaded quality factor
         """
         # Translate circle to origin
         xc, yc, r = find_circle(np.real(z_data), np.imag(z_data))
