@@ -398,7 +398,7 @@ class Fitter:
             delay = self._update_delay(delay, delay_corr)
 
         if not self._is_correction_small(xdata, delay_corr, residuals, final_check=True):
-            logging.warning("Delay could not be fit properly!")
+            logging.warning("Delay could not be fit properly!") ## Throws an error with simulated dcm data
         
         return delay
 
