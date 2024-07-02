@@ -9,6 +9,8 @@ from .utils import find_circle, phase_dist, phase_centered, periodic_boundary, n
 
 
 class Fitter:
+    # TODO Verify the format of data throughout this whole class
+    # TODO Make 'Resonator' an umbrella class of 'Fitter' such that 'Fitter' inherits parameters from 'Resonator'
     def __init__(self, fit_method=None, **kwargs):
         """Initializes the Fitter with a fitting method that includes the fitting function.
 
@@ -28,9 +30,9 @@ class Fitter:
         self.MC_fix = kwargs.get('MC_fix', [])
         self.databg = kwargs.get('databg', None)
 
-    def fit(self, freqs: np.ndarray, amps: np.ndarray, phases: np.ndarray, manual_init=None, verbose=False): ## How can we preprocess such that this function can take pandas dataframes as input? 
+    def fit(self, freqs: np.ndarray, amps_dB: np.ndarray, phases: np.ndarray, manual_init=None, verbose=False): ## How can we preprocess such that this function can take pandas dataframes as input? 
         """Fit resonator data using the provided method using lmfit's Monte Carlo."""
-        linear_amps = 10 ** (amps / 20)
+        linear_amps = 10 ** (amps_dB / 20)
         phases = np.unwrap(phases)
         xdata, ydata = freqs, np.multiply(linear_amps, np.exp(1j * phases)) ## Why is ydata complex? Is xdata, ydata supposed to be making the complex circle? Or can ydata be split into real and imag? No, right? because we need to incorporate magnitude/amplitude into the complex circle, not JUST phase.
 
@@ -52,29 +54,29 @@ class Fitter:
         
         # Create the model and fit
         model = self.fit_method.create_model() ## Creating model with instance of ____ class (instance is "fit_method") - at the moment only DCM is implemented. The blank on the left is "DCM"
-        result = model.fit(ydata, params, x=xdata, method='leastsq') ##Throwing an error "local variable 'params' referenced before assignment"
+        result = model.fit(ydata, params, x=xdata, method='leastsq') 
         ## Above line is calling "fit" method from lmfit package. "model" is the instance of the lmfit.Model class
         if verbose: print(result.fit_report()) ## Calling methods within lmfit package
         if verbose: print(result.ci_report()) 
         
         # TODO: implement confidence intervals
-        # conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)           
-        conf_intervals = [None]  
+        conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)           
+        # conf_intervals = [None]  
         
         # TODO: implement monte carlo
         # Using Monte Carlo to explore parameter space if enabled
-        # if self.MC_weight:
-        #     emcee_kwargs = {
-        #         'steps': self.MC_rounds,
-        #         'thin':10,
-        #         'burn': int(self.MC_rounds * 0.3),
-        #         'is_weighted': self.MC_weight,
-        #         'workers': 1
-        #     }
-        #     emcee_result = model.fit(data=ydata, params=result.params, x=xdata, method='emcee', fit_kws=emcee_kwargs)            
-        #     if verbose:
-        #         print(emcee_result.fit_report())
-        #     return emcee_result.params, conf_intervals           
+        if self.MC_weight:
+            emcee_kwargs = {
+                'steps': self.MC_rounds,
+                'thin':10,
+                'burn': int(self.MC_rounds * 0.3),
+                'is_weighted': self.MC_weight,
+                'workers': 1
+            }
+            emcee_result = model.fit(data=ydata, params=result.params, x=xdata, method='emcee', fit_kws=emcee_kwargs)            
+            if verbose:
+                print(emcee_result.fit_report())
+            return emcee_result.params, conf_intervals           
         
         return result, conf_intervals
     

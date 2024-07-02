@@ -10,7 +10,7 @@ class DCM(FitMethod):
     @staticmethod
     def func(x, Q, Qc, w1, phi):
         """DCM fit function."""
-        return 1 - Q / Qc * np.exp(1j * phi) / (1 + 1j * (x - w1) / w1 * 2 * Q)
+        return 1 - Q / Qc * np.exp(1j * phi) / (1 + 1j * (x - w1) / w1 * 2 * Q) ## absolute value of Qc actually
     
     def create_model(self):
         """Creates an lmfit Model using the static func method."""
@@ -18,7 +18,7 @@ class DCM(FitMethod):
         return model
     
 
-    def find_initial_guess(self, x: np.ndarray, y: np.ndarray) -> lmfit.Parameters:
+    def find_initial_guess(self, x: np.ndarray, y: np.ndarray) -> lmfit.Parameters: ## Redundant? There is a '_estimate_initial_parameters' method in Fitter class
         x_c, y_c, r = find_circle(np.real(y), np.imag(y))
         z_c = x_c + 1j * y_c
         # Adjust y to the circle's reference frame
