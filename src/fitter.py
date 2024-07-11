@@ -8,6 +8,12 @@ from scipy.interpolate import interp1d
 from .utils import find_circle, phase_dist, phase_centered, periodic_boundary, normalize
 
 
+## FOR TESTING ONLY
+import matplotlib.pyplot as plt
+import scresonators.src.plotter as plotter
+## FOR TESTING ONLY
+
+
 class Fitter:
     # TODO Verify the format of data throughout this whole class
     # TODO Make 'Resonator' an umbrella class of 'Fitter' such that 'Fitter' inherits parameters from 'Resonator'
@@ -16,6 +22,28 @@ class Fitter:
 
         Args:
             fit_method (object): An instance of a fitting method class that contains the `func` method.
+
+            preprocess: str
+                choice of preprocess: 'circle' or 'linear'. Defaults to 'circle'
+
+            normalize: int
+
+            MC_rounds: int
+               in each MC iteration, number of rounds of randomly choose parameter
+
+            MC_step_const: int
+                randomly choose number in range MC_step_const*[-0.5~0.5]
+                for fitting. Exp(0.5)=1.6, and this is used for Qi,... . However, the res. frequency, theta, amplitude are usually fixed during Monte Carlo.   
+
+            MC_weight: bool
+                True or False, weight the extract_factor fitting range, True uses 1/|S21| weight, which we call iDCM
+
+            MC_fix: list of str
+                'Amp','w1','theta','phi','Qc', 'Q' for DCM, 'Qi' for INV    
+
+            databg: class?
+
+
         """
         if fit_method is None or not hasattr(fit_method, 'func'): ## Why are you looking for func as an attribute instead of a method? Because func is an attribute of an instance of the class DCM.
             #Because fit_method might not be a class (or instance thereof)
@@ -28,18 +56,90 @@ class Fitter:
         self.MC_step_const = kwargs.get('MC_step_const', 0.05)
         self.MC_weight = kwargs.get('MC_weight', False)
         self.MC_fix = kwargs.get('MC_fix', [])
-        self.databg = kwargs.get('databg', None)
+        self.databg = kwargs.get('databg', None) ## databg is an instance of a class?
+        
 
-    def fit(self, freqs: np.ndarray, amps_dB: np.ndarray, phases: np.ndarray, manual_init=None, verbose=False): ## How can we preprocess such that this function can take pandas dataframes as input? 
-        """Fit resonator data using the provided method using lmfit's Monte Carlo."""
-        linear_amps = 10 ** (amps_dB / 20)
+    def plot(self, freqs, amps, phases, linear=0):
+        if linear:
+            amps_linear = amps
+            amps_dB = 20 * np.log10(amps_linear)
+        else:
+            amps_dB = amps
+            amps_linear = 10 ** (amps_dB / 20)
+
+        cmplx = amps_linear * np.exp(1j * phases)
+
+        xlim_min = np.min(freqs/1e9)
+        xlim_max = np.max(freqs/1e9)
+        
+
+        plt.figure(figsize=(4, 9))
+
+        plt.subplot(3,1,1)
+        plt.plot(freqs/1e9, amps_linear)
+        plt.xlabel('Frequency (GHz)')
+        plt.ylabel('Linear Amplitude (V_out/V_in)')
+        plt.xlim(xlim_min, xlim_max)
+        # plt.ylim(0,10)
+        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
+
+        plt.subplot(3,1,2)
+        plt.plot(freqs/1e9, amps_dB)
+        plt.xlabel('Frequency (GHz)')
+        plt.ylabel('Logarithmic Amplitude (dB)')
+        plt.xlim(xlim_min, xlim_max)
+        # plt.ylim(0,10)
+        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
+
+        plt.subplot(3,1,3)
+        plt.plot(freqs/1e9, phases)
+        plt.xlabel('Frequency (GHz)')
+        plt.ylabel('Phase (radians)')
+        plt.xlim(xlim_min, xlim_max)
+        plt.ylim(-np.pi, np.pi)
+        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
+
+        plt.suptitle('Data')
+        plt.tight_layout()
+        plt.show()
+
+        
+        plt.plot(cmplx.real, cmplx.imag)
+        plt.xlabel('Real')
+        plt.ylabel('Imaginary')
+        plt.xlim(-0.5,3)
+        plt.ylim(-1,1)
+        plt.axhline(0, color='black', linewidth=0.5)  # Add horizontal line at y=0
+        plt.axvline(1, color='black', linewidth=0.5)  # Add vertical line at x=1
+        plt.axvline(0, color='black', linewidth=0.5)  # Add vertical line at x=0
+        plt.gca().set_aspect('equal', adjustable='box') # Set aspect of the plot to be equal
+
+        plt.show()
+
+
+    def fit(self, freqs: np.ndarray, amps_dB: np.ndarray, phases: np.ndarray, preprocessing_guesses=None, manual_init=None, verbose=False): ## How can we preprocess such that this function can take pandas dataframes as input? 
+        """Fit resonator data using the provided method using lmfit's Monte Carlo.
+        
+        Args:
+            manual_init: None or list of 6 float number
+            manual input initial guesses
+            DCM: [amplitude, Q, Qc, freq, phi, theta]
+            INV: [amplitude, Qi, Qc, freq, phi, theta]
+
+        """
+        amps_linear = 10 ** (amps_dB / 20)
         phases = np.unwrap(phases)
-        xdata, ydata = freqs, np.multiply(linear_amps, np.exp(1j * phases)) ## Why is ydata complex? Is xdata, ydata supposed to be making the complex circle? Or can ydata be split into real and imag? No, right? because we need to incorporate magnitude/amplitude into the complex circle, not JUST phase.
+        # self.plot(freqs, amps_dB, phases)
+        # self.plot(freqs, amps_linear, phases, 1)
+        # Create complex data with 'amps_linear' and 'phases'
+        xdata, ydata = freqs, np.multiply(amps_linear, np.exp(1j * phases)) 
 
-        if self.databg:
-            ydata = self.background_removal(ydata)
+        if self.databg: ## not utilizing this feature at the moment
+            ydata = self.background_removal(amps_linear, phases)
+            ## Testing line below
+            # self.plot(xdata, np.abs(ydata), np.angle(ydata), 1)
         elif self.preprocess == "circle":
-            ydata = self.preprocess_circle(xdata, ydata)
+            ydata = self.preprocess_circle(xdata, ydata, preprocessing_guesses) ## Do we want to pass 'manual_init' or 'preprocessing_guesses' along?
         elif self.preprocess == "linear":
             # TODO: implement
             # ydata, _, _, _, _ = self.preprocess_linear(xdata, ydata, self.normalize)
@@ -63,22 +163,22 @@ class Fitter:
         conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)           
         # conf_intervals = [None]  
         
-        # TODO: implement monte carlo
-        # Using Monte Carlo to explore parameter space if enabled
-        if self.MC_weight:
-            emcee_kwargs = {
-                'steps': self.MC_rounds,
-                'thin':10,
-                'burn': int(self.MC_rounds * 0.3),
-                'is_weighted': self.MC_weight,
-                'workers': 1
-            }
-            emcee_result = model.fit(data=ydata, params=result.params, x=xdata, method='emcee', fit_kws=emcee_kwargs)            
-            if verbose:
-                print(emcee_result.fit_report())
-            return emcee_result.params, conf_intervals           
+        # # TODO: implement monte carlo
+        # # Using Monte Carlo to explore parameter space if enabled
+        # if self.MC_weight:
+        #     emcee_kwargs = {
+        #         'steps': self.MC_rounds,
+        #         'thin':10,
+        #         'burn': int(self.MC_rounds * 0.3),
+        #         'is_weighted': self.MC_weight,
+        #         'workers': 1
+        #     }
+        #     emcee_result = model.fit(data=ydata, params=result.params, x=xdata, method='emcee', fit_kws=emcee_kwargs)            
+        #     if verbose:
+        #         print(emcee_result.fit_report())
+        #     return emcee_result.params, conf_intervals           
         
-        return result, conf_intervals
+        return result, conf_intervals, ydata
     
     def _bootstrap_conf_intervals(self, model, ydata, params, iterations=1000):
         """
@@ -104,25 +204,50 @@ class Fitter:
         return conf_intervals
     
     
-    def preprocess_circle(self, xdata: np.ndarray, ydata: np.ndarray):
+    def preprocess_circle(self, xdata: np.ndarray, ydata: np.ndarray, preprocessing_guesses=None):
         """
         Data Preprocessing using Probst method for cable delay removal and normalization.
 
         Args:
             xdata (np.ndarray): frequency data (Hz), an array of floats
             ydata (np.ndarray): The complex S21 data to preprocess, an array of complex numbers
+            preprocessing_guesses (tuple, optional): Initial guesses for (fr, Ql, delay). If None,
+                                       they will be automatically determined.
+
 
         Returns:
             np.ndarray: The preprocessed and normalized complex S21 data.
         """
+        ## TESTING PLOT
+        plot1 = plotter.Plotter(xdata, ydata)
+        plot1.plot_before_fit(figure_title='S21 before fitting delay')
+        ## TESTING PLOT
 
         # Remove cable delay
-        delay = self.fit_delay(xdata, ydata)
+        delay = self.fit_delay(xdata, ydata, preprocessing_guesses) ## a lot of possible overhead calculations happening here
+        print("Delay from 'fit_delay': ", delay/1e-9, "ns")
+
         z_data = ydata * np.exp(2j * np.pi * delay * xdata)
+
+         ## TESTING PLOT
+        plot2 = plotter.Plotter(xdata, z_data)
+        plot2.plot_before_fit(figure_title="S21 after fitting delay")
+        ## TESTING PLOT
 
         # Calibrate and normalize
         delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, z_data)
+
+        ## TESTING PLOT
+        plot3 = plotter.Plotter(xdata, z_data)
+        plot3.plot_before_fit(figure_title="S21 after calibration")
+        ## TESTING PLOT
+
         z_norm = normalize(xdata, z_data, delay_remaining, a, alpha)
+
+        ## TESTING PLOT
+        plot4 = plotter.Plotter(xdata, z_norm)
+        plot4.plot_before_fit(figure_title="S21 after normalization")
+        ## TESTING PLOT
 
         return z_norm
     
@@ -171,13 +296,13 @@ class Fitter:
         return preprocessed_data, slope, intercept, mag_slope, mag_intercept
     
 
-    def background_removal(self, linear_amps: np.ndarray, phases: np.ndarray):
+    def background_removal(self, amps_linear: np.ndarray, phases: np.ndarray): ## not worried about this for version 1?
         """
         Removes background signal by interpolating and adjusting amplitude and phase,
         using stored background data.
 
         Args:
-            linear_amps (np.ndarray): Measured linear amplitudes to be corrected.
+            amps_linear (np.ndarray): Measured linear amplitudes to be corrected.
             phases (np.ndarray): Measured phases to be corrected.
 
         Returns:
@@ -185,22 +310,26 @@ class Fitter:
         """
         if not self.databg:
             raise ValueError("Background data ('databg') not provided.")
+        
+        # databg_type = type(self.databg)
+        # if databg_type != np.ndarray:
+        #     raise TypeError(f"Background data ('databg') is {databg_type} data type. It should be np.ndarray")
 
         # Extract background data
-        x_bg = self.databg.freqs
-        linear_amps_bg = self.databg.linear_amps
+        x_bg = self.databg.freqs ## Is databg a class or a dictionary?
+        amps_linear_bg = self.databg.amps_linear 
         phases_bg = self.databg.phases
 
         # Create interpolation functions for background amplitude and phase
-        fmag = interp1d(x_bg, linear_amps_bg, kind='cubic', fill_value="extrapolate")
+        fmag = interp1d(x_bg, amps_linear_bg, kind='cubic', fill_value="extrapolate")
         fang = interp1d(x_bg, phases_bg, kind='cubic', fill_value="extrapolate")
 
         # Correct measured data using interpolated background
-        linear_amps_corrected = np.divide(linear_amps, fmag(self.databg.freqs))
+        amps_linear_corrected = np.divide(amps_linear, fmag(self.databg.freqs))
         phases_corrected = np.subtract(phases, fang(self.databg.freqs))
 
         # Return corrected data as complex S21 values
-        return np.multiply(linear_amps_corrected, np.exp(1j * phases_corrected))
+        return np.multiply(amps_linear_corrected, np.exp(1j * phases_corrected))
         
 
     def _extract_near_res(self, x_raw: np.ndarray, y_raw: np.ndarray, f_res: float, kappa: float, extract_factor: int = 1) -> tuple:
@@ -247,7 +376,10 @@ class Fitter:
         Returns:
             tuple: Fitted parameters (fr, Ql, theta, delay).
         """
-        phase = np.unwrap(np.angle(z_data)) ## possibly redundant since this is called in 'fit' method
+        phase = np.unwrap(np.angle(z_data)) ## possibly redundant since this is called in 'fit' method? 
+        ## Maybe not redundant since 'z_data' here is different from 'phases' in 'fit'. 
+        ## 'phases' was unwrapped in 'fit' and was used in quadrature as 'ydata'.
+        ## Next, 'ydata' was passed to other functions and converted into 'z_data'.
 
         # Check for sufficient data coverage
         if np.ptp(phase) <= 0.8 * 2 * np.pi:
@@ -363,7 +495,7 @@ class Fitter:
 
 
     
-    def fit_delay(self, xdata: np.ndarray, ydata: np.ndarray):
+    def fit_delay(self, xdata: np.ndarray, ydata: np.ndarray, guesses=None):
         """
         Finds the cable delay by centering the "circle" and fitting the slope
         of the phase response, iteratively refining the delay estimation.
@@ -371,15 +503,32 @@ class Fitter:
         Args: 
             xdata (np.ndarray): frequency data (Hz), an array of floats.
             ydata (np.ndarray): complex scattering data, an array of complex numbers.
+            guesses (tuple, optional): Initial guesses for (fr, Ql, delay). If None,
+                                       they will be automatically determined.
 
         Returns:
             delay (float): cable delay time (s) ## not sure about this...
         """
-        
+        ## TESTING PLOT
+        # plot1 = plotter.Plotter(xdata, ydata)
+        # plot1.plot_before_fit(figure_title='S21 before circle translation')
+        ## TESTING PLOT
+
         # Initial circle finding and translation to origin
-        xc, yc, _ = find_circle(np.real(ydata), np.imag(ydata))
-        z_data = ydata - complex(xc, yc)
-        fr, Ql, theta, delay = self.fit_phase(xdata, z_data)
+        xc, yc, _ = find_circle(np.real(ydata), np.imag(ydata))  ## Find circle in complex coordinates
+        z_data = ydata - complex(xc, yc) ## Translate circle center to origin
+        
+        ## TESTING PLOT
+        # plot2 = plotter.Plotter(xdata, z_data)
+        # plot2.plot_before_fit(figure_title='S21 after circle translation')
+        ## TESTING PLOT
+
+        fr, Ql, theta, delay = self.fit_phase(xdata, z_data, guesses) ## fit_phase function should include initial guesses!
+
+        ## TESTING PLOT
+        # plot3 = plotter.Plotter(xdata, z_data)
+        # plot3.plot_before_fit(figure_title='S21 after fit_phase method call')
+        ## TESTING PLOT
 
         # Iterative refinement of delay
         delay *= 0.05
