@@ -34,5 +34,5 @@ class Resonator:
 
     # Additional resonator functionalities can be added here
 
-    ## maybe keep Resonator as an umbrella class that creates instances of other classes
+    ## TODO maybe keep Resonator as an umbrella class that creates instances of other classes
     ## Probably not included on first version

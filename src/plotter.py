@@ -1,12 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib.gridspec import GridSpec
 import logging
 
 class Plotter:
     # TODO separate some of the functionalities in 'plot()' to other methods
     # TODO write docstrings for all methods
     # TODO implement utility for different fitting methods (since each might have different parameters)
+    # TODO use only one legend, not three
     def __init__(self, freqs: np.ndarray, cmplx_data: np.ndarray, cmplx_fit=None, fit_params=None):
         """
         Initializes the Plotter instance attributes with experimental data and fit data (coming from an instance of Fitter). 
@@ -98,7 +100,9 @@ class Plotter:
         fig.suptitle(figure_title, fontsize=16)
         
 
-    def plot_dcm(self, normalized_cmplx_data, cmplx_fit, fit_params, linear=False, **kwargs):   
+    def plot_dcm(self, normalized_cmplx_data, cmplx_fit, fit_params, linear=False, **kwargs):
+        # TODO Make cmplx_fit within the Plotter class such that it has more points
+        # (so it actually looks like a circle when the resonance doesn't have a ton of points)   
         """
         This method will plot fitted experimental data on a complex plane, frequency vs magnitude, frequency vs phase, 
         and will show fitted parameters with associated standard errors.
@@ -156,32 +160,29 @@ class Plotter:
         ax.axhline(y=0, color='black', linewidth=1)
         ax.axvline(x=1, color='black', linewidth=1)
         ax.set_title("Complex Plane")
-        ax.legend()
 
-        if linear:
+        if linear: # TODO test this if...else block
             # Linear magnitude plot
             ax_mag = ax_dict["mag"]
             ax_mag.plot(self.normalized_freqs, np.abs(normalized_cmplx_data), '.', label="normalized data")
-            ax_mag.plot(self.normalized_freqs, 10 ** (np.abs(self.cmplx_fit) / 20), label="fit function")
+            ax_mag.plot(self.normalized_freqs, np.abs(self.cmplx_fit), label="fit function")
             ax_mag.plot(0, 20 * np.log10(resonant_magnitude_value), 'r*', markersize=15, label="resonant frequency")
             ax.plot(fit_params['w1'].value, )
             ax_mag.set_xlabel("$(f - f_c)$ [kHz]")
             ax_mag.set_ylabel("Mag[$S_{21}$]")
             ax_mag.set_title("Linear Magnitude Plot")
             ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
-            ax_mag.legend()
         else:
             # Logarithmic magnitude plot 
             ax_mag = ax_dict["mag"]
             ax_mag.plot(self.normalized_freqs, 20 * np.log10(np.abs(normalized_cmplx_data)), '.', label="normalized data")
-            ax_mag.plot(self.normalized_freqs, np.abs(self.cmplx_fit), label="fit function")
-            # ax_mag.plot(0, 20 * np.log10(resonant_magnitude_value), 'r*', markersize=15, label="resonant frequency")
+            ax_mag.plot(self.normalized_freqs, 20 * np.log10(np.abs(self.cmplx_fit)), label="fit function")
+            ax_mag.plot(0, 20 * np.log10(resonant_magnitude_value), 'r*', markersize=15, label="resonant frequency")
             ax.plot(fit_params['w1'].value, )
             ax_mag.set_xlabel("$(f - f_c)$ [kHz]")
             ax_mag.set_ylabel("Mag[$S_{21}$] (dB)")
             ax_mag.set_title("Log Magnitude Plot")
             ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
-            ax_mag.legend()
 
         # Phase plot
         ax_ang = ax_dict["ang"]
@@ -192,19 +193,32 @@ class Plotter:
         ax_ang.set_ylabel("Ang[$S_{21}$] (rad)")
         ax_ang.set_title("Phase Plot")
         ax_ang.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
-        ax_ang.legend()
 
-        ax.set_xlim([-0.5, 1.5])
-        ax.set_ylim([-1, 1])
+
+        # Calculate the range of data with padding, set x and y limits for complex circle
+        real_min, real_max = min(normalized_cmplx_data.real), max(normalized_cmplx_data.real)
+        imag_min, imag_max = min(normalized_cmplx_data.imag), max(normalized_cmplx_data.imag)
+
+        real_range = real_max - real_min
+        imag_range = imag_max - imag_min
+
+        padding_percentage = 0.05  # 5% padding
+        real_padding = real_range * padding_percentage
+        imag_padding = imag_range * padding_percentage
+
+        ax.set_xlim([real_min - real_padding, real_max + real_padding])
+        ax.set_ylim([imag_min - imag_padding, imag_max + imag_padding])
+
+        # Set x limits to freqs vs magnitude and vs phase (quadrature) plots
         ax_mag.set_xlim([min(self.normalized_freqs), max(self.normalized_freqs)])
         ax_ang.set_xlim([min(self.normalized_freqs), max(self.normalized_freqs)])
 
         # Adjust the bottom, left, right, and top margins
         plt.tight_layout(rect=[0, 0, 1, 0.95]) 
 
-        figure_title = kwargs.get('figure_title', 'Fitted S21 Data')
+        # Set whole figure title with keyword argument 'figure_title' if wanted different
+        figure_title = kwargs.get('figure_title', 'Fitted $S_{21}$ Data')
         fig.suptitle(figure_title, fontsize=16)
-        # plt.show()
 
         # TODO Separate this as a different method
         # TODO implement functionality with other fit methods
@@ -251,6 +265,18 @@ class Plotter:
         ))
 
         ax_text.text(0.5, 0.5, textstr, fontsize=12, verticalalignment='center', horizontalalignment='center', transform=ax_text.transAxes)
+
+
+         # Collect all handles and labels from each subplot
+        handles, labels = [], []
+        for ax in [ax_dict["main"], ax_dict["mag"], ax_dict["ang"]]:
+            for handle, label in zip(*ax.get_legend_handles_labels()):
+                if label not in labels:  # Avoid duplicate labels
+                    handles.append(handle)
+                    labels.append(label)
+
+        # Create a single legend
+        fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.75, 0.95), ncol=3)
 
 
     def _formatter_func(self):

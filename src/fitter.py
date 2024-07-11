@@ -17,6 +17,7 @@ import scresonators.src.plotter as plotter
 class Fitter:
     # TODO Verify the format of data throughout this whole class
     # TODO Make 'Resonator' an umbrella class of 'Fitter' such that 'Fitter' inherits parameters from 'Resonator'
+    # TODO Implement 'trim_S21_wings' method to get rid of frequency data that is too far away from the resonance
     def __init__(self, fit_method=None, **kwargs):
         """Initializes the Fitter with a fitting method that includes the fitting function.
 
@@ -57,64 +58,6 @@ class Fitter:
         self.MC_weight = kwargs.get('MC_weight', False)
         self.MC_fix = kwargs.get('MC_fix', [])
         self.databg = kwargs.get('databg', None) ## databg is an instance of a class?
-        
-
-    def plot(self, freqs, amps, phases, linear=0):
-        if linear:
-            amps_linear = amps
-            amps_dB = 20 * np.log10(amps_linear)
-        else:
-            amps_dB = amps
-            amps_linear = 10 ** (amps_dB / 20)
-
-        cmplx = amps_linear * np.exp(1j * phases)
-
-        xlim_min = np.min(freqs/1e9)
-        xlim_max = np.max(freqs/1e9)
-        
-
-        plt.figure(figsize=(4, 9))
-
-        plt.subplot(3,1,1)
-        plt.plot(freqs/1e9, amps_linear)
-        plt.xlabel('Frequency (GHz)')
-        plt.ylabel('Linear Amplitude (V_out/V_in)')
-        plt.xlim(xlim_min, xlim_max)
-        # plt.ylim(0,10)
-        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
-
-        plt.subplot(3,1,2)
-        plt.plot(freqs/1e9, amps_dB)
-        plt.xlabel('Frequency (GHz)')
-        plt.ylabel('Logarithmic Amplitude (dB)')
-        plt.xlim(xlim_min, xlim_max)
-        # plt.ylim(0,10)
-        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
-
-        plt.subplot(3,1,3)
-        plt.plot(freqs/1e9, phases)
-        plt.xlabel('Frequency (GHz)')
-        plt.ylabel('Phase (radians)')
-        plt.xlim(xlim_min, xlim_max)
-        plt.ylim(-np.pi, np.pi)
-        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
-
-        plt.suptitle('Data')
-        plt.tight_layout()
-        plt.show()
-
-        
-        plt.plot(cmplx.real, cmplx.imag)
-        plt.xlabel('Real')
-        plt.ylabel('Imaginary')
-        plt.xlim(-0.5,3)
-        plt.ylim(-1,1)
-        plt.axhline(0, color='black', linewidth=0.5)  # Add horizontal line at y=0
-        plt.axvline(1, color='black', linewidth=0.5)  # Add vertical line at x=1
-        plt.axvline(0, color='black', linewidth=0.5)  # Add vertical line at x=0
-        plt.gca().set_aspect('equal', adjustable='box') # Set aspect of the plot to be equal
-
-        plt.show()
 
 
     def fit(self, freqs: np.ndarray, amps_dB: np.ndarray, phases: np.ndarray, preprocessing_guesses=None, manual_init=None, verbose=False): ## How can we preprocess such that this function can take pandas dataframes as input? 
@@ -129,10 +72,15 @@ class Fitter:
         """
         amps_linear = 10 ** (amps_dB / 20)
         phases = np.unwrap(phases)
+
+        ## TESTING CODE
         # self.plot(freqs, amps_dB, phases)
         # self.plot(freqs, amps_linear, phases, 1)
+        ## TESTING CODE
+
         # Create complex data with 'amps_linear' and 'phases'
         xdata, ydata = freqs, np.multiply(amps_linear, np.exp(1j * phases)) 
+
 
         if self.databg: ## not utilizing this feature at the moment
             ydata = self.background_removal(amps_linear, phases)
@@ -144,6 +92,11 @@ class Fitter:
             # TODO: implement
             # ydata, _, _, _, _ = self.preprocess_linear(xdata, ydata, self.normalize)
             pass
+
+        ## TESTING CODE
+        # print("Amps_dB is logarithmic: ", self._contains_negative(20 * np.log10(np.abs(ydata))))
+        # print("Amps_linear is logarithmic: ", self._contains_negative(np.abs(ydata)))
+        ## TESTING CODE
         
         # Setup the initial parameters or use provided manual_init
         if manual_init:
@@ -160,8 +113,7 @@ class Fitter:
         if verbose: print(result.ci_report()) 
         
         # TODO: implement confidence intervals
-        conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params)           
-        # conf_intervals = [None]  
+        conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params) 
         
         # # TODO: implement monte carlo
         # # Using Monte Carlo to explore parameter space if enabled
@@ -608,3 +560,72 @@ class Fitter:
         r /= a
 
         return delay_remaining, a, alpha, theta, phi, fr, Ql
+    
+    def plot(self, freqs, amps, phases, linear=0):
+        if linear:
+            amps_linear = amps
+            amps_dB = 20 * np.log10(amps_linear)
+        else:
+            amps_dB = amps
+            amps_linear = 10 ** (amps_dB / 20)
+
+        cmplx = amps_linear * np.exp(1j * phases)
+
+        xlim_min = np.min(freqs/1e9)
+        xlim_max = np.max(freqs/1e9)
+        
+
+        plt.figure(figsize=(4, 9))
+
+        plt.subplot(3,1,1)
+        plt.plot(freqs/1e9, amps_linear)
+        plt.xlabel('Frequency (GHz)')
+        plt.ylabel('Linear Amplitude (V_out/V_in)')
+        plt.xlim(xlim_min, xlim_max)
+        # plt.ylim(0,10)
+        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
+
+        plt.subplot(3,1,2)
+        plt.plot(freqs/1e9, amps_dB)
+        plt.xlabel('Frequency (GHz)')
+        plt.ylabel('Logarithmic Amplitude (dB)')
+        plt.xlim(xlim_min, xlim_max)
+        # plt.ylim(0,10)
+        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
+
+        plt.subplot(3,1,3)
+        plt.plot(freqs/1e9, phases)
+        plt.xlabel('Frequency (GHz)')
+        plt.ylabel('Phase (radians)')
+        plt.xlim(xlim_min, xlim_max)
+        plt.ylim(-np.pi, np.pi)
+        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
+
+        plt.suptitle('Data')
+        plt.tight_layout()
+        plt.show()
+
+        
+        plt.plot(cmplx.real, cmplx.imag)
+        plt.xlabel('Real')
+        plt.ylabel('Imaginary')
+        plt.xlim(-0.5,3)
+        plt.ylim(-1,1)
+        plt.axhline(0, color='black', linewidth=0.5)  # Add horizontal line at y=0
+        plt.axvline(1, color='black', linewidth=0.5)  # Add vertical line at x=1
+        plt.axvline(0, color='black', linewidth=0.5)  # Add vertical line at x=0
+        plt.gca().set_aspect('equal', adjustable='box') # Set aspect of the plot to be equal
+
+        plt.show()
+
+    def _contains_negative(self, arr):
+        """
+        Check if the numpy array contains any negative numbers.
+        
+        Parameters:
+        arr (np.ndarray): The numpy array to check.
+        
+        Returns:
+        bool: True if the array contains negative numbers, False otherwise.
+        """
+        return np.any(arr < 0)
