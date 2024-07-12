@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.gridspec import GridSpec
 import logging
+from scresonators.src.fit_methods import DCM
 
 class Plotter:
     # TODO separate some of the functionalities in 'plot()' to other methods
@@ -100,7 +101,7 @@ class Plotter:
         fig.suptitle(figure_title, fontsize=16)
         
 
-    def plot_dcm(self, normalized_cmplx_data, cmplx_fit, fit_params, linear=False, **kwargs):
+    def plot_dcm(self, normalized_cmplx_data, fit_params, linear=False, **kwargs):
         # TODO Make cmplx_fit within the Plotter class such that it has more points
         # (so it actually looks like a circle when the resonance doesn't have a ton of points)   
         """
@@ -119,26 +120,26 @@ class Plotter:
                             Should be set to True if one wants to see a linear plot. 
                             Defaults to false (logarithmic scale).
         """
-        # TODO Implement star symbol on resonance: on all 3 plots (complex plane, magnitudes, phases)
-        # TODO Implement option to plot either linear or log magnitudes
+        # TODO Fix star symbol on resonance: on all 3 plots (complex plane, magnitudes, phases)
 
-        if cmplx_fit is None:
-            raise ValueError("Insert fitted complex data from fitting results")
+        if normalized_cmplx_data is None:
+            raise ValueError("Insert normalized complex data from fitting results")
         if fit_params is None:
             raise ValueError("Insert fit parameters from fitting results")
-        if not isinstance(cmplx_fit, np.ndarray):
-            raise TypeError("cmplx_fit must be a NumPy array")
-        self.cmplx_fit = cmplx_fit
+
+        num_fit_points = kwargs.get('num_fit_points', 1000)
+        high_res_freqs, high_res_cmplx_fit = self._generate_cmplx_fit(self.freqs, fit_params, num_fit_points)
 
         # Subtract resonant frequency from all freqs data
         resonant_freq = fit_params['w1'].value
         self.normalized_freqs = self.freqs - resonant_freq
+        normalized_highres_freqs = high_res_freqs - resonant_freq
 
         # Define loaded quality factor value and propagated standard error
         Ql_value, Ql_stderr = self.calculate_Ql(fit_params['Q'].value, fit_params['Q'].stderr, fit_params['Qc'].value, fit_params['Qc'].stderr)
         
         # Get the complex value at the resonant frequency for the resonance star
-        resonant_complex_value = np.interp(resonant_freq, self.freqs, cmplx_fit)
+        resonant_complex_value = np.interp(resonant_freq, high_res_freqs, high_res_cmplx_fit)
         resonant_magnitude_value = np.abs(resonant_complex_value)
         resonant_phase_value = np.angle(resonant_complex_value)
 
@@ -152,8 +153,11 @@ class Plotter:
         
         # Complex circle Plot
         ax = ax_dict["main"]
+        # Plot experimental data after preprocessing
         ax.plot(normalized_cmplx_data.real, normalized_cmplx_data.imag, '.', label="normalized data")
-        ax.plot(self.cmplx_fit.real, self.cmplx_fit.imag, label="fit function")
+        # Plot complex S21 data with higher resolution than experimental data
+        ax.plot(high_res_cmplx_fit.real, high_res_cmplx_fit.imag, label="fit function")
+        # Plot a star at the resonance
         ax.plot(resonant_complex_value.real, resonant_complex_value.imag, 'r*', markersize=15, label="resonant frequency")
         ax.set_xlabel("Re[$S_{21}$]")
         ax.set_ylabel("Im[$S_{21}$]")
@@ -165,7 +169,7 @@ class Plotter:
             # Linear magnitude plot
             ax_mag = ax_dict["mag"]
             ax_mag.plot(self.normalized_freqs, np.abs(normalized_cmplx_data), '.', label="normalized data")
-            ax_mag.plot(self.normalized_freqs, np.abs(self.cmplx_fit), label="fit function")
+            ax_mag.plot(normalized_highres_freqs, np.abs(high_res_cmplx_fit), label="fit function")
             ax_mag.plot(0, 20 * np.log10(resonant_magnitude_value), 'r*', markersize=15, label="resonant frequency")
             ax.plot(fit_params['w1'].value, )
             ax_mag.set_xlabel("$(f - f_c)$ [kHz]")
@@ -176,7 +180,7 @@ class Plotter:
             # Logarithmic magnitude plot 
             ax_mag = ax_dict["mag"]
             ax_mag.plot(self.normalized_freqs, 20 * np.log10(np.abs(normalized_cmplx_data)), '.', label="normalized data")
-            ax_mag.plot(self.normalized_freqs, 20 * np.log10(np.abs(self.cmplx_fit)), label="fit function")
+            ax_mag.plot(normalized_highres_freqs, 20 * np.log10(np.abs(high_res_cmplx_fit)), label="fit function")
             ax_mag.plot(0, 20 * np.log10(resonant_magnitude_value), 'r*', markersize=15, label="resonant frequency")
             ax.plot(fit_params['w1'].value, )
             ax_mag.set_xlabel("$(f - f_c)$ [kHz]")
@@ -187,7 +191,7 @@ class Plotter:
         # Phase plot
         ax_ang = ax_dict["ang"]
         ax_ang.plot(self.normalized_freqs, np.angle(normalized_cmplx_data), '.', label="normalized data")
-        ax_ang.plot(self.normalized_freqs, np.angle(self.cmplx_fit), label="fit function")
+        ax_ang.plot(normalized_highres_freqs, np.angle(high_res_cmplx_fit), label="fit function")
         ax_ang.plot(0, resonant_phase_value, 'r*', markersize=15, label="resonant frequency")
         ax_ang.set_xlabel("$(f - f_c)$ [kHz]")
         ax_ang.set_ylabel("Ang[$S_{21}$] (rad)")
@@ -222,7 +226,6 @@ class Plotter:
 
         # TODO Separate this as a different method
         # TODO implement functionality with other fit methods
-        # TODO figure out why the frequency is rounding to one decimal place when we want two
         def scientific_notation(v, err, rnd=2):
             if v == 0:
                 return f'({0:.{rnd}f} ± {0:.{rnd}f})'
@@ -303,3 +306,14 @@ class Plotter:
         ## The line of code does not work if I provide my own 'preprocessing_guesses' in 'Fitter.fit'
 
         return Q_l, sigma_Ql
+    
+
+    def _generate_cmplx_fit(self, freqs, fit_params, num_fit_points):
+        dcm_method = DCM()
+        
+        # Generate a higher-resolution frequency array
+        high_res_freqs = np.linspace(min(freqs), max(freqs), num_fit_points)
+        # Use the fitted parameters to evaluate the model function at the new high-resolution frequencies
+        high_res_fit_data = dcm_method.func(high_res_freqs, fit_params['Q'], fit_params['Qc'], fit_params['w1'], fit_params['phi'])
+
+        return high_res_freqs, high_res_fit_data
