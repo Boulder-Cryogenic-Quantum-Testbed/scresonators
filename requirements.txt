@@ -10,4 +10,5 @@ sympy>=1.11.*
 scikit-rf>=0.24.*
 uncertainties>=3.1.*
 gitpython>=3.1*
+ipykernel>=6.29.*
 # Mattis-Bardeen>=0.0.*
