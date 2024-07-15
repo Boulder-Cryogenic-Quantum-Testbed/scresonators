@@ -145,8 +145,14 @@ class Plotter:
         Ql_value, Ql_stderr = self.calculate_Ql(fit_params['Q'].value, fit_params['Q'].stderr, fit_params['Qc'].value, fit_params['Qc'].stderr)
 
         layout = [
+        ["legend", "legend", "legend"],
+        ["main", "main", "mag"],
+        ["main", "main", "mag"],
         ["main", "main", "mag"],
         ["main", "main", "ang"],
+        ["main", "main", "ang"],
+        ["main", "main", "ang"],
+        ["main", "main", "text"],
         ["main", "main", "text"]
         ]
 
@@ -260,7 +266,7 @@ class Plotter:
         ax_text = ax_dict["text"]
         ax_text.axis("off")
 
-        textstr = '\n'.join((
+        textstr_text = '\n'.join((
             f'$Q_l: {scientific_notation(Ql_value, Ql_stderr)}$',
             f'$Q_i: {scientific_notation(fit_params["Q"].value, fit_params["Q"].stderr)}$',
             f'$Q_c: {scientific_notation(fit_params["Qc"].value, fit_params["Qc"].stderr)}$',
@@ -268,7 +274,7 @@ class Plotter:
             f'$f_c: {scientific_notation(fit_params["w1"].value/1e9, fit_params["w1"].stderr/1e9, 9)}$ GHz'
         ))
 
-        ax_text.text(0.5, 0.5, textstr, fontsize=12, verticalalignment='center', horizontalalignment='center', transform=ax_text.transAxes)
+        ax_text.text(0.5, 0.5, textstr_text, fontsize=12, verticalalignment='center', horizontalalignment='center', transform=ax_text.transAxes)
 
 
          # Collect all handles and labels from each subplot
@@ -279,13 +285,27 @@ class Plotter:
                     handles.append(handle)
                     labels.append(label)
 
+
+        print("Handles: ", handles, "\n")
+        print("Labels", labels, "\n")
         # Create a single legend
-        fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.75, 0.95), ncol=3)
+        # fig.legend(handles, labels, loc='upper center', ncol=3)
+        ax_legend = ax_dict["legend"]
+        ax_legend.axis("off")
+        textstr_leg = '\t'.join((
+            f"Legend\n",
+            f"{labels[0]}: {handles[0].get_label()}",
+            f"{labels[1]}: {handles[1].get_label()}",
+            f"{labels[2]}: {handles[2].get_label()}"
+        ))
+
+        ax_legend.text(0.5, 0.5, textstr_leg, fontsize=12, verticalalignment='center', horizontalalignment='center', transform=ax_legend.transAxes)
 
 
         # TODO: return figure object(s) so that users can edit the plot as they see fit
         return fig, ax_dict
 
+    ## Static method?
     def _formatter_func(self):
         factor = 1e6  # converting to kHz
 
