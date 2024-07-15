@@ -170,10 +170,6 @@ class Fitter:
         Returns:
             np.ndarray: The preprocessed and normalized complex S21 data.
         """
-        ## TESTING PLOT
-        plot1 = plotter.Plotter(xdata, ydata)
-        plot1.plot_before_fit(figure_title='S21 before fitting delay')
-        ## TESTING PLOT
 
         # Remove cable delay
         delay = self.fit_delay(xdata, ydata, preprocessing_guesses) ## a lot of possible overhead calculations happening here
@@ -181,24 +177,14 @@ class Fitter:
 
         z_data = ydata * np.exp(2j * np.pi * delay * xdata)
 
-         ## TESTING PLOT
-        plot2 = plotter.Plotter(xdata, z_data)
-        plot2.plot_before_fit(figure_title="S21 after fitting delay")
-        ## TESTING PLOT
-
         # Calibrate and normalize
         delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, z_data)
-
-        ## TESTING PLOT
-        plot3 = plotter.Plotter(xdata, z_data)
-        plot3.plot_before_fit(figure_title="S21 after calibration")
-        ## TESTING PLOT
 
         z_norm = normalize(xdata, z_data, delay_remaining, a, alpha)
 
         ## TESTING PLOT
-        plot4 = plotter.Plotter(xdata, z_norm)
-        plot4.plot_before_fit(figure_title="S21 after normalization")
+        # plot1 = plotter.Plotter(xdata, z_norm)
+        # plot1.plot_before_fit(figure_title="S21 after normalization")
         ## TESTING PLOT
 
         return z_norm

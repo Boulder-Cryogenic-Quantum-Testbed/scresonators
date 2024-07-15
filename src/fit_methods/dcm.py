@@ -39,3 +39,12 @@ class DCM(FitMethod):
         params.add('phi', value=phi, min=-np.pi, max=np.pi)
 
         return params       
+    
+    def generate_highres_fit(self, x: np.ndarray, fit_params, num_fit_points=1000):
+        
+        # Generate a higher-resolution frequency array
+        high_res_x = np.linspace(min(x), max(x), num_fit_points)
+        # Use the fitted parameters to evaluate the model function at the new high-resolution frequencies
+        high_res_y = self.func(high_res_x, fit_params['Q'], fit_params['Qc'], fit_params['w1'], fit_params['phi'])
+
+        return high_res_x, high_res_y
