@@ -10,7 +10,7 @@ class Plotter:
     # TODO write docstrings for all methods
     # TODO implement utility for different fitting methods (since each might have different parameters)
     # TODO use only one legend, not three
-    def __init__(self, freqs: np.ndarray, cmplx_data: np.ndarray, cmplx_fit=None, fit_params=None):
+    def __init__(self, freqs: np.ndarray, cmplx_data: np.ndarray, cmplx_fit=None, fit_params=None, fit_method=None):
         """
         Initializes the Plotter instance attributes with experimental data and fit data (coming from an instance of Fitter). 
         Ensures data is input and is of the correct type. 
@@ -23,9 +23,6 @@ class Plotter:
                         'Qc' (coupling quality factor), 'w1' (resonant frequency), 'phi' (asymmetry angle)  
         """
 
-        # TODO Implement cmplx_data as normalized experimental data (how much of the preprocessing and/or fitting processes does this consider?)
-        # At the moment this file was built with the idea that cmplx_data is precisely from the experimental measurement, which is not what we want.
-
         # Check if any input data is missing
         # Add parameter name to a list 'missing_data' if it is missing
         missing_data = []
@@ -33,6 +30,10 @@ class Plotter:
             missing_data.append("freqs")
         if cmplx_data is None:
             missing_data.append("cmplx_data")
+        ## TODO Implement fit_method in __init__
+        ## The issue here is that if one wants to 'plot_before_fit', the fit hasn't been done yet, so 'fit_method' hasn't been defined yet.
+        # if fit_method is None: ## DO WE WANT THIS?
+        #     missing_data.append("fit_method")
 
         # Check if 'missing_data' is 'True'
         if missing_data: 
@@ -40,19 +41,19 @@ class Plotter:
             raise logging.warning(f"Missing data: {', '.join(missing_data)}")
         else:
             # Initialize attributes needed/helpful to plot
-            self.freqs = freqs
-            self.cmplx_data = cmplx_data
-            self.amps_linear = np.abs(self.cmplx_data)
-            self.amps_dB = 20*np.log10(self.amps_linear)
-            self.phases = np.angle(self.cmplx_data)
-
-            self.cmplx_fit = cmplx_fit
+            self.freqs = freqs ## Do we want this here or in plot_dcm?
+            self.cmplx_data = cmplx_data ## Do we want this here or in plot_dcm?
+            self.amps_linear = np.abs(self.cmplx_data) ## Do we want this here or in plot_dcm?
+            self.amps_dB = 20*np.log10(self.amps_linear) ## Do we want this here or in plot_dcm?
+            self.phases = np.angle(self.cmplx_data) ## Do we want this here or in plot_dcm?
 
         # Check if each argument is a NumPy array
         if not isinstance(freqs, np.ndarray):
             raise TypeError("freqs must be a NumPy array")
         if not isinstance(cmplx_data, np.ndarray):
             raise TypeError("cmplx_data must be a NumPy array")
+        
+        # TODO Implement the ability to read fit_method and call whichever plot method is accordingly needed 
 
 
     def plot_before_fit(self, **kwargs):
@@ -101,7 +102,7 @@ class Plotter:
         fig.suptitle(figure_title, fontsize=16)
         
 
-    def plot_dcm(self, normalized_cmplx_data, fit_params, linear=False, **kwargs):
+    def plot_dcm(self, normalized_cmplx_data, fit_params, dcm_method, linear=False, **kwargs):
         # TODO Make cmplx_fit within the Plotter class such that it has more points
         # (so it actually looks like a circle when the resonance doesn't have a ton of points)   
         """
@@ -127,21 +128,21 @@ class Plotter:
         if fit_params is None:
             raise ValueError("Insert fit parameters from fitting results")
 
+        # Use 'dcm_method' instance to get higher resolution fitted data
         num_fit_points = kwargs.get('num_fit_points', 1000)
-        high_res_freqs, high_res_cmplx_fit = self._generate_cmplx_fit(self.freqs, fit_params, num_fit_points)
+        high_res_freqs, high_res_cmplx_fit = dcm_method.generate_highres_fit(self.freqs, fit_params, num_fit_points)
 
         # Subtract resonant frequency from all freqs data
         resonant_freq = fit_params['w1'].value
         self.normalized_freqs = self.freqs - resonant_freq
         normalized_highres_freqs = high_res_freqs - resonant_freq
-
-        # Define loaded quality factor value and propagated standard error
-        Ql_value, Ql_stderr = self.calculate_Ql(fit_params['Q'].value, fit_params['Q'].stderr, fit_params['Qc'].value, fit_params['Qc'].stderr)
-        
         # Get the complex value at the resonant frequency for the resonance star
         resonant_complex_value = np.interp(resonant_freq, high_res_freqs, high_res_cmplx_fit)
         resonant_magnitude_value = np.abs(resonant_complex_value)
         resonant_phase_value = np.angle(resonant_complex_value)
+
+        # Define loaded quality factor value and propagated standard error
+        Ql_value, Ql_stderr = self.calculate_Ql(fit_params['Q'].value, fit_params['Q'].stderr, fit_params['Qc'].value, fit_params['Qc'].stderr)
 
         layout = [
         ["main", "main", "mag"],
@@ -153,7 +154,7 @@ class Plotter:
         
         # Complex circle Plot
         ax = ax_dict["main"]
-        # Plot experimental data after preprocessing
+        # Plot preprocessed (normalized) experimental data
         ax.plot(normalized_cmplx_data.real, normalized_cmplx_data.imag, '.', label="normalized data")
         # Plot complex S21 data with higher resolution than experimental data
         ax.plot(high_res_cmplx_fit.real, high_res_cmplx_fit.imag, label="fit function")
@@ -163,7 +164,7 @@ class Plotter:
         ax.set_ylabel("Im[$S_{21}$]")
         ax.axhline(y=0, color='black', linewidth=1)
         ax.axvline(x=1, color='black', linewidth=1)
-        ax.set_title("Complex Plane")
+        ax.set_title("Complex Circle")
 
         if linear: # TODO test this if...else block
             # Linear magnitude plot
@@ -282,6 +283,9 @@ class Plotter:
         fig.legend(handles, labels, loc='upper center', bbox_to_anchor=(0.75, 0.95), ncol=3)
 
 
+        # TODO: return figure object(s) so that users can edit the plot as they see fit
+        return fig, ax_dict
+
     def _formatter_func(self):
         factor = 1e6  # converting to kHz
 
@@ -306,14 +310,3 @@ class Plotter:
         ## The line of code does not work if I provide my own 'preprocessing_guesses' in 'Fitter.fit'
 
         return Q_l, sigma_Ql
-    
-
-    def _generate_cmplx_fit(self, freqs, fit_params, num_fit_points):
-        dcm_method = DCM()
-        
-        # Generate a higher-resolution frequency array
-        high_res_freqs = np.linspace(min(freqs), max(freqs), num_fit_points)
-        # Use the fitted parameters to evaluate the model function at the new high-resolution frequencies
-        high_res_fit_data = dcm_method.func(high_res_freqs, fit_params['Q'], fit_params['Qc'], fit_params['w1'], fit_params['phi'])
-
-        return high_res_freqs, high_res_fit_data
