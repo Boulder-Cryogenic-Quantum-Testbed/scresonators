@@ -27,7 +27,8 @@ class DCM(FitMethod):
 
         # Use specific criteria or model to calculate initial guesses
         freq_idx = np.argmax(np.abs(y_adjusted))
-        f_c = x[freq_idx]
+        f_0 = x[freq_idx]
+        w_0 = 2 * np.pi * f_0
         Q_guess = 1e4  # Placeholder guess
         Qc_guess = Q_guess / np.abs(y_adjusted[freq_idx])  # Example calculation
 
@@ -35,10 +36,10 @@ class DCM(FitMethod):
         params = lmfit.Parameters()
         params.add('Q', value=Q_guess, min=1e3, max=1e6)
         params.add('Qc', value=Qc_guess, min=1e3, max=1e6)
-        params.add('w1', value=f_c, min=f_c*0.9, max=f_c*1.1)
+        params.add('w1', value=w_0, min=w_0*0.9, max=w_0*1.1)
         params.add('phi', value=phi, min=-np.pi, max=np.pi)
 
-        return params       
+        return params
     
     def generate_highres_fit(self, x: np.ndarray, fit_params, num_fit_points=1000):
         
@@ -47,4 +48,6 @@ class DCM(FitMethod):
         # Use the fitted parameters to evaluate the model function at the new high-resolution frequencies
         high_res_y = self.func(high_res_x, fit_params['Q'], fit_params['Qc'], fit_params['w1'], fit_params['phi'])
 
-        return high_res_x, high_res_y
+        high_res_x_Hz = high_res_x / (2 * np.pi)
+        high_res_y_Hz = high_res_y / (2 * np.pi)
+        return high_res_x_Hz, high_res_y_Hz

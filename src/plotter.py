@@ -3,14 +3,13 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib.gridspec import GridSpec
 import logging
-from scresonators.src.fit_methods import DCM
 
 class Plotter:
     # TODO separate some of the functionalities in 'plot()' to other methods
     # TODO write docstrings for all methods
     # TODO implement utility for different fitting methods (since each might have different parameters)
     # TODO use only one legend, not three
-    def __init__(self, freqs: np.ndarray, cmplx_data: np.ndarray, cmplx_fit=None, fit_params=None, fit_method=None):
+    def __init__(self, freqs: np.ndarray, cmplx_data: np.ndarray, fit_params=None, fit_method=None):
         """
         Initializes the Plotter instance attributes with experimental data and fit data (coming from an instance of Fitter). 
         Ensures data is input and is of the correct type. 
@@ -32,7 +31,7 @@ class Plotter:
             missing_data.append("cmplx_data")
         ## TODO Implement fit_method in __init__
         ## The issue here is that if one wants to 'plot_before_fit', the fit hasn't been done yet, so 'fit_method' hasn't been defined yet.
-        # if fit_method is None: ## DO WE WANT THIS?
+        # if fit_method is None: 
         #     missing_data.append("fit_method")
 
         # Check if 'missing_data' is 'True'
@@ -58,7 +57,9 @@ class Plotter:
 
     def plot_before_fit(self, **kwargs):
         # Keyword arguments
-        figure_title = kwargs.get('figure_title', 'S21 data')
+        figure_title = kwargs.get('figure_title', 'S21 Experimental Data')
+        horiz_line = kwargs.get('horiz_line', True)
+        vert_line = kwargs.get('vert_line', False)
 
         layout = [
         ["main", "main", "mag"],
@@ -67,15 +68,13 @@ class Plotter:
 
         fig, ax_dict = plt.subplot_mosaic(layout, figsize=(12, 8))
         
-        # Complex circle Plot
+        # Complex circle plot
         ax = ax_dict["main"]
         ax.plot(self.cmplx_data.real, self.cmplx_data.imag, '.', label="normalized data")
         ax.set_xlabel("Re[$S_{21}$]")
         ax.set_ylabel("Im[$S_{21}$]")
-        ax.axhline(y=0, color='black', linewidth=1)
-        # ax.axvline(x=1, color='black', linewidth=1) ## add functionality to enable/disable either vertical or horizontal lines?
-        # ax.set_xlim(-0.05, 1.05)
-        # ax.set_ylim(-0.55, 0.55)
+        ax.axhline(y=0, color='black', linewidth=1) if horiz_line else None
+        ax.axvline(x=1, color='black', linewidth=1) if vert_line else None 
         ax.set_title("Complex Plane")
         ax.legend()
 
@@ -102,7 +101,7 @@ class Plotter:
         fig.suptitle(figure_title, fontsize=16)
         
 
-    def plot_dcm(self, normalized_cmplx_data, fit_params, dcm_method, linear=False, **kwargs):
+    def plot_dcm(self, normalized_cmplx_data, fit_params, dcm_method=None, **kwargs):
         # TODO Make cmplx_fit within the Plotter class such that it has more points
         # (so it actually looks like a circle when the resonance doesn't have a ton of points)   
         """
@@ -110,55 +109,64 @@ class Plotter:
         and will show fitted parameters with associated standard errors.
 
         Args:
-            cmplx_fit (np.ndarray of complex numbers): fitted complex S21 data 
+            normalized_cmplx_data (np.ndarray of complex numbers): preprocessed experimental S21 data
 
-            fit_params (instance of a class): 
-                            contains dcm fit parameters 
+            fit_params (instance of a class in lmfit): contains dcm fit parameters 
                             (internal Q, coupling Q, asymmetry phi, resonant frequency)
 
-            linear (boolean): a flag used to indicate whether or not plots 
-                            should be displayed in linear scale or not. 
-                            Should be set to True if one wants to see a linear plot. 
-                            Defaults to false (logarithmic scale).
-        """
-        # TODO Fix star symbol on resonance: on all 3 plots (complex plane, magnitudes, phases)
+            dcm_method (instance of DCM class): Should be instantiated in a user file. 
+                            Contains method 'generate_highres_fit' used in this method.
 
+            keyword arguments:
+                linear (boolean): a flag used to indicate whether or not plots 
+                    should be displayed in linear scale or not. 
+                    Should be set to True if one wants to see a linear plot. 
+                    Defaults to false (logarithmic scale).
+                num_fit_points: int
+                    Number of points for high resolution evaluation of fit function 'dcm_method.generate_highres_fit'. 
+                    Defaults to 1000.
+                figure_title: str
+                    Title of the whole figure, placed on upper middle of figure. Defaults to 'Fitted $S_{21}$ Data'.
+                
+        """
+        # TODO Verify star symbol on resonance: on all 3 plots (complex plane, magnitudes, phases)
+        if dcm_method is None: 
+            raise ValueError("Insert instance of DCM fit method class")
         if normalized_cmplx_data is None:
             raise ValueError("Insert normalized complex data from fitting results")
         if fit_params is None:
             raise ValueError("Insert fit parameters from fitting results")
 
-        # Use 'dcm_method' instance to get higher resolution fitted data
+        # Get linear controller
+        linear = kwargs.get('linear', False)
+
+        # Convert frequency data from radians to Hz
+        self.freqs_Hz = self.freqs / (2 * np.pi)
+
+        # Use existing 'dcm_method' instance to get higher resolution fitted data
         num_fit_points = kwargs.get('num_fit_points', 1000)
-        high_res_freqs, high_res_cmplx_fit = dcm_method.generate_highres_fit(self.freqs, fit_params, num_fit_points)
+        high_res_freqs, high_res_cmplx_fit = dcm_method.generate_highres_fit(self.freqs_Hz, fit_params, num_fit_points)
 
         # Subtract resonant frequency from all freqs data
-        resonant_freq = fit_params['w1'].value
-        self.normalized_freqs = self.freqs - resonant_freq
-        normalized_highres_freqs = high_res_freqs - resonant_freq
+        resonant_freq_Hz = fit_params['w1'].value / (2 * np.pi)
+        normalized_freqs = self.freqs_Hz - resonant_freq_Hz
+        normalized_highres_freqs = high_res_freqs - resonant_freq_Hz
         # Get the complex value at the resonant frequency for the resonance star
-        resonant_complex_value = np.interp(resonant_freq, high_res_freqs, high_res_cmplx_fit)
+        resonant_complex_value = np.interp(resonant_freq_Hz, high_res_freqs, high_res_cmplx_fit)
         resonant_magnitude_value = np.abs(resonant_complex_value)
         resonant_phase_value = np.angle(resonant_complex_value)
 
-        # Define loaded quality factor value and propagated standard error
-        Ql_value, Ql_stderr = self.calculate_Ql(fit_params['Q'].value, fit_params['Q'].stderr, fit_params['Qc'].value, fit_params['Qc'].stderr)
+        ## fit_params may be same format as params in dcm.py. Look into this
 
         layout = [
-        ["legend", "legend", "legend"],
-        ["main", "main", "mag"],
-        ["main", "main", "mag"],
         ["main", "main", "mag"],
         ["main", "main", "ang"],
-        ["main", "main", "ang"],
-        ["main", "main", "ang"],
-        ["main", "main", "text"],
         ["main", "main", "text"]
         ]
 
         fig, ax_dict = plt.subplot_mosaic(layout, figsize=(12, 8))
         
-        # Complex circle Plot
+        # Complex circle plot
         ax = ax_dict["main"]
         # Plot preprocessed (normalized) experimental data
         ax.plot(normalized_cmplx_data.real, normalized_cmplx_data.imag, '.', label="normalized data")
@@ -171,33 +179,21 @@ class Plotter:
         ax.axhline(y=0, color='black', linewidth=1)
         ax.axvline(x=1, color='black', linewidth=1)
         ax.set_title("Complex Circle")
+        ax.legend()
 
-        if linear: # TODO test this if...else block
-            # Linear magnitude plot
-            ax_mag = ax_dict["mag"]
-            ax_mag.plot(self.normalized_freqs, np.abs(normalized_cmplx_data), '.', label="normalized data")
-            ax_mag.plot(normalized_highres_freqs, np.abs(high_res_cmplx_fit), label="fit function")
-            ax_mag.plot(0, 20 * np.log10(resonant_magnitude_value), 'r*', markersize=15, label="resonant frequency")
-            ax.plot(fit_params['w1'].value, )
-            ax_mag.set_xlabel("$(f - f_c)$ [kHz]")
-            ax_mag.set_ylabel("Mag[$S_{21}$]")
-            ax_mag.set_title("Linear Magnitude Plot")
-            ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
-        else:
-            # Logarithmic magnitude plot 
-            ax_mag = ax_dict["mag"]
-            ax_mag.plot(self.normalized_freqs, 20 * np.log10(np.abs(normalized_cmplx_data)), '.', label="normalized data")
-            ax_mag.plot(normalized_highres_freqs, 20 * np.log10(np.abs(high_res_cmplx_fit)), label="fit function")
-            ax_mag.plot(0, 20 * np.log10(resonant_magnitude_value), 'r*', markersize=15, label="resonant frequency")
-            ax.plot(fit_params['w1'].value, )
-            ax_mag.set_xlabel("$(f - f_c)$ [kHz]")
-            ax_mag.set_ylabel("Mag[$S_{21}$] (dB)")
-            ax_mag.set_title("Log Magnitude Plot")
-            ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
+        # Linear/Logarithmic magnitude plot
+        ax_mag = ax_dict["mag"]
+        ax_mag.plot(normalized_freqs, (np.abs(normalized_cmplx_data) if linear else 20 * np.log10(np.abs(normalized_cmplx_data))), '.', label="normalized data")
+        ax_mag.plot(normalized_highres_freqs, (np.abs(high_res_cmplx_fit) if linear else 20 * np.log10(np.abs(high_res_cmplx_fit))), label="fit function")
+        ax_mag.plot(0, (resonant_magnitude_value if linear else 20 * np.log10(resonant_magnitude_value)), 'r*', markersize=15, label="resonant frequency")
+        ax_mag.set_xlabel("$(f - f_c)$ [kHz]")
+        ax_mag.set_ylabel("Mag[$S_{21}$]") if linear else ax_mag.set_ylabel("Mag[$S_{21}$] (dB)")
+        ax_mag.set_title("Linear Magnitude Plot") if linear else ax_mag.set_title("Log Magnitude Plot")
+        ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Phase plot
         ax_ang = ax_dict["ang"]
-        ax_ang.plot(self.normalized_freqs, np.angle(normalized_cmplx_data), '.', label="normalized data")
+        ax_ang.plot(normalized_freqs, np.angle(normalized_cmplx_data), '.', label="normalized data")
         ax_ang.plot(normalized_highres_freqs, np.angle(high_res_cmplx_fit), label="fit function")
         ax_ang.plot(0, resonant_phase_value, 'r*', markersize=15, label="resonant frequency")
         ax_ang.set_xlabel("$(f - f_c)$ [kHz]")
@@ -221,8 +217,8 @@ class Plotter:
         ax.set_ylim([imag_min - imag_padding, imag_max + imag_padding])
 
         # Set x limits to freqs vs magnitude and vs phase (quadrature) plots
-        ax_mag.set_xlim([min(self.normalized_freqs), max(self.normalized_freqs)])
-        ax_ang.set_xlim([min(self.normalized_freqs), max(self.normalized_freqs)])
+        ax_mag.set_xlim([min(normalized_freqs), max(normalized_freqs)])
+        ax_ang.set_xlim([min(normalized_freqs), max(normalized_freqs)])
 
         # Adjust the bottom, left, right, and top margins
         plt.tight_layout(rect=[0, 0, 1, 0.95]) 
@@ -231,9 +227,57 @@ class Plotter:
         figure_title = kwargs.get('figure_title', 'Fitted $S_{21}$ Data')
         fig.suptitle(figure_title, fontsize=16)
 
-        # TODO Separate this as a different method
-        # TODO implement functionality with other fit methods
-        def scientific_notation(v, err, rnd=2):
+        # Define internal quality factor value and propagated standard error
+        Qi_value, Qi_stderr = self.calculate_Qi(fit_params['Q'].value, fit_params['Q'].stderr, fit_params['Qc'].value, fit_params['Qc'].stderr)
+
+        # Text box with fitted parameters
+        ax_text = ax_dict["text"]
+        ax_text.axis("off")
+        ## TODO generalize the fitted parameters text
+        # text_list = []
+        # for i in range(len(fit_params)):
+            # if fit_params[i]
+            # text_list[i] = 
+        textstr_text = '\n'.join((
+            f'$Q_l: {self._scientific_notation(fit_params["Q"].value, fit_params["Q"].stderr)}$',
+            f'$Q_i: {self._scientific_notation(Qi_value, Qi_stderr)}$',
+            f'$Q_c: {self._scientific_notation(fit_params["Qc"].value, fit_params["Qc"].stderr)}$',
+            f'$\phi: {self._scientific_notation(fit_params["phi"].value, fit_params["phi"].stderr)}$ radians',
+            f'$f_c: {self._scientific_notation(fit_params["w1"].value/(2 * np.pi)/1e9, fit_params["w1"].stderr/1e9, 9)}$ GHz'
+        ))
+        # assign units from dcm method
+
+        ax_text.text(0.5, 0.5, textstr_text, fontsize=12, verticalalignment='center', horizontalalignment='center', transform=ax_text.transAxes)
+
+        # TODO: return figure object(s) so that users can edit the plot as they see fit
+        return fig, ax_dict
+
+    @staticmethod
+    def _formatter_func():
+        factor = 1e6  # converting to kHz
+
+        def formatter(x, pos):
+            return f'{x / factor:.2f}'
+
+        return formatter
+    
+    @staticmethod
+    def calculate_Qi(Q_l, sigma_Ql, Q_c, sigma_Qc):
+        # Calculate Qi
+        Q_i = (1 / Q_l - 1 / Q_c) ** -1
+
+        # Calculate partial derivatives
+        dQi_dQl = Q_i**2 / Q_l**2
+        dQi_dQc = -Q_i**2 / Q_c**2
+
+        # Propagate errors
+        sigma_Qi = np.sqrt((dQi_dQl * sigma_Ql)**2 + (dQi_dQc * sigma_Qc)**2)
+
+        return Q_i, sigma_Qi
+        
+    # TODO verify this method's uses with other fit_methods
+    @staticmethod
+    def _scientific_notation(v, err, rnd=2):
             if v == 0:
                 return f'({0:.{rnd}f} ± {0:.{rnd}f})'
             
@@ -261,72 +305,3 @@ class Plotter:
                 return f'({v_base_str} ± {err_base_str})'
             else:
                 return f'({v_base_str} ± {err_base_str}) \\times 10^{{{power}}}'
-
-        # Text box
-        ax_text = ax_dict["text"]
-        ax_text.axis("off")
-
-        textstr_text = '\n'.join((
-            f'$Q_l: {scientific_notation(Ql_value, Ql_stderr)}$',
-            f'$Q_i: {scientific_notation(fit_params["Q"].value, fit_params["Q"].stderr)}$',
-            f'$Q_c: {scientific_notation(fit_params["Qc"].value, fit_params["Qc"].stderr)}$',
-            f'$\phi: {scientific_notation(fit_params["phi"].value, fit_params["phi"].stderr)}$ radians',
-            f'$f_c: {scientific_notation(fit_params["w1"].value/1e9, fit_params["w1"].stderr/1e9, 9)}$ GHz'
-        ))
-
-        ax_text.text(0.5, 0.5, textstr_text, fontsize=12, verticalalignment='center', horizontalalignment='center', transform=ax_text.transAxes)
-
-
-         # Collect all handles and labels from each subplot
-        handles, labels = [], []
-        for ax in [ax_dict["main"], ax_dict["mag"], ax_dict["ang"]]:
-            for handle, label in zip(*ax.get_legend_handles_labels()):
-                if label not in labels:  # Avoid duplicate labels
-                    handles.append(handle)
-                    labels.append(label)
-
-
-        print("Handles: ", handles, "\n")
-        print("Labels", labels, "\n")
-        # Create a single legend
-        # fig.legend(handles, labels, loc='upper center', ncol=3)
-        ax_legend = ax_dict["legend"]
-        ax_legend.axis("off")
-        textstr_leg = '\t'.join((
-            f"Legend\n",
-            f"{labels[0]}: {handles[0].get_label()}",
-            f"{labels[1]}: {handles[1].get_label()}",
-            f"{labels[2]}: {handles[2].get_label()}"
-        ))
-
-        ax_legend.text(0.5, 0.5, textstr_leg, fontsize=12, verticalalignment='center', horizontalalignment='center', transform=ax_legend.transAxes)
-
-
-        # TODO: return figure object(s) so that users can edit the plot as they see fit
-        return fig, ax_dict
-
-    ## Static method?
-    def _formatter_func(self):
-        factor = 1e6  # converting to kHz
-
-        def formatter(x, pos):
-            return f'{x / factor:.2f}'
-
-        return formatter
-    
-    def calculate_Ql(self, Q_i, sigma_Qi, Q_c, sigma_Qc):
-        # TODO Decide if we need this to be a separate method in Plotter class. What is most efficient?
-
-        # Calculate Ql
-        Q_l = (1 / Q_i + 1 / Q_c) ** -1
-
-        # Calculate partial derivatives
-        dQl_dQi = -Q_l**2 / Q_i**2
-        dQl_dQc = -Q_l**2 / Q_c**2
-
-        # Propagate errors
-        sigma_Ql = np.sqrt((dQl_dQi * sigma_Qi)**2 + (dQl_dQc * sigma_Qc)**2) 
-        ## The above line of code works if I don't use 'preprocessing_guesses' in 'Fitter.fit'
-        ## The line of code does not work if I provide my own 'preprocessing_guesses' in 'Fitter.fit'
-
-        return Q_l, sigma_Ql
