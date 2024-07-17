@@ -24,25 +24,26 @@ class Fitter:
         Args:
             fit_method (object): An instance of a fitting method class that contains the `func` method.
 
-            preprocess: str
-                choice of preprocess: 'circle' or 'linear'. Defaults to 'circle'
+            keyword arguments:
+                preprocess: str
+                    choice of preprocess: 'circle' or 'linear'. Defaults to 'circle'
 
-            normalize: int
+                normalize: int
 
-            MC_rounds: int
-               in each MC iteration, number of rounds of randomly choose parameter
+                MC_rounds: int
+                in each MC iteration, number of rounds of randomly choose parameter
 
-            MC_step_const: int
-                randomly choose number in range MC_step_const*[-0.5~0.5]
-                for fitting. Exp(0.5)=1.6, and this is used for Qi,... . However, the res. frequency, theta, amplitude are usually fixed during Monte Carlo.   
+                MC_step_const: int
+                    randomly choose number in range MC_step_const*[-0.5~0.5]
+                    for fitting. Exp(0.5)=1.6, and this is used for Qi,... . However, the res. frequency, theta, amplitude are usually fixed during Monte Carlo.   
 
-            MC_weight: bool
-                True or False, weight the extract_factor fitting range, True uses 1/|S21| weight, which we call iDCM
+                MC_weight: bool
+                    True or False, weight the extract_factor fitting range, True uses 1/|S21| weight, which we call iDCM
 
-            MC_fix: list of str
-                'Amp','w1','theta','phi','Qc', 'Q' for DCM, 'Qi' for INV    
+                MC_fix: list of str
+                    'Amp','f0','theta','phi','Qc', 'Q' for DCM, 'Qi' for INV    
 
-            databg: class?
+                databg: class?
 
 
         """
@@ -61,22 +62,10 @@ class Fitter:
 
 
     def fit(self, freqs: np.ndarray, amps_dB: np.ndarray, phases: np.ndarray, preprocessing_guesses=None, manual_init=None, verbose=False): ## How can we preprocess such that this function can take pandas dataframes as input? 
-        """Fit resonator data using the provided method using lmfit's Monte Carlo.
-        
-        Args:
-            manual_init: None or list of 6 float number
-            manual input initial guesses
-            DCM: [amplitude, Q, Qc, freq, phi, theta]
-            INV: [amplitude, Qi, Qc, freq, phi, theta]
-
+        """Fit resonator data using the provided method using lmfit's Model.fit
         """
         amps_linear = 10 ** (amps_dB / 20)
         phases = np.unwrap(phases)
-
-        ## TESTING CODE
-        # self.plot(freqs, amps_dB, phases)
-        # self.plot(freqs, amps_linear, phases, 1)
-        ## TESTING CODE
 
         # Create complex data with 'amps_linear' and 'phases'
         xdata, ydata = freqs, np.multiply(amps_linear, np.exp(1j * phases)) 
@@ -84,19 +73,12 @@ class Fitter:
 
         if self.databg: ## not utilizing this feature at the moment
             ydata = self.background_removal(amps_linear, phases)
-            ## Testing line below
-            # self.plot(xdata, np.abs(ydata), np.angle(ydata), 1)
         elif self.preprocess == "circle":
             ydata = self.preprocess_circle(xdata, ydata, preprocessing_guesses) ## Do we want to pass 'manual_init' or 'preprocessing_guesses' along?
         elif self.preprocess == "linear":
             # TODO: implement
             # ydata, _, _, _, _ = self.preprocess_linear(xdata, ydata, self.normalize)
             pass
-
-        ## TESTING CODE
-        # print("Amps_dB is logarithmic: ", self._contains_negative(20 * np.log10(np.abs(ydata))))
-        # print("Amps_linear is logarithmic: ", self._contains_negative(np.abs(ydata)))
-        ## TESTING CODE
         
         # Setup the initial parameters or use provided manual_init
         if manual_init:
@@ -513,7 +495,7 @@ class Fitter:
     def calibrate(self, x_data: np.ndarray, z_data: np.ndarray):
         """
         Finds parameters for normalization of scattering data.
-        ## TO BE UPDATED FOR CONSISTENCY
+        ## TODO UPDATE FOR CONSISTENCY
             ## needs data types on return data
             ## needs clarification of units on return data
         Args:
@@ -603,15 +585,3 @@ class Fitter:
         plt.gca().set_aspect('equal', adjustable='box') # Set aspect of the plot to be equal
 
         plt.show()
-
-    def _contains_negative(self, arr):
-        """
-        Check if the numpy array contains any negative numbers.
-        
-        Parameters:
-        arr (np.ndarray): The numpy array to check.
-        
-        Returns:
-        bool: True if the array contains negative numbers, False otherwise.
-        """
-        return np.any(arr < 0)
