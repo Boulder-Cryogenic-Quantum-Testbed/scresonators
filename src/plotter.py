@@ -15,11 +15,17 @@ class Plotter:
         Ensures data is input and is of the correct type. 
         Args:
             freqs (np.ndarray): Frequency data (Hz), an array of floats
+
             cmplx_data (np.ndarray): Experimental complex S21 data, an array of complex numbers
+
             cmplx_fit (np.ndarray): Fitted complex S21 data, an array of complex numbers
+
             fit_params (instance of 'lmfit.parameter.Parameters' class): contains fitted parameter data such as 'Q' (internal quality factor),
-                        'Qc' (coupling quality factor), 'w1' (resonant frequency), 'phi' (asymmetry angle)  
+                        'Qc' (coupling quality factor), 'f0' (resonant frequency), 'phi' (asymmetry angle) (can be different for other fit methods)
+
+            fit_method (instance of fit method class specified in user file): contains methods useful for the fitting function utility
         """
+        
         # Check if any input data is missing
         # Add parameter name to a list 'missing_data' if it is missing
         missing_data = []
@@ -244,7 +250,7 @@ class Plotter:
 
         return fig, ax_dict
     
-    ## TODO Consider sourcing out the main parts of the plots to methods
+    ## TODO Consider sourcing out the common parts of the plots to methods
     def _plot_complex_circle(self, ax, cmplx_data, cmplx_fit, **kwargs):
         horiz_line = kwargs.get('horiz_line', True)
         vert_line = kwargs.get('vert_line', False)
