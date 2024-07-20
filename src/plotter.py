@@ -119,7 +119,7 @@ class Plotter:
 
         return fig, ax_dict
         
-    def plot(self, normalized_cmplx_data, fit_params, fit_method=None, **kwargs):
+    def plot(self, normalized_cmplx_data, fit_params, fig, ax_dict, fit_method=None, **kwargs):
         # TODO Make cmplx_fit within the Plotter class such that it has more points
         # (so it actually looks like a circle when the resonance doesn't have a ton of points)   
         """
@@ -168,12 +168,6 @@ class Plotter:
         resonant_phase_value = np.angle(resonant_complex_value)
 
         ## TODO fit_params may be same format as params in dcm.py. Look into this
-        layout = [
-        ["main", "main", "mag"],
-        ["main", "main", "ang"],
-        ["main", "main", "text"]
-        ]
-        fig, ax_dict = plt.subplot_mosaic(layout, figsize=(12, 8))
         
         # Complex circle plot
         ax = ax_dict["main"]
@@ -184,22 +178,16 @@ class Plotter:
 
         # Linear/Logarithmic magnitude plot
         ax_mag = ax_dict["mag"]
-        ax_mag.plot(normalized_freqs, (np.abs(normalized_cmplx_data) if linear else 20 * np.log10(np.abs(normalized_cmplx_data))), '.', label="normalized data")
-        ax_mag.plot(normalized_highres_freqs, (np.abs(high_res_cmplx_fit) if linear else 20 * np.log10(np.abs(high_res_cmplx_fit))), label="fit function")
+        ax_mag = self._plot_magnitudes(ax_mag, normalized_freqs, normalized_cmplx_data, normalized_highres_freqs, high_res_cmplx_fit, linear=False)
+        # Plot a star at the resonance
         ax_mag.plot(0, (resonant_magnitude_value if linear else 20 * np.log10(resonant_magnitude_value)), 'r*', markersize=15, label="resonant frequency")
-        ax_mag.set_xlabel("$(f - f_0)$ [kHz]")
-        ax_mag.set_ylabel("Mag[$S_{21}$]") if linear else ax_mag.set_ylabel("Mag[$S_{21}$] (dB)")
-        ax_mag.set_title("Linear Magnitude Plot") if linear else ax_mag.set_title("Log Magnitude Plot")
         ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Phase plot
         ax_ang = ax_dict["ang"]
-        ax_ang.plot(normalized_freqs, np.angle(normalized_cmplx_data), '.', label="normalized data")
-        ax_ang.plot(normalized_highres_freqs, np.angle(high_res_cmplx_fit), label="fit function")
+        ax_ang = self._plot_phases(ax_ang, normalized_freqs, normalized_cmplx_data, normalized_highres_freqs, high_res_cmplx_fit)
+        # Plot a star at the resonance
         ax_ang.plot(0, resonant_phase_value, 'r*', markersize=15, label="resonant frequency")
-        ax_ang.set_xlabel("$(f - f_0)$ [kHz]")
-        ax_ang.set_ylabel("Ang[$S_{21}$] (rad)")
-        ax_ang.set_title("Phase Plot")
         ax_ang.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Calculate the range of data with padding, set x and y limits for complex circle
@@ -266,15 +254,29 @@ class Plotter:
         ax.axhline(y=0, color='black', linewidth=1)
         ax.axvline(x=1, color='black', linewidth=1)
         ax.set_title("Complex Circle")
-        ax.legend()
 
         return ax
 
-    def _plot_magnitudes():
-        pass
+    def _plot_magnitudes(self, ax_mag, normalized_freqs, normalized_cmplx_data, normalized_highres_freqs, high_res_cmplx_fit, **kwargs):
+        linear = kwargs.get('linear', False)
 
-    def _plot_phases():
-        pass
+        ax_mag.plot(normalized_freqs, (np.abs(normalized_cmplx_data) if linear else 20 * np.log10(np.abs(normalized_cmplx_data))), '.', label="normalized data")
+        ax_mag.plot(normalized_highres_freqs, (np.abs(high_res_cmplx_fit) if linear else 20 * np.log10(np.abs(high_res_cmplx_fit))), label="fit function")
+
+        ax_mag.set_xlabel("$(f - f_0)$ [kHz]")
+        ax_mag.set_ylabel("Mag[$S_{21}$]") if linear else ax_mag.set_ylabel("Mag[$S_{21}$] (dB)")
+        ax_mag.set_title("Linear Magnitude Plot") if linear else ax_mag.set_title("Log Magnitude Plot")
+
+        return ax_mag
+
+    def _plot_phases(self, ax_ang, normalized_freqs, normalized_cmplx_data, normalized_highres_freqs, high_res_cmplx_fit, **kwargs):
+        ax_ang.plot(normalized_freqs, np.angle(normalized_cmplx_data), '.', label="normalized data")
+        ax_ang.plot(normalized_highres_freqs, np.angle(high_res_cmplx_fit), label="fit function")
+        ax_ang.set_xlabel("$(f - f_0)$ [kHz]")
+        ax_ang.set_ylabel("Ang[$S_{21}$] (rad)")
+        ax_ang.set_title("Phase Plot")
+
+        return ax_ang
 
 
     @staticmethod
