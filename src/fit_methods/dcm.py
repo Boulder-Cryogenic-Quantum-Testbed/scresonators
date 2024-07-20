@@ -12,13 +12,9 @@ class DCM(FitMethod):
     def func(x, Q, Qc, f0, phi):
         """DCM fit function."""
         return 1 - Q / Qc * np.exp(1j * phi) / (1 + 1j * (x - f0) / f0 * 2 * Q) ## absolute value of Qc actually
-    
-    @staticmethod
-    def abs_func(x, Q, Qc, f0, phi):
-        return (((1-((Q/Qc*np.cos(phi) + 2*(Q**2)/f0*(x-f0)/Qc*np.sin(phi))/(1+4*(Q**2)/(f0**2)*((x-f0)**2))))**2) + (((2*(Q**2)/f0*(x-f0)/Qc*np.cos(phi) + Q/Qc*np.sin(phi))/(1+4*(Q**2)/(f0**2)*((x-f0)**2)))**2)) ** (0.5)
 
     @staticmethod
-    def abs_func2(x, Q, Qc, f0, phi):
+    def abs_func(x, Q, Qc, f0, phi):
         return np.abs(1 - Q / Qc * np.exp(1j * phi) / (1 + 1j * (x - f0) / f0 * 2 * Q))
 
     def create_model(self):
@@ -27,14 +23,21 @@ class DCM(FitMethod):
         return model
 
     def find_initial_guess(self, x: np.ndarray, y: np.ndarray) -> lmfit.Parameters: ## Redundant? There is a '_estimate_initial_parameters' method in Fitter class
-        Q, Qc = 1e5, 1e5
+        Q = Qc = 1000  # Starting guess for Q and Qc
         f0_idx = np.abs(y).argmin()
         f0 = x[f0_idx]
         phi = 0
-
-        init_guess_params = np.array([Q, Qc, f0, phi])
-        param_guesses, _ = scipy.optimize.curve_fit(self.abs_func2, x, abs(y), init_guess_params)
-        print("Parameter guesses: ", param_guesses)
+        
+        while True:
+            try:
+                init_guess_params = np.array([Q, Qc, f0, phi])
+                param_guesses, _ = scipy.optimize.curve_fit(self.abs_func, x, abs(y), p0=init_guess_params)
+                print("Parameter guesses: ", param_guesses)
+                break
+            except RuntimeError:
+                Q *= 10
+                Qc *= 10
+                print(f"Retrying with Q={Q}, Qc={Qc}")
 
         Q_guess = param_guesses[0]
         Qc_guess = param_guesses[1]
