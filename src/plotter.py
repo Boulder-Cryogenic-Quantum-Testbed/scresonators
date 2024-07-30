@@ -49,6 +49,8 @@ class Plotter:
             self.amps_linear = np.abs(self.cmplx_data) ## Do we want this here or in plot_dcm?
             self.amps_dB = 20*np.log10(self.amps_linear) ## Do we want this here or in plot_dcm?
             self.phases = np.angle(self.cmplx_data) ## Do we want this here or in plot_dcm?
+
+        # self.freq_factor = self._find_freq_order() TODO consider this idea
         
         # Check if each argument is a NumPy array
         if not isinstance(freqs, np.ndarray):
@@ -71,20 +73,25 @@ class Plotter:
         
         # Complex circle plot
         ax = ax_dict["main"]
-        ax = self._plot_complex_circle(ax, self.cmplx_data, horiz_line=True, vert_line=True)
+        ax = self._plot_complex_circle(ax, horiz_line=True, vert_line=True)
         ax.axvline(x=0, color='black', linewidth=1) 
         ax.legend()
+
+        freq_factor = 1e9 ## TODO code this more robust, and consider making freq_factor an attribute of the class
+        rotation = 280 
+        freqs_ticks, freqs_ticks_labels = self.xticks_setup(5, freq_factor)
         
-        freq_factor = 1e9
         # Magnitude plot
         ax_mag = ax_dict["mag"]
-        ax_mag = self._plot_magnitudes(ax_mag, self.freqs_Hz, self.cmplx_data)
+        ax_mag = self._plot_magnitudes(ax_mag, freq_factor)
+        ax_mag.set_xticks(freqs_ticks/freq_factor, labels=freqs_ticks_labels, rotation=rotation)
         # ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func(freq_factor)))
         
         # Phase plot
         ax_ang = ax_dict["ang"]
-        ax_ang = self._plot_phases(ax_ang, self.freqs_Hz, self.cmplx_data)
-        ax_ang.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func(freq_factor)))
+        ax_ang = self._plot_phases(ax_ang, freq_factor)
+        ax_ang.set_xticks(freqs_ticks/freq_factor, labels=freqs_ticks_labels, rotation=rotation)
+        # ax_ang.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func(freq_factor)))
         
         # Adjust the bottom, left, right, and top margins
         plt.tight_layout(rect=[0, 0, 1, 0.95]) 
@@ -152,6 +159,14 @@ class Plotter:
         ax.plot(resonant_complex_value.real, resonant_complex_value.imag, 'r*', markersize=15, label="resonant frequency")
         ax.legend()
 
+        freq_factor = 1e9
+        rotation = 280
+        # Calculate the indices for `n` evenly spaced frequency markers
+        num_ticks = 5
+        indices = np.linspace(0, len(self.freqs_Hz) - 1, num_ticks, dtype=int)
+        freqs_ticks = self.freqs_Hz[indices]
+        freqs_ticks_labels = [f'{freq/freq_factor:.4f}' for freq in freqs_ticks]
+
         # Linear/Logarithmic magnitude plot
         ax_mag = ax_dict["mag"]
         ax_mag = self._plot_magnitudes(ax_mag, normalized_freqs, normalized_cmplx_data, linear=False)
@@ -160,6 +175,7 @@ class Plotter:
         # Plot a star at the resonance
         ax_mag.plot(0, (resonant_magnitude_value if linear else 20 * np.log10(resonant_magnitude_value)), 'r*', markersize=15, label="resonant frequency")
         ax_mag.set_xlabel("$(f - f_0)$ [kHz]")
+        # ax_mag.set_xticks(freqs_ticks/freq_factor, labels=freqs_ticks_labels, rotation=rotation)
         ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Phase plot
@@ -170,6 +186,7 @@ class Plotter:
         # Plot a star at the resonance
         ax_ang.plot(0, resonant_phase_value, 'r*', markersize=15, label="resonant frequency")
         ax_ang.set_xlabel("$(f - f_0)$ [kHz]")
+        # ax_ang.set_xticks(freqs_ticks/freq_factor, labels=freqs_ticks_labels, rotation=rotation)
         ax_ang.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Calculate the range of data with padding, set x and y limits for complex circle
@@ -220,13 +237,13 @@ class Plotter:
 
         return fig, ax_dict
 
-    def _plot_complex_circle(self, ax, cmplx_data, **kwargs):
+    def _plot_complex_circle(self, ax, **kwargs):
         horiz_line = kwargs.get('horiz_line', True)
         vert_line = kwargs.get('vert_line', False)
 
         # Complex circle plot
         # Plot data
-        ax.plot(cmplx_data.real, cmplx_data.imag, '.', label="normalized data")
+        ax.plot(self.cmplx_data.real, self.cmplx_data.imag, '.', label="normalized data")
         
         ax.set_xlabel("Re[$S_{21}$]")
         ax.set_ylabel("Im[$S_{21}$]")
@@ -236,20 +253,20 @@ class Plotter:
 
         return ax
 
-    def _plot_magnitudes(self, ax_mag, freqs, cmplx_data, **kwargs):
+    def _plot_magnitudes(self, ax_mag, freq_factor, **kwargs):
         linear = kwargs.get('linear', False)
 
-        ax_mag.plot(freqs, (np.abs(cmplx_data) if linear else 20 * np.log10(np.abs(cmplx_data))), '.', label="normalized data")
+        ax_mag.plot(self.freqs_Hz/freq_factor, (np.abs(self.cmplx_data) if linear else 20 * np.log10(np.abs(self.cmplx_data))), '.', label="normalized data")
     
         ax_mag.set_xlabel("Frequency [Hz]")
-        ax_mag.set_ylabel("Mag[$S_{21}$]") if linear else ax_mag.set_ylabel("Mag[$S_{21}$] (dB)")
-        ax_mag.set_title("Linear Magnitude Plot") if linear else ax_mag.set_title("Log Magnitude Plot")
+        ax_mag.set_ylabel("Mag[$S_{21}$]" if linear else "Mag[$S_{21}$] (dB)")
+        ax_mag.set_title("Linear Magnitude Plot" if linear else "Logarithmic Magnitude Plot")
 
         return ax_mag
 
-    def _plot_phases(self, ax_ang, normalized_freqs, normalized_cmplx_data, **kwargs):
+    def _plot_phases(self, ax_ang, freq_factor, **kwargs):
         ## TODO Make this generally functional, including fixing the x-axis ticks
-        ax_ang.plot(normalized_freqs, np.angle(normalized_cmplx_data), '.', label="normalized data")
+        ax_ang.plot(self.freqs_Hz/freq_factor, np.angle(self.cmplx_data), '.', label="normalized data")
 
         ax_ang.set_xlabel("Frequency [Hz]")
         ax_ang.set_ylabel("Ang[$S_{21}$] (rad)")
@@ -257,6 +274,14 @@ class Plotter:
 
         return ax_ang
 
+
+    def xticks_setup(self, n, freq_factor):
+        # Calculate the indices for `n` evenly spaced frequency markers
+        indices = np.linspace(0, len(self.freqs_Hz) - 1, n, dtype=int)
+        freqs_ticks = self.freqs_Hz[indices]
+        freqs_ticks_labels = [f'{freq/freq_factor:.4f}' for freq in freqs_ticks]
+
+        return freqs_ticks, freqs_ticks_labels
 
     @staticmethod
     def _formatter_func(factor=1e6):
