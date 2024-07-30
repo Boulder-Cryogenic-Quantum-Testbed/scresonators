@@ -10,7 +10,7 @@ from .utils import find_circle, phase_dist, phase_centered, periodic_boundary, n
 
 ## FOR TESTING ONLY
 import matplotlib.pyplot as plt
-import plotter
+import scresonators.src.plotter
 ## FOR TESTING ONLY
 
 

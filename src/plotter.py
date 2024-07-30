@@ -58,58 +58,32 @@ class Plotter:
         
         # TODO Implement the ability to read fit_method and call whichever plot method is accordingly needed 
     
-    def plot_initial_guess_steps(self, fit_method):
-        if (fit_method.__class__.__name__ == 'DCM'):
-            # fit method is DCM
-            _, guess_intermediate_vars = fit_method.find_initial_guess(self.freqs_Hz, self.cmplx_data)
-
-
-        elif (fit_method.__class__.__name__ == 'PhiRM'):
-            # fit_method is φRM
-            print()
+    def plot_preprocessing_steps(self, fit_method):
+        pass
             
 
-    def plot_before_fit(self, **kwargs):
+    def plot_before_fit(self, fig, ax_dict, **kwargs):
         # Keyword arguments
         figure_title = kwargs.get('figure_title', 'S21 Experimental Data')
         horiz_line = kwargs.get('horiz_line', True)
         vert_line = kwargs.get('vert_line', False)
         linear = kwargs.get('linear', False)
-
-        layout = [
-        ["main", "main", "mag"],
-        ["main", "main", "ang"],
-        ]
-
-        fig, ax_dict = plt.subplot_mosaic(layout, figsize=(12, 8))
         
         # Complex circle plot
         ax = ax_dict["main"]
-        ax.plot(self.cmplx_data.real, self.cmplx_data.imag, '.', label="normalized data")
-        ax.set_xlabel("Re[$S_{21}$]")
-        ax.set_ylabel("Im[$S_{21}$]")
-        ax.axhline(y=0, color='black', linewidth=1) if horiz_line else None
-        ax.axvline(x=1, color='black', linewidth=1) if vert_line else None
+        ax = self._plot_complex_circle(ax, self.cmplx_data, horiz_line=True, vert_line=True)
         ax.axvline(x=0, color='black', linewidth=1) 
-        ax.set_title("Complex Plane")
         ax.legend()
         
         freq_factor = 1e9
-        
         # Magnitude plot
         ax_mag = ax_dict["mag"]
-        ax_mag.plot(self.freqs_Hz, self.amps_linear if linear else self.amps_dB, '.', label="normalized data")
-        ax_mag.set_xlabel("Frequency [GHz]")
-        ax_mag.set_ylabel("Mag[$S_{21}$]" if linear else "Mag[$S_{21}$] (dB)")
-        ax_mag.set_title("Linear Magnitude Plot" if linear else "Log Magnitude Plot")
-        ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func(freq_factor)))
+        ax_mag = self._plot_magnitudes(ax_mag, self.freqs_Hz, self.cmplx_data)
+        # ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func(freq_factor)))
         
         # Phase plot
         ax_ang = ax_dict["ang"]
-        ax_ang.plot(self.freqs_Hz, self.phases, '.', label="normalized data")
-        ax_ang.set_xlabel("Frequency [GHz]")
-        ax_ang.set_ylabel("Ang[$S_{21}$] (rad)")
-        ax_ang.set_title("Phase Plot")
+        ax_ang = self._plot_phases(ax_ang, self.freqs_Hz, self.cmplx_data)
         ax_ang.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func(freq_factor)))
         
         # Adjust the bottom, left, right, and top margins
@@ -171,23 +145,31 @@ class Plotter:
         
         # Complex circle plot
         ax = ax_dict["main"]
-        ax = self._plot_complex_circle(ax, normalized_cmplx_data, high_res_cmplx_fit, horiz_line=True, vert_line=True)
+        ax = self._plot_complex_circle(ax, normalized_cmplx_data, horiz_line=True, vert_line=True)
+        # Plot fitted complex S21 data with higher resolution than experimental data
+        ax.plot(high_res_cmplx_fit.real, high_res_cmplx_fit.imag, label="fit function")
         # Plot a star at the resonance
         ax.plot(resonant_complex_value.real, resonant_complex_value.imag, 'r*', markersize=15, label="resonant frequency")
         ax.legend()
 
         # Linear/Logarithmic magnitude plot
         ax_mag = ax_dict["mag"]
-        ax_mag = self._plot_magnitudes(ax_mag, normalized_freqs, normalized_cmplx_data, normalized_highres_freqs, high_res_cmplx_fit, linear=False)
+        ax_mag = self._plot_magnitudes(ax_mag, normalized_freqs, normalized_cmplx_data, linear=False)
+        # Plot fitted magnitude data with higher resolution than experimental data
+        ax_mag.plot(normalized_highres_freqs, (np.abs(high_res_cmplx_fit) if linear else 20 * np.log10(np.abs(high_res_cmplx_fit))), label="fit function")
         # Plot a star at the resonance
         ax_mag.plot(0, (resonant_magnitude_value if linear else 20 * np.log10(resonant_magnitude_value)), 'r*', markersize=15, label="resonant frequency")
+        ax_mag.set_xlabel("$(f - f_0)$ [kHz]")
         ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Phase plot
         ax_ang = ax_dict["ang"]
         ax_ang = self._plot_phases(ax_ang, normalized_freqs, normalized_cmplx_data, normalized_highres_freqs, high_res_cmplx_fit)
+        # Plot fitted phase data with higher resolution than experimental data
+        ax_ang.plot(normalized_highres_freqs, np.angle(high_res_cmplx_fit), label="fit function")
         # Plot a star at the resonance
         ax_ang.plot(0, resonant_phase_value, 'r*', markersize=15, label="resonant frequency")
+        ax_ang.set_xlabel("$(f - f_0)$ [kHz]")
         ax_ang.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Calculate the range of data with padding, set x and y limits for complex circle
@@ -237,42 +219,39 @@ class Plotter:
         # TODO: return figure object(s) so that users can edit the plot as they see fit
 
         return fig, ax_dict
-    
-    ## TODO Consider sourcing out the common parts of the plots to methods
-    def _plot_complex_circle(self, ax, cmplx_data, cmplx_fit, **kwargs):
+
+    def _plot_complex_circle(self, ax, cmplx_data, **kwargs):
         horiz_line = kwargs.get('horiz_line', True)
         vert_line = kwargs.get('vert_line', False)
 
         # Complex circle plot
-        # Plot preprocessed (normalized) experimental data
+        # Plot data
         ax.plot(cmplx_data.real, cmplx_data.imag, '.', label="normalized data")
-        # Plot complex S21 data with higher resolution than experimental data
-        ax.plot(cmplx_fit.real, cmplx_fit.imag, label="fit function")
         
         ax.set_xlabel("Re[$S_{21}$]")
         ax.set_ylabel("Im[$S_{21}$]")
-        ax.axhline(y=0, color='black', linewidth=1)
-        ax.axvline(x=1, color='black', linewidth=1)
+        ax.axhline(y=0, color='black', linewidth=1) if horiz_line else None
+        ax.axvline(x=1, color='black', linewidth=1) if vert_line else None
         ax.set_title("Complex Circle")
 
         return ax
 
-    def _plot_magnitudes(self, ax_mag, normalized_freqs, normalized_cmplx_data, normalized_highres_freqs, high_res_cmplx_fit, **kwargs):
+    def _plot_magnitudes(self, ax_mag, freqs, cmplx_data, **kwargs):
         linear = kwargs.get('linear', False)
 
-        ax_mag.plot(normalized_freqs, (np.abs(normalized_cmplx_data) if linear else 20 * np.log10(np.abs(normalized_cmplx_data))), '.', label="normalized data")
-        ax_mag.plot(normalized_highres_freqs, (np.abs(high_res_cmplx_fit) if linear else 20 * np.log10(np.abs(high_res_cmplx_fit))), label="fit function")
-
-        ax_mag.set_xlabel("$(f - f_0)$ [kHz]")
+        ax_mag.plot(freqs, (np.abs(cmplx_data) if linear else 20 * np.log10(np.abs(cmplx_data))), '.', label="normalized data")
+    
+        ax_mag.set_xlabel("Frequency [Hz]")
         ax_mag.set_ylabel("Mag[$S_{21}$]") if linear else ax_mag.set_ylabel("Mag[$S_{21}$] (dB)")
         ax_mag.set_title("Linear Magnitude Plot") if linear else ax_mag.set_title("Log Magnitude Plot")
 
         return ax_mag
 
-    def _plot_phases(self, ax_ang, normalized_freqs, normalized_cmplx_data, normalized_highres_freqs, high_res_cmplx_fit, **kwargs):
+    def _plot_phases(self, ax_ang, normalized_freqs, normalized_cmplx_data, **kwargs):
+        ## TODO Make this generally functional, including fixing the x-axis ticks
         ax_ang.plot(normalized_freqs, np.angle(normalized_cmplx_data), '.', label="normalized data")
-        ax_ang.plot(normalized_highres_freqs, np.angle(high_res_cmplx_fit), label="fit function")
-        ax_ang.set_xlabel("$(f - f_0)$ [kHz]")
+
+        ax_ang.set_xlabel("Frequency [Hz]")
         ax_ang.set_ylabel("Ang[$S_{21}$] (rad)")
         ax_ang.set_title("Phase Plot")
 
