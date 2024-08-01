@@ -10,7 +10,7 @@ from .utils import find_circle, phase_dist, phase_centered, periodic_boundary, n
 
 ## FOR TESTING ONLY
 import matplotlib.pyplot as plt
-import scresonators.src.plotter
+import scresonators.src.plotter as plotter
 ## FOR TESTING ONLY
 
 
@@ -153,24 +153,30 @@ class Fitter:
             np.ndarray: The preprocessed and normalized complex S21 data.
         """
 
+        self.ydata = ydata
+
+        ## plot_preprocessing_steps PLOT HERE using self.ydata
+
         # Remove cable delay
         delay = self.fit_delay(xdata, ydata, preprocessing_guesses) ## a lot of possible overhead calculations happening here
         print("Delay from 'fit_delay': ", delay/1e-9, "ns")
 
-        z_data = ydata * np.exp(2j * np.pi * delay * xdata)
+        self.z_data = ydata * np.exp(2j * np.pi * delay * xdata)
+
+        ## plot_preprocessing_steps PLOT HERE using self.z_data
+        ## plot_preprocessing_steps PLOT HERE
 
         # Calibrate and normalize
-        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, z_data)
+        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, self.z_data)
 
-        z_norm = normalize(xdata, z_data, delay_remaining, a, alpha)
+        self.z_norm = normalize(xdata, self.z_data, delay_remaining, a, alpha)
 
-        ## TESTING PLOT
+        ## plot_preprocessing_steps PLOT HERE
         # plot1 = plotter.Plotter(xdata, z_norm)
         # plot1.plot_before_fit(figure_title="S21 after normalization")
         ## TESTING PLOT
 
-        return z_norm
-    
+        return self.z_norm
     
     def preprocess_linear(self, xdata: np.ndarray, ydata: np.ndarray, normalize: int):
         """
@@ -429,26 +435,24 @@ class Fitter:
         Returns:
             delay (float): cable delay time (s) ## not sure about this...
         """
-        ## TESTING PLOT
-        # plot1 = plotter.Plotter(xdata, ydata)
-        # plot1.plot_before_fit(figure_title='S21 before circle translation')
-        ## TESTING PLOT
 
         # Initial circle finding and translation to origin
         xc, yc, _ = find_circle(np.real(ydata), np.imag(ydata))  ## Find circle in complex coordinates
         z_data = ydata - complex(xc, yc) ## Translate circle center to origin
         
+        self.fit_delay_zdata1 = z_data
+        ## plot_preprocessing_steps PLOT HERE with self.fit_delay_zdata1
         ## TESTING PLOT
         # plot2 = plotter.Plotter(xdata, z_data)
-        # plot2.plot_before_fit(figure_title='S21 after circle translation')
+        # layout = [
+        #     ["main", "main", "mag"],
+        #     ["main", "main", "ang"]
+        # ]
+        # fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        # plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in fit_delay after circle translation')
         ## TESTING PLOT
 
         fr, Ql, theta, delay = self.fit_phase(xdata, z_data, guesses) ## fit_phase function should include initial guesses!
-
-        ## TESTING PLOT
-        # plot3 = plotter.Plotter(xdata, z_data)
-        # plot3.plot_before_fit(figure_title='S21 after fit_phase method call')
-        ## TESTING PLOT
 
         # Iterative refinement of delay
         delay *= 0.05
@@ -457,7 +461,7 @@ class Fitter:
             xc, yc, _ = find_circle(np.real(z_data), np.imag(z_data))
             z_data -= complex(xc, yc)
             
-            guesses = (fr, Ql, 5e-11)
+            guesses = (fr, Ql, 5e-11) ## hard coded 5e-11
             fr, Ql, theta, delay_corr = self.fit_phase(xdata, z_data, guesses)
             
             # Condition for stopping iteration
@@ -468,8 +472,20 @@ class Fitter:
             
             delay = self._update_delay(delay, delay_corr)
 
+        self.fit_delay_zdata2 = z_data
+        ## plot_preprocessing_steps PLOT HERE with self.fit_delay_zdata2
+        ## TESTING PLOT
+        # plot3 = plotter.Plotter(xdata, z_data)
+        # layout = [
+        #     ["main", "main", "mag"],
+        #     ["main", "main", "ang"]
+        # ]
+        # fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        # plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after delay refinement')
+        ## TESTING PLOT
+
         if not self._is_correction_small(xdata, delay_corr, residuals, final_check=True):
-            logging.warning("Delay could not be fit properly!") ## Throws an error with simulated dcm data
+            logging.warning("Delay could not be fit properly!")
         
         return delay
 
@@ -512,10 +528,22 @@ class Fitter:
                 - fr: resonance frequency (Hz)
                 - Ql: loaded quality factor
         """
+        ## plot before translation to origin
+
         # Translate circle to origin
         xc, yc, r = find_circle(np.real(z_data), np.imag(z_data))
         zc = complex(xc, yc)
         z_data2 = z_data - zc
+
+        ## TESTING PLOT
+        plot2 = plotter.Plotter(x_data, z_data)
+        layout = [
+            ["main", "main", "mag"],
+            ["main", "main", "ang"]
+        ]
+        fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in fit_delay after circle translation')
+        ## TESTING PLOT
 
         # Fit phase for off-resonant point
         fr, Ql, theta, delay_remaining = self.fit_phase(x_data, z_data2)
@@ -524,8 +552,15 @@ class Fitter:
         a, alpha = np.abs(offrespoint), np.angle(offrespoint)
         phi = periodic_boundary(beta - alpha)
 
-        # Adjust radius for normalization
-        r /= a
+        ## TESTING PLOT
+        plot3 = plotter.Plotter(x_data, z_data)
+        layout = [
+            ["main", "main", "mag"],
+            ["main", "main", "ang"]
+        ]
+        fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after circle translation')
+        ## TESTING PLOT
 
         return delay_remaining, a, alpha, theta, phi, fr, Ql
     
