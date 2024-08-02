@@ -154,7 +154,6 @@ class Fitter:
         """
 
         self.ydata = ydata
-
         ## plot_preprocessing_steps PLOT HERE using self.ydata
 
         # Remove cable delay
@@ -164,7 +163,6 @@ class Fitter:
         self.z_data = ydata * np.exp(2j * np.pi * delay * xdata)
 
         ## plot_preprocessing_steps PLOT HERE using self.z_data
-        ## plot_preprocessing_steps PLOT HERE
 
         # Calibrate and normalize
         delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, self.z_data)
@@ -443,13 +441,13 @@ class Fitter:
         self.fit_delay_zdata1 = z_data
         ## plot_preprocessing_steps PLOT HERE with self.fit_delay_zdata1
         ## TESTING PLOT
-        # plot2 = plotter.Plotter(xdata, z_data)
-        # layout = [
-        #     ["main", "main", "mag"],
-        #     ["main", "main", "ang"]
-        # ]
-        # fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
-        # plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in fit_delay after circle translation')
+        plot2 = plotter.Plotter(xdata, z_data)
+        layout = [
+            ["main", "main", "mag"],
+            ["main", "main", "ang"]
+        ]
+        fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in fit_delay after circle translation')
         ## TESTING PLOT
 
         fr, Ql, theta, delay = self.fit_phase(xdata, z_data, guesses) ## fit_phase function should include initial guesses!
@@ -475,13 +473,13 @@ class Fitter:
         self.fit_delay_zdata2 = z_data
         ## plot_preprocessing_steps PLOT HERE with self.fit_delay_zdata2
         ## TESTING PLOT
-        # plot3 = plotter.Plotter(xdata, z_data)
-        # layout = [
-        #     ["main", "main", "mag"],
-        #     ["main", "main", "ang"]
-        # ]
-        # fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
-        # plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after delay refinement')
+        plot3 = plotter.Plotter(xdata, z_data)
+        layout = [
+            ["main", "main", "mag"],
+            ["main", "main", "ang"]
+        ]
+        fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after delay refinement')
         ## TESTING PLOT
 
         if not self._is_correction_small(xdata, delay_corr, residuals, final_check=True):
@@ -536,13 +534,13 @@ class Fitter:
         z_data2 = z_data - zc
 
         ## TESTING PLOT
-        plot2 = plotter.Plotter(x_data, z_data)
-        layout = [
-            ["main", "main", "mag"],
-            ["main", "main", "ang"]
-        ]
-        fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
-        plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in fit_delay after circle translation')
+        # plot2 = plotter.Plotter(x_data, z_data)
+        # layout = [
+        #     ["main", "main", "mag"],
+        #     ["main", "main", "ang"]
+        # ]
+        # fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        # plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in calibrate after circle translation to origin')
         ## TESTING PLOT
 
         # Fit phase for off-resonant point
@@ -553,13 +551,13 @@ class Fitter:
         phi = periodic_boundary(beta - alpha)
 
         ## TESTING PLOT
-        plot3 = plotter.Plotter(x_data, z_data)
-        layout = [
-            ["main", "main", "mag"],
-            ["main", "main", "ang"]
-        ]
-        fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
-        plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after circle translation')
+        # plot3 = plotter.Plotter(x_data, z_data)
+        # layout = [
+        #     ["main", "main", "mag"],
+        #     ["main", "main", "ang"]
+        # ]
+        # fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        # plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in calibrate after ')
         ## TESTING PLOT
 
         return delay_remaining, a, alpha, theta, phi, fr, Ql

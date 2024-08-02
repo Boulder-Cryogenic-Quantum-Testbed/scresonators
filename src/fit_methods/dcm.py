@@ -24,12 +24,14 @@ class DCM(FitMethod):
 
     def find_initial_guess(self, x: np.ndarray, y: np.ndarray) -> lmfit.Parameters: ## Redundant? There is a '_estimate_initial_parameters' method in Fitter class
         # Rough calculation to find loaded quality factor
-        mags_min = np.min(y.real)
-        mags_max = np.max(y.real)
+        mags_min = np.min(np.abs(y))
+        mags_max = np.max(np.abs(y))
         mags_halfmax = (mags_max + mags_min) / 2
 
         crossing_points = []
         for i in range(len(y.real)-1):
+            # np.where() returns indices where function is zero
+            # np.where(np.abs(self.func)<= 0.1, x)
             if (y.real[i] - mags_halfmax) * (y.real[i+1] - mags_halfmax) < 0:
                 crossing_points.append(i)
 
@@ -56,7 +58,7 @@ class DCM(FitMethod):
         param_guesses = lmfit.Parameters()
         param_guesses.add('Q', value=Q, min=1e3, max=1e6)
         param_guesses.add('Qc', value=Qc, min=1e3, max=1e6)
-        param_guesses.add('f0', value=f0, min=f0_guess*0.9, max=f0_guess*1.1)
+        param_guesses.add('f0', value=f0, min=f0*0.9, max=f0*1.1)
         param_guesses.add('phi', value=phi, min=-np.pi, max=np.pi)
 
         return param_guesses

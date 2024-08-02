@@ -73,13 +73,13 @@ class Plotter:
         
         # Complex circle plot
         ax = ax_dict["main"]
-        ax = self._plot_complex_circle(ax, horiz_line=True, vert_line=True)
+        ax = self._plot_complex_circle(ax, horiz_line=horiz_line, vert_line=vert_line)
         ax.axvline(x=0, color='black', linewidth=1) 
         ax.legend()
 
         freq_factor = 1e9 ## TODO code this more robust, and consider making freq_factor an attribute of the class
         rotation = 280 
-        freqs_ticks, freqs_ticks_labels = self.xticks_setup(5, freq_factor)
+        freqs_ticks, freqs_ticks_labels = self._xticks_setup(5, freq_factor)
         
         # Magnitude plot
         ax_mag = ax_dict["mag"]
@@ -125,13 +125,13 @@ class Plotter:
                 
         """
         if fit_method is None: 
-            raise ValueError("Insert instance of DCM fit method class")
+            raise ValueError("Insert instance of fit method class")
         if normalized_cmplx_data is None:
             raise ValueError("Insert normalized complex data from fitting results")
         if fit_params is None:
             raise ValueError("Insert fit parameters from fitting results")
         
-        # Get linear controller
+        # Keyword arguments
         linear = kwargs.get('linear', False)
 
         # Use existing 'dcm_method' instance to get higher resolution fitted data
@@ -152,7 +152,7 @@ class Plotter:
         
         # Complex circle plot
         ax = ax_dict["main"]
-        ax = self._plot_complex_circle(ax, normalized_cmplx_data, horiz_line=True, vert_line=True)
+        ax = self._plot_complex_circle(ax, horiz_line=True, vert_line=True)
         # Plot fitted complex S21 data with higher resolution than experimental data
         ax.plot(high_res_cmplx_fit.real, high_res_cmplx_fit.imag, label="fit function")
         # Plot a star at the resonance
@@ -161,26 +161,22 @@ class Plotter:
 
         freq_factor = 1e9
         rotation = 280
-        # Calculate the indices for `n` evenly spaced frequency markers
-        num_ticks = 5
-        indices = np.linspace(0, len(self.freqs_Hz) - 1, num_ticks, dtype=int)
-        freqs_ticks = self.freqs_Hz[indices]
-        freqs_ticks_labels = [f'{freq/freq_factor:.4f}' for freq in freqs_ticks]
+        freqs_ticks, freqs_ticks_labels = self._xticks_setup(5, freq_factor)
 
         # Linear/Logarithmic magnitude plot
         ax_mag = ax_dict["mag"]
-        ax_mag = self._plot_magnitudes(ax_mag, normalized_freqs, normalized_cmplx_data, linear=False)
+        ax_mag = self._plot_magnitudes(ax_mag, freq_factor, linear=False)
         # Plot fitted magnitude data with higher resolution than experimental data
         ax_mag.plot(normalized_highres_freqs, (np.abs(high_res_cmplx_fit) if linear else 20 * np.log10(np.abs(high_res_cmplx_fit))), label="fit function")
         # Plot a star at the resonance
         ax_mag.plot(0, (resonant_magnitude_value if linear else 20 * np.log10(resonant_magnitude_value)), 'r*', markersize=15, label="resonant frequency")
         ax_mag.set_xlabel("$(f - f_0)$ [kHz]")
-        # ax_mag.set_xticks(freqs_ticks/freq_factor, labels=freqs_ticks_labels, rotation=rotation)
+        ax_mag.set_xticks(freqs_ticks/freq_factor, labels=freqs_ticks_labels, rotation=rotation)
         ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Phase plot
         ax_ang = ax_dict["ang"]
-        ax_ang = self._plot_phases(ax_ang, normalized_freqs, normalized_cmplx_data, normalized_highres_freqs, high_res_cmplx_fit)
+        ax_ang = self._plot_phases(ax_ang, freq_factor)
         # Plot fitted phase data with higher resolution than experimental data
         ax_ang.plot(normalized_highres_freqs, np.angle(high_res_cmplx_fit), label="fit function")
         # Plot a star at the resonance
@@ -241,8 +237,6 @@ class Plotter:
         horiz_line = kwargs.get('horiz_line', True)
         vert_line = kwargs.get('vert_line', False)
 
-        # Complex circle plot
-        # Plot data
         ax.plot(self.cmplx_data.real, self.cmplx_data.imag, '.', label="normalized data")
         
         ax.set_xlabel("Re[$S_{21}$]")
@@ -258,25 +252,24 @@ class Plotter:
 
         ax_mag.plot(self.freqs_Hz/freq_factor, (np.abs(self.cmplx_data) if linear else 20 * np.log10(np.abs(self.cmplx_data))), '.', label="normalized data")
     
-        ax_mag.set_xlabel("Frequency [Hz]")
+        ax_mag.set_xlabel("Frequency [GHz]")
         ax_mag.set_ylabel("Mag[$S_{21}$]" if linear else "Mag[$S_{21}$] (dB)")
         ax_mag.set_title("Linear Magnitude Plot" if linear else "Logarithmic Magnitude Plot")
 
         return ax_mag
 
-    def _plot_phases(self, ax_ang, freq_factor, **kwargs):
-        ## TODO Make this generally functional, including fixing the x-axis ticks
+    def _plot_phases(self, ax_ang, freq_factor):
+
         ax_ang.plot(self.freqs_Hz/freq_factor, np.angle(self.cmplx_data), '.', label="normalized data")
 
-        ax_ang.set_xlabel("Frequency [Hz]")
+        ax_ang.set_xlabel("Frequency [GHz]")
         ax_ang.set_ylabel("Ang[$S_{21}$] (rad)")
         ax_ang.set_title("Phase Plot")
 
         return ax_ang
 
-
-    def xticks_setup(self, n, freq_factor):
-        # Calculate the indices for `n` evenly spaced frequency markers
+    def _xticks_setup(self, n, freq_factor):
+        # Calculate the indices for `n` evenly spaced frequency markers (evenly spaced in array-space, not frequency-space)
         indices = np.linspace(0, len(self.freqs_Hz) - 1, n, dtype=int)
         freqs_ticks = self.freqs_Hz[indices]
         freqs_ticks_labels = [f'{freq/freq_factor:.4f}' for freq in freqs_ticks]
