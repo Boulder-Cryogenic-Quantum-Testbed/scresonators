@@ -155,23 +155,50 @@ class Fitter:
 
         self.ydata = ydata
         ## plot_preprocessing_steps PLOT HERE using self.ydata
+        ## TESTING PLOT
+        # plot1 = plotter.Plotter()
+        # plot1.load_data(xdata, self.y_data)
+        # layout = [
+        #     ["main", "main", "mag"],
+        #     ["main", "main", "ang"]
+        # ]
+        # fig1, ax_dict1 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        # plot1.plot_before_fit(fig1, ax_dict1, figure_title='S21 in fit_delay after circle translation')
+        ## TESTING PLOT
 
         # Remove cable delay
-        delay = self.fit_delay(xdata, ydata, preprocessing_guesses) ## a lot of possible overhead calculations happening here
+        delay = self.fit_delay(xdata, self.ydata, preprocessing_guesses) ## a lot of possible overhead calculations happening here
         print("Delay from 'fit_delay': ", delay/1e-9, "ns")
 
         self.z_data = ydata * np.exp(2j * np.pi * delay * xdata)
 
         ## plot_preprocessing_steps PLOT HERE using self.z_data
+        ## TESTING PLOT
+        # plot2 = plotter.Plotter()
+        # plot2.load_data(xdata, self.z_data)
+        # layout = [
+        #     ["main", "main", "mag"],
+        #     ["main", "main", "ang"]
+        # ]
+        # fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        # plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in fit_delay after circle translation')
+        ## TESTING PLOT
 
         # Calibrate and normalize
         delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, self.z_data)
 
         self.z_norm = normalize(xdata, self.z_data, delay_remaining, a, alpha)
 
-        ## plot_preprocessing_steps PLOT HERE
-        # plot1 = plotter.Plotter(xdata, z_norm)
-        # plot1.plot_before_fit(figure_title="S21 after normalization")
+        ## plot_preprocessing_steps PLOT HERE with self.preprocess_circle_z_norm
+        ## TESTING PLOT
+        # plot3 = plotter.Plotter()
+        # plot3.load_data(xdata, self.z_norm)
+        # layout = [
+        #     ["main", "main", "mag"],
+        #     ["main", "main", "ang"]
+        # ]
+        # fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        # plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after circle translation')
         ## TESTING PLOT
 
         return self.z_norm
@@ -441,7 +468,8 @@ class Fitter:
         self.fit_delay_zdata1 = z_data
         ## plot_preprocessing_steps PLOT HERE with self.fit_delay_zdata1
         ## TESTING PLOT
-        plot2 = plotter.Plotter(xdata, z_data)
+        plot2 = plotter.Plotter()
+        plot2.load_data(xdata, z_data)
         layout = [
             ["main", "main", "mag"],
             ["main", "main", "ang"]
@@ -473,7 +501,8 @@ class Fitter:
         self.fit_delay_zdata2 = z_data
         ## plot_preprocessing_steps PLOT HERE with self.fit_delay_zdata2
         ## TESTING PLOT
-        plot3 = plotter.Plotter(xdata, z_data)
+        plot3 = plotter.Plotter()
+        plot3.load_data(xdata, z_data)
         layout = [
             ["main", "main", "mag"],
             ["main", "main", "ang"]
@@ -534,7 +563,8 @@ class Fitter:
         z_data2 = z_data - zc
 
         ## TESTING PLOT
-        # plot2 = plotter.Plotter(x_data, z_data)
+        # plot2 = plotter.Plotter()
+        # plot2.load_data(x_data, z_data)
         # layout = [
         #     ["main", "main", "mag"],
         #     ["main", "main", "ang"]
@@ -551,7 +581,8 @@ class Fitter:
         phi = periodic_boundary(beta - alpha)
 
         ## TESTING PLOT
-        # plot3 = plotter.Plotter(x_data, z_data)
+        # plot3 = plotter.Plotter()
+        # plot3.load_data(x_data, z_data)
         # layout = [
         #     ["main", "main", "mag"],
         #     ["main", "main", "ang"]
