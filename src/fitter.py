@@ -153,7 +153,7 @@ class Fitter:
             np.ndarray: The preprocessed and normalized complex S21 data.
         """
 
-        self.ydata = ydata
+        # self.ydata = ydata
         ## plot_preprocessing_steps PLOT HERE using self.ydata
         ## TESTING PLOT
         # plot1 = plotter.Plotter()
@@ -166,11 +166,12 @@ class Fitter:
         # plot1.plot_before_fit(fig1, ax_dict1, figure_title='S21 in fit_delay after circle translation')
         ## TESTING PLOT
 
-        # Remove cable delay
-        delay = self.fit_delay(xdata, self.ydata, preprocessing_guesses) ## a lot of possible overhead calculations happening here
+        # Remove cable delay 
+        delay = self.fit_delay(xdata, ydata, preprocessing_guesses) # self.ydata
         print("Delay from 'fit_delay': ", delay/1e-9, "ns")
 
-        self.z_data = ydata * np.exp(2j * np.pi * delay * xdata)
+        # self.z_data
+        z_data = ydata * np.exp(2j * np.pi * delay * xdata)
 
         ## plot_preprocessing_steps PLOT HERE using self.z_data
         ## TESTING PLOT
@@ -185,9 +186,10 @@ class Fitter:
         ## TESTING PLOT
 
         # Calibrate and normalize
-        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, self.z_data)
+        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, z_data) #self.z_data
 
-        self.z_norm = normalize(xdata, self.z_data, delay_remaining, a, alpha)
+        # self.z_norm
+        z_norm = normalize(xdata, z_data, delay_remaining, a, alpha) #self.z_data
 
         ## plot_preprocessing_steps PLOT HERE with self.preprocess_circle_z_norm
         ## TESTING PLOT
@@ -201,7 +203,7 @@ class Fitter:
         # plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after circle translation')
         ## TESTING PLOT
 
-        return self.z_norm
+        return z_norm # self.z_norm
     
     def preprocess_linear(self, xdata: np.ndarray, ydata: np.ndarray, normalize: int):
         """
