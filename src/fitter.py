@@ -60,21 +60,31 @@ class Fitter:
         self.MC_fix = kwargs.get('MC_fix', [])
         self.databg = kwargs.get('databg', None) ## databg is an instance of a class?
 
+    def load_data(self, freqs, amps_dB, phases):
+        self.xdata = freqs
+        self.amps_dB = amps_dB
+        self.phases = phases
 
-    def fit(self, freqs: np.ndarray, amps_dB: np.ndarray, phases: np.ndarray, preprocessing_guesses=None, manual_init=None, verbose=False): ## How can we preprocess such that this function can take pandas dataframes as input? 
+        # Check if each argument is a NumPy array
+        if not isinstance(self.xdata, np.ndarray):
+            raise TypeError("Frequency data must be a NumPy array")
+        if not isinstance(self.amps_dB, np.ndarray):
+            raise TypeError("Experimental S21 magnitude data must be a NumPy array")
+        if not isinstance(self.phases, np.ndarray):
+            raise TypeError("Experimental S21 phase data must be a NumPy array")
+
+        self.amps_linear = 10 ** (amps_dB / 20)
+        self.ydata = np.multiply(self.amps_linear, np.exp(1j * phases))
+
+    def fit(self, preprocessing_guesses=None, manual_init=None, verbose=False): ## How can we preprocess such that this function can take pandas dataframes as input? 
         """Fit resonator data using the provided method using lmfit's Model.fit
         """
-        amps_linear = 10 ** (amps_dB / 20)
-        phases = np.unwrap(phases)
-
-        # Create complex data with 'amps_linear' and 'phases'
-        xdata, ydata = freqs, np.multiply(amps_linear, np.exp(1j * phases)) 
-
+        self.phases = np.unwrap(self.phases)
 
         if self.databg: ## not utilizing this feature at the moment
-            ydata = self.background_removal(amps_linear, phases)
+            self.background_removal()
         elif self.preprocess == "circle":
-            ydata = self.preprocess_circle(xdata, ydata, preprocessing_guesses) ## Do we want to pass 'manual_init' or 'preprocessing_guesses' along?
+            self.preprocess_circle(preprocessing_guesses) ## Do we want to pass 'manual_init' or 'preprocessing_guesses' along?
         elif self.preprocess == "linear":
             # TODO: implement
             # ydata, _, _, _, _ = self.preprocess_linear(xdata, ydata, self.normalize)
@@ -85,17 +95,17 @@ class Fitter:
             params = manual_init
             pass
         else:
-            params = self.fit_method.find_initial_guess(xdata, ydata)
+            params = self.fit_method.find_initial_guess(self.xdata, self.ydata)
         
         # Create the model and fit
         model = self.fit_method.create_model() ## Creating model with instance of ____ class (instance is "fit_method") - at the moment only DCM is implemented. The blank on the left is "DCM"
-        result = model.fit(ydata, params, x=xdata, method='leastsq') 
+        result = model.fit(self.ydata, params, x=self.xdata, method='leastsq') 
         ## Above line is calling "fit" method from lmfit package. "model" is the instance of the lmfit.Model class
         if verbose: print(result.fit_report()) ## Calling methods within lmfit package
         if verbose: print(result.ci_report()) 
         
         # TODO: implement confidence intervals
-        conf_intervals = self._bootstrap_conf_intervals(model, ydata, result.params) 
+        conf_intervals = self._bootstrap_conf_intervals(model, result.params) 
         
         # # TODO: implement monte carlo
         # # Using Monte Carlo to explore parameter space if enabled
@@ -112,9 +122,9 @@ class Fitter:
         #         print(emcee_result.fit_report())
         #     return emcee_result.params, conf_intervals           
         
-        return result, conf_intervals, ydata
+        return result, conf_intervals
     
-    def _bootstrap_conf_intervals(self, model, ydata, params, iterations=1000):
+    def _bootstrap_conf_intervals(self, model, params, iterations=1000):
         """
         This method finds confidence intervals for each of the parameters in 'params'
         
@@ -129,16 +139,16 @@ class Fitter:
         """
         sampled_params = []
         for _ in range(iterations):
-            indices = np.random.randint(0, len(ydata), len(ydata))
-            sample_ydata = ydata[indices]
-            res = model.fit(sample_ydata, params, x=ydata[indices])
+            indices = np.random.randint(0, len(self.ydata), len(self.ydata))
+            sample_ydata = self.ydata[indices]
+            res = model.fit(sample_ydata, params, x=self.ydata[indices])
             sampled_params.append(res.params)
             
         conf_intervals = {key: np.percentile([p[key].value for p in sampled_params], [5, 95]) for key in params}
         return conf_intervals
     
     
-    def preprocess_circle(self, xdata: np.ndarray, ydata: np.ndarray, preprocessing_guesses=None):
+    def preprocess_circle(self, preprocessing_guesses=None):
         """
         Data Preprocessing using Probst method for cable delay removal and normalization.
 
@@ -152,8 +162,8 @@ class Fitter:
         Returns:
             np.ndarray: The preprocessed and normalized complex S21 data.
         """
-
-        # self.ydata = ydata
+        
+        self.preprocess_circle_ydata = self.ydata
         ## plot_preprocessing_steps PLOT HERE using self.ydata
         ## TESTING PLOT
         # plot1 = plotter.Plotter()
@@ -167,13 +177,12 @@ class Fitter:
         ## TESTING PLOT
 
         # Remove cable delay 
-        delay = self.fit_delay(xdata, ydata, preprocessing_guesses) # self.ydata
+        delay = self.fit_delay(self.xdata, self.ydata, preprocessing_guesses)
         print("Delay from 'fit_delay': ", delay/1e-9, "ns")
 
-        # self.z_data
-        z_data = ydata * np.exp(2j * np.pi * delay * xdata)
+        self.preprocess_circle_z_data = self.ydata * np.exp(2j * np.pi * delay * self.xdata)
 
-        ## plot_preprocessing_steps PLOT HERE using self.z_data
+        ## plot_preprocessing_steps PLOT HERE using self.-preprocess_circle_z_data
         ## TESTING PLOT
         # plot2 = plotter.Plotter()
         # plot2.load_data(xdata, self.z_data)
@@ -186,11 +195,11 @@ class Fitter:
         ## TESTING PLOT
 
         # Calibrate and normalize
-        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(xdata, z_data) #self.z_data
+        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(self.xdata, self.preprocess_circle_z_data) 
+        
+        self.preprocess_circle_z_norm = normalize(self.xdata, self.preprocess_circle_z_data, delay_remaining, a, alpha)
 
-        # self.z_norm
-        z_norm = normalize(xdata, z_data, delay_remaining, a, alpha) #self.z_data
-
+        self.ydata = self.preprocess_circle_z_norm
         ## plot_preprocessing_steps PLOT HERE with self.preprocess_circle_z_norm
         ## TESTING PLOT
         # plot3 = plotter.Plotter()
@@ -202,8 +211,6 @@ class Fitter:
         # fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
         # plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after circle translation')
         ## TESTING PLOT
-
-        return z_norm # self.z_norm
     
     def preprocess_linear(self, xdata: np.ndarray, ydata: np.ndarray, normalize: int):
         """
@@ -249,7 +256,7 @@ class Fitter:
         return preprocessed_data, slope, intercept, mag_slope, mag_intercept
     
 
-    def background_removal(self, amps_linear: np.ndarray, phases: np.ndarray): ## not worried about this for version 1?
+    def background_removal(self): ## not worried about this for V1.0?
         """
         Removes background signal by interpolating and adjusting amplitude and phase,
         using stored background data.
@@ -278,11 +285,11 @@ class Fitter:
         fang = interp1d(x_bg, phases_bg, kind='cubic', fill_value="extrapolate")
 
         # Correct measured data using interpolated background
-        amps_linear_corrected = np.divide(amps_linear, fmag(self.databg.freqs))
-        phases_corrected = np.subtract(phases, fang(self.databg.freqs))
+        amps_linear_corrected = np.divide(self.amps_linear, fmag(self.databg.freqs))
+        phases_corrected = np.subtract(self.phases, fang(self.databg.freqs))
 
         # Return corrected data as complex S21 values
-        return np.multiply(amps_linear_corrected, np.exp(1j * phases_corrected))
+        self.ydata = np.multiply(amps_linear_corrected, np.exp(1j * phases_corrected))
         
 
     def _extract_near_res(self, x_raw: np.ndarray, y_raw: np.ndarray, f_res: float, kappa: float, extract_factor: int = 1) -> tuple:
@@ -470,14 +477,14 @@ class Fitter:
         self.fit_delay_zdata1 = z_data
         ## plot_preprocessing_steps PLOT HERE with self.fit_delay_zdata1
         ## TESTING PLOT
-        plot2 = plotter.Plotter()
-        plot2.load_data(xdata, z_data)
-        layout = [
-            ["main", "main", "mag"],
-            ["main", "main", "ang"]
-        ]
-        fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
-        plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in fit_delay after circle translation')
+        # plot2 = plotter.Plotter()
+        # plot2.load_data(xdata, z_data)
+        # layout = [
+        #     ["main", "main", "mag"],
+        #     ["main", "main", "ang"]
+        # ]
+        # fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        # plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in fit_delay after circle translation')
         ## TESTING PLOT
 
         fr, Ql, theta, delay = self.fit_phase(xdata, z_data, guesses) ## fit_phase function should include initial guesses!
@@ -503,14 +510,14 @@ class Fitter:
         self.fit_delay_zdata2 = z_data
         ## plot_preprocessing_steps PLOT HERE with self.fit_delay_zdata2
         ## TESTING PLOT
-        plot3 = plotter.Plotter()
-        plot3.load_data(xdata, z_data)
-        layout = [
-            ["main", "main", "mag"],
-            ["main", "main", "ang"]
-        ]
-        fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
-        plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after delay refinement')
+        # plot3 = plotter.Plotter()
+        # plot3.load_data(xdata, z_data)
+        # layout = [
+        #     ["main", "main", "mag"],
+        #     ["main", "main", "ang"]
+        # ]
+        # fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
+        # plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after delay refinement')
         ## TESTING PLOT
 
         if not self._is_correction_small(xdata, delay_corr, residuals, final_check=True):
@@ -557,23 +564,11 @@ class Fitter:
                 - fr: resonance frequency (Hz)
                 - Ql: loaded quality factor
         """
-        ## plot before translation to origin
 
         # Translate circle to origin
         xc, yc, r = find_circle(np.real(z_data), np.imag(z_data))
         zc = complex(xc, yc)
         z_data2 = z_data - zc
-
-        ## TESTING PLOT
-        # plot2 = plotter.Plotter()
-        # plot2.load_data(x_data, z_data)
-        # layout = [
-        #     ["main", "main", "mag"],
-        #     ["main", "main", "ang"]
-        # ]
-        # fig2, ax_dict2 = plt.subplot_mosaic(layout, figsize=(12, 8))
-        # plot2.plot_before_fit(fig2, ax_dict2, figure_title='S21 in calibrate after circle translation to origin')
-        ## TESTING PLOT
 
         # Fit phase for off-resonant point
         fr, Ql, theta, delay_remaining = self.fit_phase(x_data, z_data2)
@@ -581,17 +576,6 @@ class Fitter:
         offrespoint = zc + r * np.exp(1j * beta)
         a, alpha = np.abs(offrespoint), np.angle(offrespoint)
         phi = periodic_boundary(beta - alpha)
-
-        ## TESTING PLOT
-        # plot3 = plotter.Plotter()
-        # plot3.load_data(x_data, z_data)
-        # layout = [
-        #     ["main", "main", "mag"],
-        #     ["main", "main", "ang"]
-        # ]
-        # fig3, ax_dict3 = plt.subplot_mosaic(layout, figsize=(12, 8))
-        # plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in calibrate after ')
-        ## TESTING PLOT
 
         return delay_remaining, a, alpha, theta, phi, fr, Ql
     
