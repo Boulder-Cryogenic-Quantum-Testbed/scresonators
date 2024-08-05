@@ -150,9 +150,9 @@ class Plotter:
         ax_mag = ax_dict["mag"]
         ax_mag = self._plot_magnitudes(ax_mag, linear=False)
         # Plot preprocessed S21 magnitude data
-        ax_mag.plot(normalized_freqs/self.freq_factor, (np.abs(self.preprocessed_cmplx_data) if linear else 20 * np.log10(np.abs(self.preprocessed_cmplx_data))), '.', label="Preprocessed Data")
+        ax_mag.plot(normalized_freqs, (np.abs(self.preprocessed_cmplx_data) if linear else 20 * np.log10(np.abs(self.preprocessed_cmplx_data))), '.', label="Preprocessed Data")
         # Plot fitted magnitude data with higher resolution than preprocessed data
-        ax_mag.plot(normalized_highres_freqs/self.freq_factor, (np.abs(high_res_cmplx_fit) if linear else 20 * np.log10(np.abs(high_res_cmplx_fit))), label="fit function")
+        ax_mag.plot(normalized_highres_freqs, (np.abs(high_res_cmplx_fit) if linear else 20 * np.log10(np.abs(high_res_cmplx_fit))), label="fit function")
         # Plot a star at the resonance
         ax_mag.plot(0, (resonant_magnitude_value if linear else 20 * np.log10(resonant_magnitude_value)), 'r*', markersize=15, label="resonant frequency")
         ax_mag.set_xlabel("$(f - f_0)$ [kHz]") 
@@ -163,11 +163,11 @@ class Plotter:
         ax_ang = ax_dict["ang"]
         ax_ang = self._plot_phases(ax_ang)
         # Plot preprocessed S21 phase data
-        ax_ang.plot(self.freqs_Hz/self.freq_factor, np.angle(self.preprocessed_cmplx_data), '.', label="Preprocessed Data")
+        ax_ang.plot(normalized_freqs, np.angle(self.preprocessed_cmplx_data), '.', label="Preprocessed Data")
         # Plot fitted phase data with higher resolution than preprocessed data
         ax_ang.plot(normalized_highres_freqs, np.angle(high_res_cmplx_fit), label="fit function")
         # Plot a star at the resonance
-        ax_ang.plot(0, resonant_phase_value, 'r*', markersize=15, label="resonant frequency")
+        # ax_ang.plot(0, resonant_phase_value, 'r*', markersize=15, label="resonant frequency")
         ax_ang.set_xlabel("$(f - f_0)$ [kHz]")
         # ax_ang.set_xticks(freqs_ticks/freq_factor, labels=freqs_ticks_labels, rotation=rotation)
         ax_ang.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
