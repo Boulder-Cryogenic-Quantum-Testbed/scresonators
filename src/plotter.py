@@ -37,9 +37,38 @@ class Plotter:
         self.phases = np.angle(self.cmplx_data)
 
         self.freq_factor = self._find_freq_order()
+    
+    def load_preprocessing_data(self, preprocess_circle_ydata, preprocess_circle_z_data, preprocess_circle_z_norm, preprocessed_cmplx_data):
+        self.preprocess_circle_ydata = preprocess_circle_ydata
+        self.preprocess_circle_z_data = preprocess_circle_z_data
+        self.preprocess_circle_z_norm = preprocess_circle_z_norm
+        self.preprocessed_cmplx_data = preprocessed_cmplx_data
 
-    def plot_preprocessing_steps(self, fit_method):
-        pass
+    def plot_preprocessing_steps(self, fig, ax_dict ,fit_method):
+        
+        ax0 = ax_dict["step_zero"]
+        ax0 = self._plot_complex_circle(ax0, horiz_line=True, vert_line=True)
+        ax0.plot(self.preprocess_circle_ydata.real, self.preprocess_circle_ydata.imag, '.', label="Step 0: Expt Data")
+        ax0.legend()
+
+        ax1 = ax_dict["step_one"]
+        ax1 = self._plot_complex_circle(ax1, horiz_line=True, vert_line=True)
+        ax1.plot(self.preprocess_circle_z_data.real, self.preprocess_circle_z_data.imag, '.', label="Step 1: Remove Cable Delay")
+        ax1.legend()
+
+        ax2 = ax_dict["step_two"]
+        ax2 = self._plot_complex_circle(ax2, horiz_line=True, vert_line=True)
+        ax2.plot(self.preprocess_circle_z_norm.real, self.preprocess_circle_z_norm.imag, '.', label="Step 2: Normalize")
+        ax2.legend()
+
+        ax3 = ax_dict["step_three"]
+        ax3 = self._plot_complex_circle(ax3, horiz_line=True, vert_line=True)
+        ax3.plot(self.preprocessed_cmplx_data.real, self.preprocessed_cmplx_data.imag, '.', label="Step 3: Same as step 2?")
+        ax3.legend()
+
+        plt.tight_layout()
+
+        return fig, ax_dict
 
     def plot_before_fit(self, fig, ax_dict, **kwargs):
         # Keyword arguments
