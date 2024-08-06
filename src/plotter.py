@@ -93,7 +93,7 @@ class Plotter:
         ax_mag = ax_dict["mag"]
         # Plot experimental complex S21 data
         ax_mag.plot(self.freqs_Hz/self.freq_factor, (np.abs(self.cmplx_data) if linear else 20 * np.log10(np.abs(self.cmplx_data))), '.', label="Experimental Data")
-        ax_mag = self._plot_magnitudes(ax_mag, linear=False)
+        ax_mag = self._plot_magnitudes(ax_mag, linear=linear)
         ax_mag.set_xticks(freqs_ticks/self.freq_factor, labels=freqs_ticks_labels, rotation=rotation)
         # ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func(freq_factor)))
         
@@ -306,7 +306,11 @@ class Plotter:
         # Calculate partial derivatives
         dQi_dQl = Q_i**2 / Q_l**2
         dQi_dQc = -Q_i**2 / Q_c**2
-
+        print("Calculated Qi: ", Q_i)
+        print("Qc", Q_c, sigma_Qc)
+        print("Ql", Q_l, sigma_Ql)
+        print("dQi_dQc: ", dQi_dQc)
+        print("dQi_dQl: ", dQi_dQl)
         # Propagate errors
         sigma_Qi = np.sqrt((dQi_dQl * sigma_Ql)**2 + (dQi_dQc * sigma_Qc)**2)
         return Q_i, sigma_Qi

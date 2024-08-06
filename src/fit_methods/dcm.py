@@ -23,36 +23,39 @@ class DCM(FitMethod):
         return model
 
     def find_initial_guess(self, x: np.ndarray, y: np.ndarray) -> lmfit.Parameters: ## Redundant? There is a '_estimate_initial_parameters' method in Fitter class
+        f0_idx = np.abs(y).argmin()
+        f0 = x[f0_idx]
+        phi = 0
+        
         # Rough calculation to find loaded quality factor
         mags_min = np.min(np.abs(y))
         mags_max = np.max(np.abs(y))
         mags_halfmax = (mags_max + mags_min) / 2
 
-        crossing_points = []
-        for i in range(len(y.real)-1):
-            # np.where() returns indices where function is zero
-            # np.where(np.abs(self.func)<= 0.1, x)
-            if (y.real[i] - mags_halfmax) * (y.real[i+1] - mags_halfmax) < 0:
-                crossing_points.append(i)
-
-        nearest_indices = []
-        for point in crossing_points:
-            if abs(y.real[point] - mags_halfmax) < abs(y.real[point + 1] - mags_halfmax):
-                nearest_indices.append(point)
-            else:
-                nearest_indices.append(point + 1)
-
-        nearest_values = y.real[nearest_indices]
-
-        print("Nearest indices", nearest_indices)
+        try:
+            multiplier = 0.1
+            crossing_pts = np.where(np.abs(np.abs(y) - mags_halfmax) <= (multiplier * mags_max))
+            print("np.where crossing pts: ", crossing_pts)
+            while(len(crossing_pts[0]) != 2):
+                print("Length of cp: ", len(crossing_pts[0]))
+                crossing_pts = np.where(np.abs(np.abs(y) - mags_halfmax) <= (multiplier * mags_max))
+                multiplier /= 10
+                if len(crossing_pts[0]) == 0:
+                    print("Crossing pts ValueError conditional: ", crossing_pts)
+                    raise ValueError("Better Q-guess didn't work. Using a less precise guess.")
+                
+            print("Crossing pts: ", crossing_pts[0][0], crossing_pts[0][1])
+            kappa = np.abs(x[crossing_pts[0][1]] - x[crossing_pts[0][0]])
+            Q = f0 / kappa
+        except ValueError:
+            kappa_rough_estimate = np.max(x) - np.min(x)
+            Q = f0 / kappa_rough_estimate
 
         ## TODO Use FWHM for Q
         ## Circle diameter is Q/Qc
-
-
-        f0_idx = np.abs(y).argmin()
-        f0 = x[f0_idx]
-        phi = 0
+        _, _, r = find_circle(np.real(y), np.imag(y))
+        d = 2 * r
+        Qc = d / Q
 
         # Create an lmfit.Parameters object to store initial guesses
         param_guesses = lmfit.Parameters()
