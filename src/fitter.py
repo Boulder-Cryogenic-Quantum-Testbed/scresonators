@@ -150,7 +150,7 @@ class Fitter:
     
     def preprocess_circle(self, preprocessing_guesses=None):
         """
-        Data Preprocessing using Probst method for cable delay removal and normalization.
+        Data Preprocessing using the Probst 2015 method for cable delay removal and normalization.
 
         Args:
             xdata (np.ndarray): frequency data (Hz), an array of floats
@@ -161,6 +161,9 @@ class Fitter:
 
         Returns:
             np.ndarray: The preprocessed and normalized complex S21 data.
+
+        Citation:
+            Review of Scientific Instruments 86, 024706 (2015); doi: 10.1063/1.4907935
         """
         
         self.preprocess_circle_ydata = self.ydata
@@ -336,10 +339,7 @@ class Fitter:
         Returns:
             tuple: Fitted parameters (fr, Ql, theta, delay).
         """
-        phase = np.unwrap(np.angle(z_data)) ## possibly redundant since this is called in 'fit' method? 
-        ## Maybe not redundant since 'z_data' here is different from 'phases' in 'fit'. 
-        ## 'phases' was unwrapped in 'fit' and was used in quadrature as 'ydata'.
-        ## Next, 'ydata' was passed to other functions and converted into 'z_data'.
+        phase = np.unwrap(np.angle(z_data))
 
         # Check for sufficient data coverage
         if np.ptp(phase) <= 0.8 * 2 * np.pi:
@@ -359,7 +359,7 @@ class Fitter:
 
 
     def _estimate_initial_parameters(self, f_data, phase):
-        """Estimate initial parameters for the fitting process.
+        """Estimate initial parameters for the phase fitting process.
         
         Args: 
             f_data (np.ndarray): array of frequency data (Hz), an array of floats
@@ -370,7 +370,7 @@ class Fitter:
             Ql_guess (float): guess of loaded quality factor 
             delay_guess (float): guess of cable time delay (s) ## not sure about this...
         """
-        phase_smooth = gaussian_filter1d(phase, 30) ## should we unwrap phases first or is that redundant?
+        phase_smooth = gaussian_filter1d(phase, 30) 
         fr_guess = f_data[np.argmax(np.gradient(phase_smooth))]
         Ql_guess = 2 * fr_guess / (f_data[-1] - f_data[0])
         delay_guess = -(np.ptp(phase) / (2 * np.pi * (f_data[-1] - f_data[0])))
@@ -413,10 +413,13 @@ class Fitter:
         initial_guesses = np.array([fr_guess, Ql_guess], dtype=np.float64)
 
         # Perform the least squares fits
-        Ql_guess = spopt.leastsq(residuals_Ql, Ql_guess)[0]
-        fr_guess, theta_guess = spopt.leastsq(residuals_fr_theta, [fr_guess, theta_guess])[0]
-        delay_guess = spopt.leastsq(residuals_delay, delay_guess)[0][0] ## Used to throw an error because it only had a single [0] before
-        fr_guess, Ql_guess = spopt.leastsq(residuals_fr_Ql, initial_guesses)[0]
+        ## TODO utilize the return value 'ier' that tells if the solution was found or not
+        Ql_guess = spopt.leastsq(residuals_Ql, Ql_guess)[0][0]
+        fr_theta_placeholder = spopt.leastsq(residuals_fr_theta, [fr_guess, theta_guess])[0]
+        fr_guess, theta_guess = fr_theta_placeholder[0], fr_theta_placeholder[1]
+        delay_guess = spopt.leastsq(residuals_delay, delay_guess)[0][0]
+        fr_Ql_placeholder = spopt.leastsq(residuals_fr_Ql, initial_guesses)[0]
+        fr_guess, Ql_guess = fr_Ql_placeholder[0], fr_Ql_placeholder[1]
 
         # Final optimization for all parameters together
         try:
@@ -571,67 +574,10 @@ class Fitter:
         z_data2 = z_data - zc
 
         # Fit phase for off-resonant point
-        fr, Ql, theta, delay_remaining = self.fit_phase(x_data, z_data2)
-        beta = periodic_boundary(theta - np.pi)
+        fr, Ql, theta, delay_remaining = self.fit_phase(x_data, z_data2) 
+        beta = periodic_boundary(theta - np.pi) 
         offrespoint = zc + r * np.exp(1j * beta)
         a, alpha = np.abs(offrespoint), np.angle(offrespoint)
         phi = periodic_boundary(beta - alpha)
 
         return delay_remaining, a, alpha, theta, phi, fr, Ql
-    
-    def plot(self, freqs, amps, phases, linear=0):
-        if linear:
-            amps_linear = amps
-            amps_dB = 20 * np.log10(amps_linear)
-        else:
-            amps_dB = amps
-            amps_linear = 10 ** (amps_dB / 20)
-
-        cmplx = amps_linear * np.exp(1j * phases)
-
-        xlim_min = np.min(freqs/1e9)
-        xlim_max = np.max(freqs/1e9)
-        
-
-        plt.figure(figsize=(4, 9))
-
-        plt.subplot(3,1,1)
-        plt.plot(freqs/1e9, amps_linear)
-        plt.xlabel('Frequency (GHz)')
-        plt.ylabel('Linear Amplitude (V_out/V_in)')
-        plt.xlim(xlim_min, xlim_max)
-        # plt.ylim(0,10)
-        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
-
-        plt.subplot(3,1,2)
-        plt.plot(freqs/1e9, amps_dB)
-        plt.xlabel('Frequency (GHz)')
-        plt.ylabel('Logarithmic Amplitude (dB)')
-        plt.xlim(xlim_min, xlim_max)
-        # plt.ylim(0,10)
-        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
-
-        plt.subplot(3,1,3)
-        plt.plot(freqs/1e9, phases)
-        plt.xlabel('Frequency (GHz)')
-        plt.ylabel('Phase (radians)')
-        plt.xlim(xlim_min, xlim_max)
-        plt.ylim(-np.pi, np.pi)
-        # plt.gca().xaxis.set_major_formatter(ticker.FuncFormatter(custom_formatter1)) # Set the formatter for the x-axis
-
-        plt.suptitle('Data')
-        plt.tight_layout()
-        plt.show()
-
-        
-        plt.plot(cmplx.real, cmplx.imag)
-        plt.xlabel('Real')
-        plt.ylabel('Imaginary')
-        plt.xlim(-0.5,3)
-        plt.ylim(-1,1)
-        plt.axhline(0, color='black', linewidth=0.5)  # Add horizontal line at y=0
-        plt.axvline(1, color='black', linewidth=0.5)  # Add vertical line at x=1
-        plt.axvline(0, color='black', linewidth=0.5)  # Add vertical line at x=0
-        plt.gca().set_aspect('equal', adjustable='box') # Set aspect of the plot to be equal
-
-        plt.show()
