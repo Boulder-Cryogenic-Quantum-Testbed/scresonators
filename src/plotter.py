@@ -38,33 +38,54 @@ class Plotter:
 
         self.freq_factor = self._find_freq_order()
     
-    def load_preprocessing_data(self, preprocess_circle_ydata, preprocess_circle_z_data, preprocess_circle_z_norm, preprocessed_cmplx_data):
-        self.preprocess_circle_ydata = preprocess_circle_ydata
-        self.preprocess_circle_z_data = preprocess_circle_z_data
-        self.preprocess_circle_z_norm = preprocess_circle_z_norm
-        self.preprocessed_cmplx_data = preprocessed_cmplx_data
+    def load_preprocessing_data(self, preprocess_circle_ydata, preprocess_circle_z_data, preprocess_circle_z_norm, fit_delay_zdata1, fit_delay_zdata2, fit_delay_zdata3, preprocessed_cmplx_data):
+        self.preprocess_circle_ydata = preprocess_circle_ydata # initial data
+        self.fit_delay_zdata1 = fit_delay_zdata1 # translate to origin
+        self.fit_delay_zdata2 = fit_delay_zdata2 # initial delay fit using 'fit_phase'
+        self.fit_delay_zdata3 = fit_delay_zdata3 # after refinement of delay (iteratively calling 'fit_phase')
+        self.preprocess_circle_z_data = preprocess_circle_z_data # after 'fit_delay' method call and the calculation: ydata * np.exp(2j * np.pi * delay * self.xdata)
+        self.preprocess_circle_z_norm = preprocess_circle_z_norm # after calibration and normalization
+        self.preprocessed_cmplx_data = preprocessed_cmplx_data # after calibration and normalization (should be equivalent to 'preprocess_circle_z_norm')
 
     def plot_preprocessing_steps(self, fig, ax_dict ,fit_method):
         
         ax0 = ax_dict["step0"]
         ax0 = self._plot_complex_circle(ax0, horiz_line=False, vert_line=False)
-        ax0.plot(self.preprocess_circle_ydata.real, self.preprocess_circle_ydata.imag, '.', label="Step 0: Expt Data")
+        ax0.plot(self.preprocess_circle_ydata.real, self.preprocess_circle_ydata.imag, '.', label="Step 0: Experiment data")
         ax0.legend()
 
         ax1 = ax_dict["step1"]
-        ax1 = self._plot_complex_circle(ax1, horiz_line=False, vert_line=False)
-        ax1.plot(self.preprocess_circle_z_data.real, self.preprocess_circle_z_data.imag, '.', label="Step 1: Remove Cable Delay")
+        ax1 = self._plot_complex_circle(ax1, horiz_line=True, vert_line=False)
+        ax1.axvline(x=0, color='black', linewidth=1)
+        ax1.plot(self.fit_delay_zdata1.real, self.fit_delay_zdata1.imag, '.', label="Step 1: Translate to origin")
         ax1.legend()
 
         ax2 = ax_dict["step2"]
-        ax2 = self._plot_complex_circle(ax2, horiz_line=True, vert_line=True)
-        ax2.plot(self.preprocess_circle_z_norm.real, self.preprocess_circle_z_norm.imag, '.', label="Step 2: Normalize")
+        ax2 = self._plot_complex_circle(ax2, horiz_line=True, vert_line=False)
+        ax2.axvline(x=0, color='black', linewidth=1)
+        ax2.plot(self.fit_delay_zdata2.real, self.fit_delay_zdata2.imag, '.', label="Step 2: Initial delay fit")
         ax2.legend()
 
         ax3 = ax_dict["step3"]
-        ax3 = self._plot_complex_circle(ax3, horiz_line=True, vert_line=True)
-        ax3.plot(self.preprocessed_cmplx_data.real, self.preprocessed_cmplx_data.imag, '.', label="Step 3: Same as step 2?")
+        ax3 = self._plot_complex_circle(ax3, horiz_line=True, vert_line=False)
+        ax3.axvline(x=0, color='black', linewidth=1)
+        ax3.plot(self.fit_delay_zdata3.real, self.fit_delay_zdata3.imag, '.', label="Step 3: Refined delay fit")
         ax3.legend()
+        
+        ax4 = ax_dict["step4"]
+        ax4 = self._plot_complex_circle(ax4, horiz_line=False, vert_line=False)
+        ax4.plot(self.preprocess_circle_z_data.real, self.preprocess_circle_z_data.imag, '.', label="Step 4: After 'fit_delay' method call")
+        ax4.legend()
+
+        ax5 = ax_dict["step5"]
+        ax5 = self._plot_complex_circle(ax5, horiz_line=True, vert_line=True)
+        ax5.plot(self.preprocess_circle_z_norm.real, self.preprocess_circle_z_norm.imag, '.', label="Step 5: Calibrated and normalized")
+        ax5.legend()
+
+        # ax6 = ax_dict["step6"]
+        # ax6 = self._plot_complex_circle(ax6, horiz_line=True, vert_line=True)
+        # ax6.plot(self.preprocessed_cmplx_data.real, self.preprocessed_cmplx_data.imag, '.', label="Step 6: Same as Step 5?")
+        # ax6.legend()
 
         plt.tight_layout()
 
@@ -83,11 +104,11 @@ class Plotter:
         ax.plot(self.cmplx_data.real, self.cmplx_data.imag, '.', label="Experimental Data")
         # Setup 
         ax = self._plot_complex_circle(ax, horiz_line=horiz_line, vert_line=vert_line)
-        ax.axvline(x=0, color='black', linewidth=1) 
+        # ax.axvline(x=0, color='black', linewidth=1) 
         ax.legend()
 
         rotation = 280 
-        freqs_ticks, freqs_ticks_labels = self._xticks_setup(5, self.freq_factor)
+        freqs_ticks, freqs_ticks_labels = self._xticks_setup(3)
         
         # Magnitude plot
         ax_mag = ax_dict["mag"]
@@ -171,9 +192,8 @@ class Plotter:
         ax.plot(resonant_complex_value.real, resonant_complex_value.imag, 'r*', markersize=15, label="resonant frequency")
         ax.legend()
 
-        freq_factor = self._find_freq_order()
         rotation = 280
-        freqs_ticks, freqs_ticks_labels = self._xticks_setup(5, freq_factor)
+        freqs_ticks, freqs_ticks_labels = self._xticks_setup(5)
 
         # Linear/Logarithmic magnitude plot
         ax_mag = ax_dict["mag"]
@@ -185,7 +205,7 @@ class Plotter:
         # Plot a star at the resonance
         ax_mag.plot(0, (resonant_magnitude_value if linear else 20 * np.log10(resonant_magnitude_value)), 'r*', markersize=15, label="resonant frequency")
         ax_mag.set_xlabel("$(f - f_0)$ [kHz]") 
-        # ax_mag.set_xticks(freqs_ticks/freq_factor, labels=freqs_ticks_labels, rotation=rotation)
+        # ax_mag.set_xticks(freqs_ticks/self.freq_factor, labels=freqs_ticks_labels, rotation=rotation)
         ax_mag.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Phase plot
@@ -196,9 +216,9 @@ class Plotter:
         # Plot fitted phase data with higher resolution than preprocessed data
         ax_ang.plot(normalized_highres_freqs, np.angle(high_res_cmplx_fit), label="fit function")
         # Plot a star at the resonance
-        # ax_ang.plot(0, resonant_phase_value, 'r*', markersize=15, label="resonant frequency")
+        ax_ang.plot(0, resonant_phase_value, 'r*', markersize=15, label="resonant frequency")
         ax_ang.set_xlabel("$(f - f_0)$ [kHz]")
-        # ax_ang.set_xticks(freqs_ticks/freq_factor, labels=freqs_ticks_labels, rotation=rotation)
+        # ax_ang.set_xticks(freqs_ticks/self.freq_factor, labels=freqs_ticks_labels, rotation=rotation)
         ax_ang.xaxis.set_major_formatter(ticker.FuncFormatter(self._formatter_func()))
 
         # Calculate the range of data with padding, set x and y limits for complex circle
@@ -278,16 +298,15 @@ class Plotter:
 
         return ax_ang
     
-    
-
     def _find_freq_order(self):
-        return np.floor(np.log10(np.mean(self.freqs_Hz)))
+        order = np.floor(np.log10(np.mean(self.freqs_Hz)))
+        return (10 ** order)
 
-    def _xticks_setup(self, n, freq_factor):
+    def _xticks_setup(self, n):
         # Calculate the indices for `n` evenly spaced frequency markers (evenly spaced in array-space, not frequency-space)
         indices = np.linspace(0, len(self.freqs_Hz) - 1, n, dtype=int)
         freqs_ticks = self.freqs_Hz[indices]
-        freqs_ticks_labels = [f'{freq/freq_factor:.4f}' for freq in freqs_ticks]
+        freqs_ticks_labels = [f'{freq/self.freq_factor:.4f}' for freq in freqs_ticks]
 
         return freqs_ticks, freqs_ticks_labels
 
@@ -304,8 +323,8 @@ class Plotter:
         Q_i = (1 / Q_l - 1 / Q_c) ** -1
 
         # Calculate partial derivatives
-        dQi_dQl = Q_i**2 / Q_l**2
-        dQi_dQc = -Q_i**2 / Q_c**2
+        dQi_dQl = (((-(1/Q_c) + 1/Q_l)**2) * (Q_l**2))**(-1)
+        dQi_dQc = -(((Q_c**2) * (-(1/Q_c) + 1/Q_l)**2))**(-1)
         print("Calculated Qi: ", Q_i)
         print("Qc", Q_c, sigma_Qc)
         print("Ql", Q_l, sigma_Ql)
@@ -313,6 +332,7 @@ class Plotter:
         print("dQi_dQl: ", dQi_dQl)
         # Propagate errors
         sigma_Qi = np.sqrt((dQi_dQl * sigma_Ql)**2 + (dQi_dQc * sigma_Qc)**2)
+        print("Sigma_Qi: ", sigma_Qi)
         return Q_i, sigma_Qi
         
     # TODO verify this method's uses with other fit_methods

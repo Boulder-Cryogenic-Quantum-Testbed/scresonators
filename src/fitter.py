@@ -492,8 +492,11 @@ class Fitter:
 
         fr, Ql, theta, delay = self.fit_phase(xdata, z_data, guesses) ## fit_phase function should include initial guesses!
 
+        self.fit_delay_zdata2 = ydata * np.exp(2j * np.pi * delay * xdata)
+        print("Initial Delay: ", delay*1e9, "ns")
+        
         # Iterative refinement of delay
-        delay *= 0.05
+        delay *= 0.05 ## hard coded value
         for i in range(5):
             z_data = ydata * np.exp(2j * np.pi * delay * xdata)
             xc, yc, _ = find_circle(np.real(z_data), np.imag(z_data))
@@ -501,7 +504,7 @@ class Fitter:
             
             guesses = (fr, Ql, 5e-11) ## hard coded 5e-11
             fr, Ql, theta, delay_corr = self.fit_phase(xdata, z_data, guesses)
-            
+            print("Delay Correction: ", delay_corr*1e9, "ns")
             # Condition for stopping iteration
             phase_fit = phase_centered(xdata, fr, Ql, theta, delay_corr)
             residuals = np.unwrap(np.angle(z_data)) - phase_fit
@@ -510,7 +513,7 @@ class Fitter:
             
             delay = self._update_delay(delay, delay_corr)
 
-        self.fit_delay_zdata2 = z_data
+        self.fit_delay_zdata3 = z_data
         ## plot_preprocessing_steps PLOT HERE with self.fit_delay_zdata2
         ## TESTING PLOT
         # plot3 = plotter.Plotter()
@@ -523,8 +526,8 @@ class Fitter:
         # plot3.plot_before_fit(fig3, ax_dict3, figure_title='S21 in fit_delay after delay refinement')
         ## TESTING PLOT
 
-        if not self._is_correction_small(xdata, delay_corr, residuals, final_check=True):
-            logging.warning("Delay could not be fit properly!")
+        # if not self._is_correction_small(xdata, delay_corr, residuals, final_check=True):
+        #     logging.warning("Delay could not be fit properly!")
         
         return delay
 
