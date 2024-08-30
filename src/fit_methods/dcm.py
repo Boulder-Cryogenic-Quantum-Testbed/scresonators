@@ -55,7 +55,7 @@ class DCM(FitMethod):
         ## Circle diameter is Q/Qc
         _, _, r = find_circle(np.real(y), np.imag(y))
         d = 2 * r
-        Qc = d / Q
+        Qc = Q / d
 
         # Create an lmfit.Parameters object to store initial guesses
         param_guesses = lmfit.Parameters()
