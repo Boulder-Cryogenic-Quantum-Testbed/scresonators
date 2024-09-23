@@ -33,3 +33,6 @@ class Resonator:
         return self.fit_result
 
     # Additional resonator functionalities can be added here
+
+    ## TODO maybe keep Resonator as an umbrella class that creates instances of other classes
+    ## Probably not included on first version

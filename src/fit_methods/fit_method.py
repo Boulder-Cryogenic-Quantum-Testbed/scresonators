@@ -40,3 +40,20 @@ class FitMethod(ABC):
             Model: object with minimizing methods
         """
         pass
+
+    @abstractmethod
+    def generate_highres_fit(self, x: np.ndarray, fit_params: dict, num_fit_points: int) -> tuple[np.ndarray, np.ndarray]:
+        """
+        Generates a higher-resolution complex fit using the fit method.
+
+        Args:
+            x (np.ndarray): The independent variable data.
+            fit_params (dict): Dictionary of fit parameters.
+            num_fit_points (int): Number of points for higher resolution.
+
+        Returns:
+            tuple: Tuple of (high_res_x, high_res_y).
+                high_res_x (np.ndarray): High-resolution independent variable data.
+                high_res_y (np.ndarray): High-resolution dependent variable data.
+        """
+        pass

@@ -38,7 +38,7 @@ def find_circle(x: np.ndarray, y: np.ndarray) -> tuple:
         if area == 0:
             raise ValueError("The points are collinear and cannot define a circle.")
 
-    # Center the data
+    # Center the data about the origin
     u, v = x - x_mean, y - y_mean
 
     # Matrix form of the system
