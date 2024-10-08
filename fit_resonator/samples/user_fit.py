@@ -182,7 +182,7 @@ def fit_single_res(filename, filter_points=[0,0], preprocess_method='linear',
                     MC_fix=MC_fix, manual_init=manual_init, MC_step_const=0.3)
     except Exception as ex:
         print(f'Exception:\n{ex}')
-        quit()
+        
     
     ##############################################################
     

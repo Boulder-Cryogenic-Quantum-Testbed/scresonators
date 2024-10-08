@@ -54,7 +54,7 @@ def plot(x,
     if p_x is not None and p_y is not None:
         ax.plot(p_x, p_y, '*', color='red', markersize=5)
     
-    fig.savefig(output_path + name + '.pdf', format='pdf')
+    fig.savefig(output_path + name + '.png', format='png')
 
 
 def plot2(x, y, x2, y2, name, output_path):
@@ -64,7 +64,7 @@ def plot2(x, y, x2, y2, name, output_path):
     ax = plt.subplot(gs[0:2, 0:2])  ## plot
     ax.plot(x, y, 'bo', label='raw data', markersize=3)
     ax.plot(x2, y2, 'bo', label='raw data', markersize=3, color='red')
-    fig.savefig(output_path + name + '.pdf', format='pdf')
+    fig.savefig(output_path + name + '.png', format='png')
 
 
 # def name_folder(dir, strmethod):
@@ -544,7 +544,7 @@ def PlotFit(x,
     except Exception as e:
         print(">Error when trying to write parameters on plot")
         print(f">{e}")
-        quit()
+        
         
     # Create plot metadata output file
     if save_dcm_plot is True:
@@ -553,5 +553,5 @@ def PlotFit(x,
         except Exception as e:
             print(">Error when trying to create metadata file")
             print(f">{e}")
-            quit()
+            
     return fig

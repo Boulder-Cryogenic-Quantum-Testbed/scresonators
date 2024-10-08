@@ -10,6 +10,8 @@ import sys
 import os
 import logging
 
+import matplotlib.pyplot as plt
+
 import fit_resonator.cavity_functions as ff
 import fit_resonator.plot as fp
 import fit_resonator.resonator as res
@@ -53,8 +55,8 @@ def extract_near_res(x_raw: np.ndarray,
             y_temp.append(y_raw[i])
 
     if len(y_temp) < 5:
-        print("Less than 5 Data points to fit data, not enough points near",
-            "resonance, attempting to fit anyway")
+        print(f"Less than 5 Data points to fit data, not enough points near",
+            f"resonance, attempting to fit anyway.\n {kappa=}\n{y_temp=}")
     if len(x_temp) < 1:
         raise Exception(">Failed to extract data from designated bandwidth")
 
@@ -179,7 +181,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
     except:
         print(">Problem initializing data in find_initial_guess(), please make",
               " sure data is of correct format")
-        quit()
+        
 
     try:
         # find circle that matches the data
@@ -189,7 +191,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
     except:
         print(">Problem in function find_circle, please make sure data is of ",
               "correct format")
-        quit()
+        
 
     if plot_extra:
         try:
@@ -198,7 +200,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         except:
             print(">Error when trying to plot raw data and circle fit in ",
                   "find_initial_guess")
-            quit()
+            
 
     try:
         ## move gap of circle to (0,0)
@@ -209,7 +211,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
     except:
         print(">Error when trying to shift data into canonical position",
               " minus 1")
-        quit()
+        
 
     try:
         # determine the angle to the center of the fitting circle from origin
@@ -217,21 +219,61 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             phi = np.angle(z_c)
         else:
             phi = np.angle(-z_c)
-
         freq_idx = np.argmax(np.abs(ydata))
+        
+        # error: code thinks the res freq is the first or last point
+        if freq_idx == 0 or freq_idx == len(x)-1:
+            
+            # how to get new freq_idx - look only in center
+            # e.g, 30 points. we want to slice into 0:10, 10:20, 20:30
+            #   and ignore the 0:10 and 20:30 sections
+            #  1/3rd and 2/3rd indices can be found with '//' instead of '/'
+            #           10 = 1 * (len(x) // 3)  
+            #           20 = 2 * (len(x) // 3)
+            
+            idx_1 = len(ydata) // 3
+            idx_2 = 2 * (len(ydata) // 3)
+            
+            fixed_freq_idx = np.argmax(np.abs(ydata[idx_1:idx_2])) 
+            freq_idx = fixed_freq_idx + idx_1  # remember to add the offset from slicing!
+            
+            
+            x_plot = x/1e9 if any(x > 1e9) else x
+            
+            if plot_extra is True:
+                plt.figure()
+                plt.plot(x_plot, np.abs(ydata), label="np.abs(ydata)")
+                plt.plot(x_plot[freq_idx], np.abs(ydata)[freq_idx], 'r*', label="freq_idx", markersize=20)
+                
+                plt.plot()
+                
+                plt.title("debug: freq_idx = 0\n ")
+                plt.legend()
+                
+                plt.show()
+                
+        
         f_c = x[freq_idx]
-
+        
+        
+        
         if plot_extra:
             # plot data with guide circle
-            fp.plot(np.real(ydata),
-                 np.imag(ydata),
-                 "resonance",
-                 output_path,
-                 np.real(z_c),
-                 np.imag(z_c),
-                 r,
-                 np.real(ydata[freq_idx]),
-                 np.imag(ydata[freq_idx]))
+            # fp.plot(np.real(ydata),
+            #      np.imag(ydata),
+            #      "resonance",
+            #      output_path,
+            #      np.real(z_c),
+            #      np.imag(z_c),
+            #      r,
+            #      np.real(ydata[freq_idx]),
+            #      np.imag(ydata[freq_idx]))
+            
+            plt.figure()
+            plt.plot(np.real(ydata), np.imag(ydata), 'bx', label="ydata")
+            plt.plot(np.real(z_c), np.imag(z_c), "r*", label="z_c")
+            plt.plot([np.real(z_c), np.real(z_c) + r], [np.imag(z_c), np.imag(z_c) + 0], label=f"radius = {r:1.1f}", linestyle=':', linecolor='k', linewidth=1)
+            
         # rotate resonant freq to minimum
         ydata = ydata * np.exp(-1j * phi)
 
@@ -244,29 +286,42 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
     except:
         print(">Error when trying to shift data according to phi in ",
               "find_initial_guess")
-        quit()
+        
 
     try:
         if f_c < 0:
             print(">Resonance frequency is negative. Please only input ",
                   "positive frequencies.")
-            quit()
+            
     except:
         print(">Cannot find resonance frequency in find_initial_guess")
-        quit()
+        
 
     if Method.method == 'DCM' or Method.method == 'PHI':
         try:
+            
             # diameter of the circle found from getting distance from (0,0) to 
             # resonance frequency data point (possibly should use fit circle)
             Q_Qc = np.max(np.abs(ydata))
             # y_temp = |ydata|-(diameter/sqrt(2))
             y_temp = np.abs(np.abs(ydata) - np.max(np.abs(ydata)) / 2 ** 0.5)
 
+            if len(y_temp[0:freq_idx]) == 0:
+                print(f"y_temp[0:freq_idx] >>>  {freq_idx = }, {len(y_temp) = }")
+                raise ValueError("'y_temp' inside of find_initial_guess for first half of circle has length 0!")
+            
+            if len(y_temp[freq_idx:]) == 0:
+                print(f"y_temp[freq_idx:] >>>  {freq_idx = }, {len(y_temp) = }")
+                raise ValueError("'y_temp' inside of find_initial_guess for second half of circle has length 0!")
+            
             # find min value in y_temp on one half of circle from resonance
             _, idx1 = find_nearest(y_temp[0:freq_idx], 0)
+            
+            print(Q_Qc, freq_idx, len(y_temp))
+            
             # find min value in y_temp on other half of circle from resonance
             _, idx2 = find_nearest(y_temp[freq_idx:], 0)
+            
             # add index of resonance frequency to get correct index for idx2
             idx2 = idx2 + freq_idx
             # bandwidth of frequencies
@@ -291,7 +346,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
             else:
                 print(">Failed to find initial guess for method PHI.",
                       " Please manually initialize a guess")
-            quit()
+            
 
     elif Method.method == 'DCM REFLECTION':
         try:
@@ -322,7 +377,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         except:
             print(">Failed to find initial guess for method DCM REFLECTION. ",
                   "Please manually initialize a guess")
-            quit()
+            
 
     elif Method.method == 'INV':
 
@@ -355,7 +410,7 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         except:
             print(">Failed to find initial guess for method INV. ",
                   "Please manually initialize a guess")
-            quit()
+            
 
     elif Method.method == 'CPZM':
         try:
@@ -383,11 +438,17 @@ def find_initial_guess(x, y1, y2, Method, output_path, plot_extra):
         except:
             print(">Failed to find initial guess for method CPZM. ",
                   "Please manually initialize a guess")
-            quit()
+            
     else:
         print(">Method is not defined. Please choose a method: DCM, ",
               "DCM REFLECTION, PHI, INV or CPZM")
-        quit()
+    
+    # just in case init guess failed
+    try:
+        print(init_guess)
+    except:
+        init_guess = [None, None, f_c, None, None]
+        
     return init_guess, x_c, y_c, r
 
 
@@ -421,7 +482,7 @@ def monte_carlo_fit(xdata=None, ydata=None, parameter=None, Method=None):
         error_0 = error
     except:
         print(">Failed to initialize monte_carlo_fit(), please check parameters")
-        quit()
+        
     # Fix condition and Monte Carlo Method with random number Generator
 
     counts = 0
@@ -460,7 +521,7 @@ def monte_carlo_fit(xdata=None, ydata=None, parameter=None, Method=None):
                 error = new_error
     except:
         print(">Error in while loop of monte_carlo_fit")
-        quit()
+        
     ## If finally gets better fit then plot ##
     if error < error_0:
         stop_MC = False
@@ -687,7 +748,7 @@ def preprocess_linear(xdata: np.ndarray, ydata: np.ndarray, normalize: int, outp
     if normalize * 2 > len(ydata):
         print(
             "Not enough points to normalize, please lower value of normalize variable or take more points near resonance")
-        quit()
+        
 
     # Check for bad linear preprocessing outputs
     # Redirect to circle preprocessing
@@ -795,7 +856,7 @@ def min_fit(params, xdata, ydata, Method):
         else:
             print(">Method is not defined. Please choose a method: DCM, ",
                   "DCM REFLECTION, PHI, INV or CPZM")
-            quit()
+            
 
         result = minner.minimize(method='least_squares')
 
@@ -1000,16 +1061,17 @@ def fit(resonator):
         linear_amps = data.linear_amps
         phases = np.unwrap(data.phases)
         ydata = np.multiply(linear_amps, np.exp(1j * phases))
-
+        
     except Exception as e:
         print(f'Exception: {e}')
         print("When trying to read data")
-        quit()
+        
 
-    output_path = fp.name_folder(dir, str(Method.method)) + fit_dir
-    print("scres fit.py debug: output_path = ", output_path)
+    output_path = fit_dir
+    print("scres fit.py debug: output_path = ", output_path, "\n")
+    
     if plot_extra:
-        os.makedirs(output_path)
+        os.makedirs(output_path, exist_ok=True)
 
     # original data before normalization
     x_initial = xdata
@@ -1026,11 +1088,11 @@ def fit(resonator):
         t_ydata, t_slope, t_intercept, t_slope2, t_intercept2 = preprocess_linear(xdata, ydata, normalize, output_path,
                                                                                   plot_extra)
         # Logic check for error'd linear preprocessing
-        if t_ydata == "circle":
-            preprocess_method = "circle"
-            ydata = preprocess_circle(xdata, ydata, output_path, plot_extra)
-        else:
-            ydata, slope, intercept, slope2, intercept2 = t_ydata, t_slope, t_intercept, t_slope2, t_intercept2
+        # if t_ydata == "circle":
+        #     preprocess_method = "circle"
+        #     ydata = preprocess_circle(xdata, ydata, output_path, plot_extra)
+        # else:
+        ydata, slope, intercept, slope2, intercept2 = t_ydata, t_slope, t_intercept, t_slope2, t_intercept2
 
 
     elif preprocess_method == "circle":
@@ -1064,12 +1126,18 @@ def fit(resonator):
 
     if len(x_raw) < 20:
         print(">Not enough data points to run code. Please have at least 20 data points.")
-        quit()
+        
 
     # place to store initial guess parameters
     init = [0] * 4
     # when user manually initializes a guess initialize the following variables
     if manual_init is not None:
+        
+        # TODO: bandaid solution to manual init frequency
+        if manual_init[2] is None:
+            print(f"idx 2 of manual init is none. Setting to - {min(xdata)=}")
+            manual_init[2] = min(xdata)
+            
         try:
             if len(manual_init) == 4:
 
@@ -1109,17 +1177,21 @@ def fit(resonator):
                 print(manual_init)
                 print(">Manual input wrong format, please follow the correct "
                       "format of 4 parameters in an array")
-                quit()
+                
         except Exception as e:
             print(f'Excepction {e}')
             print(f'Loaded manual_init: {manual_init}')
             print("Problem loading manually initialized parameters, please "
                   "make sure parameters are all numbers")
-            quit()
+            
     else:
         # generate initial guess parameters from data when user does not manually initialze guess
         init, x_c, y_c, r = find_initial_guess(xdata, y1data, y2data, Method, output_path,
                                                plot_extra)  # resonance frequency
+        if None in init:
+            plt.show()  # show plot_extra
+            raise ValueError("Warning! 'find_initial_guess' returned None for some value in init.")
+        
         freq = init[2]
         # f_0/Qi is kappa
         kappa = init[2] / init[0]
@@ -1156,14 +1228,14 @@ def fit(resonator):
     except Exception as e:
         print(f'Exception {e}')
         print(">Failed to define parameters, please make sure parameters are of correct format")
-        quit()
+        
 
     # Fit data to least squares fit for respective fit type
     fit_params, conf_array = min_fit(params, xdata, ydata, Method)
 
     if manual_init is None and fit_params is None:
         print(">Failed to minimize function for least squares fit")
-        quit()
+        
     if fit_params is None:
         fit_params = manual_init
 
@@ -1173,6 +1245,7 @@ def fit(resonator):
     stop_MC = False
     continue_condition = (MC_counts < Method.MC_iteration) and (stop_MC == False)
     output_params = []
+    
 
     while continue_condition:
 
@@ -1190,9 +1263,21 @@ def fit(resonator):
         if continue_condition == False:
             output_params = output_params[MC_counts - 1]
 
+        # TODO: re enable montecarlo
+        continue_condition = False
+        
     error = min(error)
 
     # if monte carlo fit got better results than initial minimization, run a minimization on the monte carlo parameters
+    
+    # print("\n output_params and fit_params: \n")
+    # print(output_params)
+    # print(fit_params)
+    
+    # check occasional error with array inside list instead of just list or just array
+    if len(output_params) == 1 and len(output_params[0]) != 1:
+        output_params = output_params[0]
+    
     if output_params[0] != fit_params[0]:
         params2 = lmfit.Parameters()  # initialize parameter class, min is lower bound, max is upper bound, vary = boolean to determine if parameter varies during fit
         if Method.method == 'DCM' or Method.method == 'DCM REFLECTION' or Method.method == 'PHI':
@@ -1215,7 +1300,7 @@ def fit(resonator):
 
     if manual_init is None and fit_params is None:
         print(">Failed to minimize function for least squares fit")
-        quit()
+        
     if fit_params is None:
         fit_params = manual_init
 
@@ -1229,7 +1314,7 @@ def fit(resonator):
         else:
             print(">Length of extracted data equals zero thus bandwidth is incorrect, "
                   "please manually input a guess for parameters")
-        quit()
+        
 
     if resonator.plot is not None:
         # make a folder to put all output in
@@ -1256,19 +1341,19 @@ def fit(resonator):
                         extract_factor, title=title, manual_params=Method.manual_init)
         except Exception as e:
             print(f'Exception: {e}')
-            print(f'Failed to plot {Method.method} fit for {data}')
-            quit()
+            print(f'Failed to plot {Method.method} fit for {filename}')
         try:
             if resonator.save_dcm_plot is True:
                 fig.savefig(fp.name_plot(filename, str(Method.method), output_path, 
                                     format=f'.{resonator.plot}'), format=f'{resonator.plot}')
             else:
                 fig.show()
+            
+            return output_params, conf_array, error, init, fig 
+                
         except Exception as e:
             print(e) 
             print(f'Unrecognized file format: {resonator.plot}\n Please use png, pdf, ps, eps or svg.')
-            quit()
             
-        return output_params, conf_array, error, init, fig 
 
-    return fig, output_params, conf_array, error, init
+    return fig, output_params, conf_array, error, init, None

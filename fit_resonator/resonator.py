@@ -320,7 +320,7 @@ def from_file(filepath, data_column=None, fscale=1):
         except OSError as e:
             print(f'ERROR {e} when opening file')
             print(f'Data file: {filepath} could not be found/read')
-            quit()
+            
         file, inline, options, frequency_units, data_format = header_parse(file=snp_file)
         freqs, amps, phases, linear_amps = data_parse(s_col, inline, frequency_units, data_format, file, options)
         if frequency_units == 'hz':
@@ -346,7 +346,7 @@ def from_file(filepath, data_column=None, fscale=1):
         except Exception as e:
             print(f'Exception: **{e}** encountered when attempting to load data file as .txt/.csv')
             print(f'Are you using a comma as your delimiter?')
-            quit()
+            
 
         freqs = data.T[0] / fscale
         amps = data.T[1]
@@ -356,7 +356,7 @@ def from_file(filepath, data_column=None, fscale=1):
     else:
         print(f'File extension {extension} not supported.')
         print(f'Please use .s2p, .s1p, .txt, or .csv')
-        quit()
+        
 
 def header_parse(file):
     data_format = None
@@ -403,7 +403,7 @@ def data_parse(s_col, line, frequency_units, data_format, file, options):
     data_rows = [3, 4]
     if len(row) == 0:
         print("Data not found in file.")
-        quit()
+        
 
     if len(row) > 3:
         # If too many rows, use info from header to pull correct column
@@ -472,7 +472,7 @@ def data_parse(s_col, line, frequency_units, data_format, file, options):
 
     else:
         print("Data type in file not supported. Please use DB, MA, or RI.")
-        quit()
+        
 
     if frequency_units == "hz":
         freqs = freqs / 10 ** 9

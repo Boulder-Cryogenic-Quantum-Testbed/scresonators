@@ -58,7 +58,7 @@ def fit_multiple(names, dir, norm=10, pickle=False):
                                  MC_step_const=0.3)  # mcrounds = 100,000 unless otherwise specified
         except Exception as e:
             print(f"Failed to initialize method, please change parameters. ERROR: {e}")
-            quit()
+            
 
 
 

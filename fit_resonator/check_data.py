@@ -66,7 +66,7 @@ def file(filename):
     file.close()
 
     if not correct_format:
-        quit()
+        
 
     # detect if numbers in columns follow specified format
     print("Detecting if column numbers are of correct format:")

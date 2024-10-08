@@ -33,7 +33,7 @@ Method = res.FitMethod(fit_type, MC_iteration, MC_rounds=MC_rounds,\
             MC_fix=MC_fix, manual_init=manual_init, MC_step_const=0.3) #mcrounds = 100,000 unless otherwise specified
 #except:
 #    print("Failed to initialize method, please change parameters")
-#    quit()
+#    
 
 ##############################################################
 
