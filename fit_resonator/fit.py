@@ -701,11 +701,32 @@ def preprocess_linear(xdata: np.ndarray, ydata: np.ndarray, normalize: int, outp
 
     return preprocessed_data, slope, intercept, slope2, intercept2
 
-def preprocess_freq_dep_atten():
+
+def preprocess_freq_dep_atten(xdata: np.ndarray, ydata: np.ndarray, normalize=None):
+    """
+        we are modeling this frequency dependent **attenuation** as a magn-only effect
+        that has a constant and a linear term, so it looks like: 
+                S_21_data = S_21_ideal * (A + B_0 * f)
+                
+        then we simply remove it by dividing that term out
+                S_21_preprocessed = S_21_data / (A + B_0 * f)
     
+    """
     
+    # by default use 10% on each side of the trace
+    # so a 50 point trace has 5 points on each side to do a linear fit
+    if normalize is None:
+        normalize = int(len(ydata) * 0.10)
     
-    return
+    magn = np.abs(ydata)
+
+    # normalize phase of S21 using linear fit
+    slope, intercept, r_value, p_value, std_err = stats.linregress(np.append(xdata[0:normalize], xdata[-normalize:]),
+                                                                   np.append(magn[0:normalize], magn[-normalize:]))
+    
+    preprocessed_data = ydata / (intercept + slope*xdata)
+    
+    return preprocessed_data, slope, intercept
 
 
 def preprocess_circle(xdata: np.ndarray, ydata: np.ndarray, output_path: str, plot_extra):
@@ -715,13 +736,21 @@ def preprocess_circle(xdata: np.ndarray, ydata: np.ndarray, output_path: str, pl
     # # Unwrap the phase
     # phase = np.unwrap(np.angle(ydata))
     # ydata = np.abs(ydata) * np.exp(1j * phase)
+    
+    if plot_extra:
+        fp.plot(np.real(ydata), np.imag(ydata), "Normalize_0", output_path)
+
+    # remove freq dependence in magnitude  (freq-dep attenuators)
+    ydata_linear_removed, intercept, slope = preprocess_freq_dep_atten(xdata, ydata, normalize)
 
     if plot_extra:
-        fp.plot(np.real(ydata), np.imag(ydata), "Normalize_1", output_path)
+        # fp.plot(np.real(ydata_linear_removed), np.imag(ydata_linear_removed), "Normalize_1", output_path)
+        fp.plot(xdata, ydata_linear_removed, "Normalize_1", output_path)
+        fp.plot(xdata, (slope*xdata + intercept), "Normalize_1", output_path)
 
-    # remove cable delay
-    delay = fit_delay(xdata, ydata)
-    z_data = ydata * np.exp(2j * np.pi * delay * xdata)
+    # remove freq dependence in phase  (cable delay)
+    delay = fit_delay(xdata, ydata_linear_removed)
+    z_data = ydata_linear_removed * np.exp(2j * np.pi * delay * xdata)
 
     if plot_extra:
         fp.plot(np.real(z_data), np.imag(z_data), "Normalize_2", output_path)
