@@ -702,7 +702,7 @@ def preprocess_linear(xdata: np.ndarray, ydata: np.ndarray, normalize: int, outp
     return preprocessed_data, slope, intercept, slope2, intercept2
 
 
-def preprocess_freq_dep_atten(xdata: np.ndarray, ydata: np.ndarray, normalize=None):
+def preprocess_freq_dep_atten(xdata: np.ndarray, ydata: np.ndarray, normalize_pts=None):
     """
         we are modeling this frequency dependent **attenuation** as a magn-only effect
         that has a constant and a linear term, so it looks like: 
@@ -715,21 +715,21 @@ def preprocess_freq_dep_atten(xdata: np.ndarray, ydata: np.ndarray, normalize=No
     
     # by default use 10% on each side of the trace
     # so a 50 point trace has 5 points on each side to do a linear fit
-    if normalize is None:
-        normalize = int(len(ydata) * 0.10)
-    
+    if normalize_pts is None:
+        normalize_pts = int(len(ydata) * 0.10)
+    print(normalize_pts)
     magn = np.abs(ydata)
 
     # normalize phase of S21 using linear fit
-    slope, intercept, r_value, p_value, std_err = stats.linregress(np.append(xdata[0:normalize], xdata[-normalize:]),
-                                                                   np.append(magn[0:normalize], magn[-normalize:]))
+    slope, intercept, r_value, p_value, std_err = stats.linregress(np.append(xdata[0:normalize_pts], xdata[-normalize_pts:]),
+                                                                   np.append(magn[0:normalize_pts], magn[-normalize_pts:]))
     
     preprocessed_data = ydata / (intercept + slope*xdata)
     
     return preprocessed_data, slope, intercept
 
 
-def preprocess_circle(xdata: np.ndarray, ydata: np.ndarray, output_path: str, plot_extra):
+def preprocess_circle(xdata: np.ndarray, ydata: np.ndarray, normalize_pts : int, output_path: str, plot_extra):
     """
     Data Preprocessing. Use Probst method to get rid of cable delay and normalize phase/magnitude of S21 by circle fit
     """
@@ -741,7 +741,7 @@ def preprocess_circle(xdata: np.ndarray, ydata: np.ndarray, output_path: str, pl
         fp.plot(np.real(ydata), np.imag(ydata), "Normalize_0", output_path)
 
     # remove freq dependence in magnitude  (freq-dep attenuators)
-    ydata_linear_removed, intercept, slope = preprocess_freq_dep_atten(xdata, ydata, normalize)
+    ydata_linear_removed, intercept, slope = preprocess_freq_dep_atten(xdata, ydata, normalize_pts)
 
     if plot_extra:
         # fp.plot(np.real(ydata_linear_removed), np.imag(ydata_linear_removed), "Normalize_1", output_path)
@@ -973,7 +973,7 @@ def fit(resonator):
 
     filepath = resonator.filepath
     Method = resonator.method_class
-    normalize = resonator.normalize
+    normalize_pts = resonator.normalize_pts
     data = resonator.data
     plot_extra = resonator.plot_extra
     preprocess_method = resonator.preprocess_method
@@ -1015,7 +1015,7 @@ def fit(resonator):
     if resonator.databg is not None:
         ydata = background_removal(resonator.databg, linear_amps, phases, output_path)
     elif preprocess_method == "linear":
-        t_ydata, t_slope, t_intercept, t_slope2, t_intercept2 = preprocess_linear(xdata, ydata, normalize, output_path,
+        t_ydata, t_slope, t_intercept, t_slope2, t_intercept2 = preprocess_linear(xdata, ydata, normalize_pts, output_path,
                                                                                   plot_extra)
         # # Logic check for error'd linear preprocessing
         # if t_ydata == "circle":
@@ -1026,7 +1026,7 @@ def fit(resonator):
 
 
     elif preprocess_method == "circle":
-        ydata = preprocess_circle(xdata, ydata, output_path, plot_extra)
+        ydata = preprocess_circle(xdata, ydata, normalize_pts, output_path, plot_extra)
     else:
         pass
 

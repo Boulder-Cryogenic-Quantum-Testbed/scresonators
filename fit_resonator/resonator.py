@@ -154,7 +154,7 @@ class Resonator:  # Object is auto-initialized with @attr annotation
     temp: float = None
     bias: float = None
     measurement: str or int or tuple or list or np.ndarray = None
-    normalize: int = 10
+    normalize_pts: int = 10
     background: str = None
     background_array: np.ndarray = None
     plot: str = 'pdf'
