@@ -1,7 +1,4 @@
 import numpy as np
-import scipy.optimize as spopt
-import plot as fp
-import cavity_functions as ff
 
 def extract_near_res(x_raw: np.ndarray,
                      y_raw: np.ndarray,

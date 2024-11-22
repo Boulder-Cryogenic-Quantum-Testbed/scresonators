@@ -7,7 +7,6 @@ from fit import Fitter
 from fit_methods.factory import create_fit_method
 
 
-
 class Resonator:
 
     def __init__(self, file_path, data_columns=["Frequency [Hz]", "Magnitude [dB]", "Phase [deg]"], 
