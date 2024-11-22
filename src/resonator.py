@@ -10,7 +10,7 @@ from fit_methods.factory import create_fit_method
 class Resonator:
 
     def __init__(self, file_path, data_columns=["Frequency [Hz]", "Magnitude [dB]", "Phase [deg]"], 
-                 preproces_method='circle', fit_method_name='DCM'):
+                 preprocess_method='circle', fit_method_name='DCM'):
 
         self.file_path = file_path
         self.data_columns = data_columns
@@ -24,7 +24,7 @@ class Resonator:
         self.dir = os_path[0]
         self.file_name = os_path[1]
 
-        self.preprocess_method = preproces_method
+        self.preprocess_method = preprocess_method
         self.data_processor = DataProcessor(self, normalize_pts=10, preprocess_method=self.preprocess_method) 
 
         self.fit_method_name = fit_method_name

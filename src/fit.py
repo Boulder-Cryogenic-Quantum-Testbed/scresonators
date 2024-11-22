@@ -1,6 +1,4 @@
-import lmfit
 import numpy as np
-import cavity_functions as ff
 import plot as fp
 from uncertainties import ufloat, umath
 from utilities import *

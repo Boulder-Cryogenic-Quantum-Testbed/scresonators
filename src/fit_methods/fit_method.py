@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import numpy as np
 
 class FitMethod(ABC):
     """
@@ -53,3 +54,7 @@ class FitMethod(ABC):
 
     def __repr__(self):
         return ', '.join(f"{key}: {value}" for key, value in vars(self).items())
+    
+    def one_cavity_peak_abs(self, x, Q, Qc, w1):
+        #Ideal resonator fit function
+        return np.abs(Q/Qc/(1 + 1j*(x-w1)/w1*2*Q))

@@ -1,5 +1,4 @@
 import numpy as np
-import cavity_functions as ff
 from utilities import * 
 from .fit_method import FitMethod
 import scipy.optimize as spopt
@@ -10,9 +9,9 @@ class DCM(FitMethod):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.name = 'DCM'
-        self.func = ff.cavity_DCM
+        self.func = self.function
 
-    def func(self, x, Q, Qc, w1, phi): 
+    def function(self, x, Q, Qc, w1, phi): 
         #DCM fit function
         return np.array(1-Q/Qc*np.exp(1j*phi)/(1 + 1j*(x-w1)/w1*2*Q))
     
@@ -92,7 +91,7 @@ class DCM(FitMethod):
             Qc = Q / Q_Qc
             # fits parameters for the 3 terms given in p0 
             # (this is where Qi and Qc are actually guessed)
-            popt, pcov = spopt.curve_fit(ff.one_cavity_peak_abs, x, 
+            popt, pcov = spopt.curve_fit(self.one_cavity_peak_abs, x, 
                                          np.abs(ydata), p0=[Q, Qc, f_c], 
                                          bounds=(0, [np.inf] * 3))
             Q = popt[0]
@@ -117,13 +116,14 @@ class DCM(FitMethod):
         return params
     
     def min_one_cavity(self, parameter, x, data=None):
+
         #fit function call for DCM fitting method
         Q = parameter['Q']
         Qc = parameter['Qc']
         w1 = parameter['w1']
         phi = parameter['phi']
 
-        model = self.cavity_DCM(x, Q, Qc, w1,phi)
+        model = self.function(x, Q, Qc, w1,phi)
         real_model = model.real
         imag_model = model.imag
         real_data = data.real
@@ -131,7 +131,9 @@ class DCM(FitMethod):
 
         resid_re = real_model - real_data
         resid_im = imag_model - imag_data
+
         return np.concatenate((resid_re,resid_im))
+
     
     def min_fit(self, params, xdata, ydata):
 
@@ -150,7 +152,7 @@ class DCM(FitMethod):
 
         try:
             
-            minner = lmfit.Minimizer(self.fit_method.min_one_cavity, params, fcn_args=(xdata, ydata))
+            minner = lmfit.Minimizer(self.min_one_cavity, params, fcn_args=(xdata, ydata))
             result = minner.minimize(method='least_squares')
             fit_params = result.params
             parameter = fit_params.valuesdict()
@@ -171,7 +173,7 @@ class DCM(FitMethod):
             p_names = []
 
             for parameter in params:
-                if parameter not in self.fit_method.MC_fix:
+                if parameter not in self.MC_fix:
                     p_names.append(parameter)
 
             
@@ -234,10 +236,10 @@ class DCM(FitMethod):
         assert parameter is not None, "parameter is not defined"
 
         try:
-            ydata_1stfit = self.fit_method.func(xdata, *parameter)  # set of S21 data based on initial guess parameters
+            ydata_1stfit = self.function(xdata, *parameter)  # set of S21 data based on initial guess parameters
 
             ## weight condition
-            if self.fit_method.MC_weight == 'yes':
+            if self.MC_weight == 'yes':
                 weight_array = 1 / abs(ydata)  # new array of inversed magnitude ydata
             else:
                 weight_array = np.full(len(xdata), 1)  # new array of len(xdata) all slots filled with 1
@@ -256,21 +258,21 @@ class DCM(FitMethod):
 
         counts = 0
         try:
-            while counts < self.fit_method.MC_rounds:
+            while counts < self.MC_rounds:
                 counts = counts + 1
                 # generate an array of 4 random numbers between -0.5 and 0.5 in the format [r,r,r,r] where r is each of the random numbers times the step constant
-                random = self.fit_method.MC_step_const * (np.random.random_sample(len(parameter)) - 0.5)
-                if 'Q' in self.fit_method.MC_fix:
+                random = self.MC_step_const * (np.random.random_sample(len(parameter)) - 0.5)
+                if 'Q' in self.MC_fix:
                     random[0] = 0
-                if 'Qi' in self.fit_method.MC_fix:
+                if 'Qi' in self.MC_fix:
                     random[0] = 0
-                if 'Qc' in self.fit_method.MC_fix:
+                if 'Qc' in self.MC_fix:
                     random[1] = 0
-                if 'w1' in self.fit_method.MC_fix:
+                if 'w1' in self.MC_fix:
                     random[2] = 0
-                if 'phi' in self.fit_method.MC_fix:
+                if 'phi' in self.MC_fix:
                     random[3] = 0
-                if 'Qa' in self.fit_method.MC_fix:
+                if 'Qa' in self.MC_fix:
                     random[3] = 0
                     
                 # Generate new parameter to test
@@ -280,7 +282,7 @@ class DCM(FitMethod):
                 new_parameter[3] = np.mod(new_parameter[3], 2 * np.pi)
 
                 # new set of data with new parameters
-                ydata_MC = self.fit_method.func(xdata, *new_parameter)
+                ydata_MC = self.function(xdata, *new_parameter)
                 # check new error with new set of parameters
                 weighted_ydata_MC = np.multiply(weight_array, ydata_MC)
                 new_error = np.linalg.norm(weighted_ydata_MC - weighted_ydata) / len(xdata)
@@ -293,8 +295,9 @@ class DCM(FitMethod):
         if error < error_0:
             stop_MC = False
             print('Monte Carlo fit got better fitting parameters')
-            if self.fit_method.manual_init != None:
+            if self.manual_init != None:
                 print('>User input parameters getting stuck in local minimum, please input more accurate parameters')
         else:
             stop_MC = True
+            
         return parameter, stop_MC, error

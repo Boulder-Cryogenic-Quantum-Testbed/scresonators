@@ -53,7 +53,11 @@ def min_one_Cavity_dip(parameter, x, data=None):
 
     resid_re = real_model - real_data
     resid_im = imag_model - imag_data
-    return np.concatenate((resid_re,resid_im))
+
+    output = np.concatenate((resid_re,resid_im))
+    # return np.concatenate((resid_re,resid_im))
+
+    return output
 
 ########################################################
 
