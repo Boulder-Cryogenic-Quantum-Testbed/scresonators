@@ -31,6 +31,7 @@ class FitMethod(ABC):
         """
         pass
 
+    #TODO: Why are we using lmfit's Model class? It seems to only provide utility if we want to use non-standard weights
     @abstractmethod
     def create_model(self) -> lmfit.Model:
         """
