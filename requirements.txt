@@ -1,8 +1,8 @@
 attrs>=23.1.*
 inflect>=6.0.*
-lmfit>=1.1.*
+lmfit==1.2.*
 matplotlib>=3.6.*
-numpy>=1.24.*
+numpy==1.24.*
 pandas>=1.5.*
 pytest>=7.2.*
 scipy>=1.9.*
@@ -10,4 +10,5 @@ sympy>=1.11.*
 scikit-rf>=0.24.*
 uncertainties>=3.1.*
 gitpython>=3.1*
+ipykernel>=6.29.*
 # Mattis-Bardeen>=0.0.*
