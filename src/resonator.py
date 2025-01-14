@@ -9,11 +9,11 @@ from fit_methods.factory import create_fit_method
 
 class Resonator:
 
-    def __init__(self, file_path, data_columns=["Frequency [Hz]", "Magnitude [dB]", "Phase [deg]"], 
+    def __init__(self, file_path, df_headers=["Frequency [Hz]", "Magnitude [dB]", "Phase [deg]"], 
                  preprocess_method='circle', fit_method_name='DCM'):
 
         self.file_path = file_path
-        self.data_columns = data_columns
+        self.df_headers = df_headers
         self.freqs, self.dB_amps, self.phase_deg = self.load_data()
 
         self.phase_rad = np.unwrap(np.deg2rad(self.phase_deg))
@@ -40,7 +40,7 @@ class Resonator:
 
     def load_data(self):
         
-        file_io = FileIO(self.file_path, self.data_columns)
+        file_io = FileIO(self.file_path, self.df_headers)
         data_list = file_io.load_csv()
         freqs = data_list[0]
         dB_amps = data_list[1]

@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 
 class Sweeper():
 
-    def __init__(self, directory, data_columns=["Frequency [Hz]", "Magnitude [dB]", "Phase [deg]"], 
+    def __init__(self, directory, df_headers=["Frequency [Hz]", "Magnitude [dB]", "Phase [deg]"], 
                  preprocess_method='circle', fit_method='DCM'):
 
         self.directory = Path(directory)
-        self.data_columns = data_columns
+        self.df_headers = df_headers
 
         self.fit_method = fit_method
         self.preprocess_method = preprocess_method
@@ -39,7 +39,7 @@ class Sweeper():
             # Create a Resonator object
             resonator = Resonator(
                 file_path=file, 
-                data_columns=self.data_columns, 
+                df_headers=self.df_headers, 
                 preprocess_method=self.preprocess_method, 
                 fit_method_name=self.fit_method
             )
