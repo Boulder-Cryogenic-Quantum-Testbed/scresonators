@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from file_io import FileIO
+from pathlib import Path
 
 from preprocessor import DataProcessor
 from fit import Fitter
@@ -9,21 +10,52 @@ from fit_methods.factory import create_fit_method
 
 class Resonator:
 
-    def __init__(self, file_path, df_headers=["Frequency [Hz]", "Magnitude [dB]", "Phase [deg]"], 
-                 preprocess_method='circle', fit_method_name='DCM'):
+    def __init__(self, df=None, filepath=None, fileIO_obj=None, filename=None, preprocess_method='circle', fit_method_name='DCM'):
+        
+        # accept either filepath as path obj or a fileIO obj directly 
+        if filepath is None and fileIO_obj is None and df is None:
+            raise TypeError("Provide one of arguments 'filepath', 'fileIO', or 'df' to load data.")
+        elif fileIO_obj is not None:
+            self.load_data_fileIO(fileIO_obj)
+        elif filepath is not None:
+            self.load_data_csv(filepath)
+        elif df is not None:
+            self.data_df = df
+            self.data_cols = df.columns
+        else:  
+            pass
+        
+        """
+            load_data_FileIO and load_data_csv add the following attributes:
+                self.filepath  ->  string filepath to data
+                self.pathlib_path  -> pathlib.Path filepath to data
+                self.data_df  ->  pd.DataFrame of data
+                self.data_cols  ->  pd.DataFrame.columns in a list instead of Index
+                self.fileIO  ->  original FileIO object
+        """
 
-        self.file_path = file_path
-        self.df_headers = df_headers
-        self.freqs, self.dB_amps, self.phase_deg = self.load_data()
+        # prepare data and path information
+        self.freqs = self.data_df[self.data_cols[0]].to_numpy()
+        self.magn_dB = self.data_df[self.data_cols[1]].to_numpy()
+        self.phase_rad =  self.data_df[self.data_cols[2]].to_numpy()
 
-        self.phase_rad = np.unwrap(np.deg2rad(self.phase_deg))
-        self.linear_amps = 10 ** (self.dB_amps / 20)
-        self.S21_data = self.linear_amps * np.exp(1j * self.phase_rad)   # S21 = magnitude * e^(i * phase)
+        self.phase_rad = np.unwrap(self.phase_rad)
+        self.magn_lin = 10 ** (self.magn_dB / 20)
+        self.S21_data = self.magn_lin * np.exp(1j * self.phase_rad)  # S21 = magn_lin * e^(i * phase_rad)
 
-        os_path = os.path.split(self.file_path)
-        self.dir = os_path[0]
-        self.file_name = os_path[1]
-
+        if hasattr(self, "pathlib_path") is True:
+            self.dir = self.pathlib_path.parent
+        else:
+            self.dir = Path(os.getcwd())
+            
+        if filename is not None:
+            self.filename = filename
+        else:
+            print(f"Since filepath and FileIO were not given, need to provide a filename!")
+            
+            
+            
+        
         self.preprocess_method = preprocess_method
         self.data_processor = DataProcessor(self, normalize_pts=10, preprocess_method=self.preprocess_method) 
 
@@ -37,19 +69,31 @@ class Resonator:
                                MC_step_const=0.6, 
                                manual_init=None, 
                                vary=None)
-
-    def load_data(self):
         
-        file_io = FileIO(self.file_path, self.df_headers)
-        data_list = file_io.load_csv()
-        freqs = data_list[0]
-        dB_amps = data_list[1]
-        phases = data_list[2]
-        return freqs, dB_amps, phases   
+    def load_data_fileIO(self, fileIO_obj):
+        """
+            takes a fileIO object and grabs all the useful parts 
+        """
+        self.pathlib_path = fileIO_obj.pathlib_path
+        self.filepath = fileIO_obj.filepath
+        self.filename = self.pathlib_path.name
+        self.data_df = fileIO_obj.df
+        self.data_cols = list(fileIO_obj.df.columns)
+        self.fileIO = fileIO_obj  # just in case we want to access it later
+        
+        
+    def load_data_csv(self, filepath):
+        """
+            takes a pathlib_path and loads csv data by converting it to a FileIO object
+        """
+        fileIO_obj = FileIO(filepath)
+        self.load_data_fileIO(fileIO_obj)
+        
     
     def initialize_data_processor(self, normalize_pts, preprocess_method):
 
         self.processor = DataProcessor(self, normalize_pts=normalize_pts, preprocess_method=preprocess_method) 
+        
         
     def initialize_fit_method(self, 
                             fit_name: str = None,

@@ -18,8 +18,8 @@ class DataProcessor:
         self.freqs = resonator.freqs
         self.ydata = resonator.S21_data
 
+        self.filename = resonator.filename
         self.dir = resonator.dir
-        self.file_name = resonator.file_name
 
     def process_data(self):
         # Process according to selected method
