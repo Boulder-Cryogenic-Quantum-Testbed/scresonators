@@ -137,17 +137,25 @@ class Fitter:
         
         #title = f'{Method.method} fit for {filename}'
         title = f'{self.fit_method.name} Method Fit'
-        figurename = f"{self.fit_method.name} with Monte Carlo Fit and Raw data\nPower: {self.preprocessor.file_name}"
+        figurename = f"{self.fit_method.name} with Monte Carlo Fit and Raw data\nPower: {self.preprocessor.filename}"
         fig = fp.PlotFit(x_raw, y_raw, x_initial, y_initial, slope, intercept, 
                     slope2, intercept2, output_params, self.fit_method, 
                     error, figurename, x_c, y_c, r, output_path, conf_array, 
                     extract_factor, title=title, manual_params=self.fit_method.manual_init)
 
         
-        fig.savefig(fp.name_plot(self.preprocessor.file_name, str(self.fit_method.name), output_path, 
+        fig.savefig(fp.name_plot(self.preprocessor.filename, str(self.fit_method.name), output_path, 
                                     format=f'.png'), format=f'png')
+        
+        output_dict = { 
+                       "output_params" : output_params, 
+                       "conf_array" : conf_array, 
+                       "error" : error, 
+                       "init" : init, 
+                       "output_path" : output_path,
+                       }
             
-        return output_params, conf_array, error, init, output_path
+        return output_dict
 
                         
 
