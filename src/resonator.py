@@ -10,7 +10,7 @@ from fit_methods.factory import create_fit_method
 
 class Resonator:
 
-    def __init__(self, df=None, filepath=None, fileIO_obj=None, filename=None, preprocess_method='circle', fit_method_name='DCM'):
+    def __init__(self, df=None, filepath=None, fileIO_obj=None, filename=None, preprocess_method='circle', fit_method_name="DCM", verbose=False):
         
         # accept either filepath as path obj or a fileIO obj directly 
         if filepath is None and fileIO_obj is None and df is None:
@@ -53,22 +53,25 @@ class Resonator:
         else:
             print(f"Since filepath and FileIO were not given, need to provide a filename!")
             
-            
+        
             
         
         self.preprocess_method = preprocess_method
         self.data_processor = DataProcessor(self, normalize_pts=10, preprocess_method=self.preprocess_method) 
 
-        self.fit_method_name = fit_method_name
-        self.fit_method = create_fit_method(self.fit_method_name, 
-                               MC_iteration=5, 
-                               MC_rounds=100, 
-                               MC_weight='no', 
-                               MC_weightvalue=2, 
-                               MC_fix=[], 
-                               MC_step_const=0.6, 
-                               manual_init=None, 
-                               vary=None)
+
+        # TODO: check if this is how we want to automatically create fit methods
+        if hasattr(self, "fit_method") is False:
+            self.fit_method_name = fit_method_name
+            self.fit_method = create_fit_method(self.fit_method_name, 
+                                MC_iteration=5, 
+                                MC_rounds=100, 
+                                MC_weight='no', 
+                                MC_weightvalue=2, 
+                                MC_fix=[], 
+                                MC_step_const=0.6, 
+                                manual_init=None, 
+                                vary=None)
         
     def load_data_fileIO(self, fileIO_obj):
         """
@@ -95,6 +98,7 @@ class Resonator:
         self.processor = DataProcessor(self, normalize_pts=normalize_pts, preprocess_method=preprocess_method) 
         
         
+    # TODO: we should pass a "FitMethod" object instead of just the name of the fit method
     def initialize_fit_method(self, 
                             fit_name: str = None,
                             MC_iteration: int = 5,
@@ -125,7 +129,8 @@ class Resonator:
     def fit(self):
 
         fitter = Fitter(self.fit_method, self.data_processor)
-        output = fitter.fit()
+        self.fitter = fitter
+        output = self.fitter.fit()
 
         return output
     
