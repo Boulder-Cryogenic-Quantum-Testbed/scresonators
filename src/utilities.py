@@ -1,5 +1,146 @@
 import numpy as np
 
+def unpack_s2p_df(s2p_df, return_bare_minimum=False):
+    """
+        This function through a provided DataFrame and returns a full set (or bare
+            minimum) of arrays that compose an s-parameter measurement.
+            
+        Currently, the function loops through the columns and compares the col
+            string manually to the following list:
+            
+        ['dB', 'lin', 'rad', 'deg', 'compl', 'cmpl', 'real', 'imag']
+        
+        
+    
+    """
+    ## start by initializing all possible formats as None, then replace one-by-one
+    magn_lin, magn_dB = None, None
+    phase_rad, phase_deg = None, None
+    real, imag = None, None
+    cmpl = None
+    
+    # check_list = ['dB', 'lin', 'rad', 'deg', 'compl', 'cmpl', 'real', 'imag']
+    # complete_lists = [ ["dB", "lin", "deg", "rad"], ["cmpl"], ["real", "imag"]]
+    
+    # loop over all columns in DataFrame
+    #   for each column, identify the format.
+    #   as soon as it is identified, exit the 
+    #   if statement (due to using elif), then 
+    #   check if we have enough info overall,
+    #   and if so, break & convert the rest
+
+    for col in s2p_df:
+        if "freq" in col.lower():
+            freqs = s2p_df[col].values
+        
+        elif "db" in col.lower():
+            magn_dB = s2p_df[col].values
+            magn_lin = 10**(magn_dB/20)
+
+        elif "lin" in col.lower():
+            magn_lin = s2p_df[col].values
+            magn_dB = 20*np.log10(magn_lin)
+            
+        elif "rad" in col.lower():
+            phase_rad = s2p_df[col].values
+            phase_deg = np.rad2deg(phase_rad)
+            
+        elif "deg" in col.lower():
+            phase_deg = s2p_df[col].values
+            phase_rad = np.deg2rad(phase_deg)
+            
+        elif "compl" in col.lower() or "cmpl" in col.lower():
+            real, imag = np.real(cmpl), np.imag(cmpl)
+            magn_lin = np.abs(cmpl)
+            phase_rad = np.unwrap(np.angle(cmpl))
+            
+        elif "real" in col.lower():
+            real = s2p_df[col].values
+            
+        elif "imag" in col.lower():
+            imag = s2p_df[col].values
+        
+        else:
+            print(f"column of s2p_df is not in recognized list!")
+            print(f"    col is not in ['dB', 'lin', 'rad', 'deg', 'compl', 'cmpl', 'real', or 'imag'].")
+            print(f"        {col=}")    
+            
+        #########################
+        ##### as soon as we have a set of variables that fully encompasses
+        ##### the dataset, just stop searching & convert the last ones
+        #########################
+        
+    s2p_dict_all_vals = {
+        "Frequency"  : freqs,
+        
+        "magn_lin"   : magn_lin,
+        "magn_dB"    : magn_dB,
+        "phase_rad"  : phase_rad,
+        "phase_deg"  : phase_deg ,
+        "real"       : real,
+        "imag "      : imag,
+        "cmpl"       : cmpl,
+    }        
+    
+    try:
+        if "magn_dB" in s2p_dict_all_vals and "phase_rad" in s2p_dict_all_vals:
+            cmpl = magn_lin * np.exp(1j * phase_rad)
+            real, imag = np.real(cmpl), np.imag(cmpl)
+            magn_lin = np.abs(cmpl)
+            phase_deg = np.deg2rad(phase_rad)
+            print("found magn_dB, phase")
+        
+        elif "magn_lin" in s2p_dict_all_vals and "phase_deg" in s2p_dict_all_vals:
+            cmpl = magn_lin * np.exp(1j * phase_rad)
+            real, imag = np.real(cmpl), np.imag(cmpl)
+            magn_dB = 20*np.log10(magn_lin)
+            phase_rad = np.angle(cmpl)
+            print("found magn_lin, phase_deg")
+            
+        if "cmpl" in s2p_dict_all_vals:
+            real, imag = np.real(cmpl), np.imag(cmpl)
+            magn_lin = np.abs(cmpl)
+            magn_dB = 20*np.log10(magn_lin)
+            phase_rad, phase_deg  = np.angle(cmpl), np.rad2deg(np.angle(cmpl))
+            print("found cmpl")
+            
+        elif "real" in s2p_dict_all_vals and "imag" in s2p_dict_all_vals:
+            cmpl = real + 1j*imag
+            magn_lin = np.abs(cmpl)
+            magn_dB = 20*np.log10(magn_lin)
+            phase_rad, phase_deg  = np.angle(cmpl), np.rad2deg(np.angle(cmpl))
+            print("found real, imag")
+        
+    except Exception as e:
+        raise e
+    
+    
+        
+    s2p_dict_all_vals.update({
+        "Frequency"  : freqs,
+        
+        "magn_lin"   : magn_lin,
+        "magn_dB"    : magn_dB,
+        "phase_rad"  : phase_rad,
+        "phase_deg"  : phase_deg ,
+        "real"       : real,
+        "imag"      : imag,
+        "cmpl"       : cmpl,
+    })
+    
+    
+    # construct final dictionary using dict comprehension to remove all None elements
+    
+    if return_bare_minimum is True:
+        s2p_dict = { "Frequency" : freqs, "magn_dB" : magn_dB, "phase_rad" : phase_rad}
+    else:
+        s2p_dict = { key : val for key, val in s2p_dict_all_vals.items() if val is not None}
+    
+    return s2p_dict
+
+
+
+
 def extract_near_res(x_raw: np.ndarray,
                      y_raw: np.ndarray,
                      f_res: float,
@@ -126,3 +267,8 @@ def find_nearest(array, value):
     idx = (np.abs(array - value)).argmin()
     val = array[idx]
     return val, idx
+
+
+# ~~~ from John's utils.py
+def remove_delay(fdata: np.ndarray, sdata: np.ndarray, delay):
+    return np.exp(2j*np.pi*delay*fdata)*sdata
