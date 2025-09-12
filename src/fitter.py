@@ -36,7 +36,6 @@ class Fitter:
         self.theta_0 = None
         self.phi = None
         self.off_res_point = kwargs.get('off_res_point', 1+0*1j)
-        self.last_delay = None
 
 
     def fit(self, fdata, sdata, manual_init=None, verbose=False):
@@ -56,7 +55,6 @@ class Fitter:
             sdata, _, _, _, _ = self.preprocess_linear(fdata, sdata, self.normalize)
         if self.remove_elec_delay == True:
             delay = self.find_delay(fdata, sdata)
-            self.last_delay = delay
             sdata = remove_delay(fdata, sdata, delay)
         if self.preprocess_circle == True:
             #rotate and scale the off-resonant point to a prescribed anchor point
@@ -74,15 +72,14 @@ class Fitter:
         if manual_init:
             params = self.manual_init
         else:
-            # Use bound method; do not pass self explicitly
-            params = self.fit_method.find_initial_guess(fdata=fdata, sdata=sdata)
+            params = self.fit_method.find_initial_guess(self = self.fit_method ,fdata = fdata,sdata = sdata)
+            #very weird that self = self.fit_method needs to be passed
 
 
         #####################################################
         #The actual fit, implemented with the lmfit package
         #####################################################
-        # Create lmfit.Model from the fit method
-        model = self.fit_method.create_model()
+        model = self.fit_method.create_model(self = self.fit_method)
         #this creates an lmfit.Model() object defined by the FitMethod
         result = model.fit(sdata, params, f=fdata, method='leastsq') #lmfit.Model.fit(), not Fitter.fit()
         if verbose: print(result.fit_report())
@@ -103,8 +100,7 @@ class Fitter:
                 print(emcee_result.fit_report())
             return emcee_result.params
 
-        # Add derived Qi to parameters (method may compute stderr as well)
-        params = self.fit_method.extractQi(params=result.params)
+        params = self.fit_method.extractQi(self = self.fit_method, params = result.params)
         return params
     
     
@@ -127,7 +123,8 @@ class Fitter:
         z_data = remove_delay(fdata, sdata, delay)
 
         # Calibrate and normalize
-        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(fdata, z_data)
+        delay_remaining, a, alpha, theta, phi, fr, Ql = self.calibrate(fdata, z_data) # There is no calibrate function
+        print(f'delay_remaining : {delay_remaining}, a : {a}, alpha : {alpha}')
         z_norm = normalize(fdata, z_data, delay_remaining, a, alpha)
 
         return z_norm
@@ -224,7 +221,7 @@ class Fitter:
             delay: float representing the electrical delay
         """
         params = lmfit.Parameters()
-        guess_params = self.fit_method.find_initial_guess(fdata=fdata, sdata=sdata)
+        guess_params = self.fit_method.find_initial_guess(self = self.fit_method ,fdata = fdata,sdata = sdata)
 
         if self.delay_guess == None:
             delay_guess = self.initial_guess_delay(fdata, sdata)/1.25
@@ -442,7 +439,7 @@ class Fitter:
             #this block is untested
             #TODO: fit the offset phase to an arctan (without delay, that is not the place for this function)
             orpmodel = lmfit.Model(sloped_arctan)
-            guess_params = self.fit_method.find_initial_guess(fdata=fdata, sdata=sdata)
+            guess_params = self.fit_method.find_initial_guess(self=self.fit_method, fdata=fdata, sdata=sdata)
 
             orparams = lmfit.Parameters()
             orparams.add(name = 'Ql', value = guess_params['Q'].value)
