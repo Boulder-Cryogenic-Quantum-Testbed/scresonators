@@ -5,9 +5,10 @@ from src.fit_methods.dcm import DCM
 from src.resonator import Resonator
 from example_data_dcm import freqs, S21, Qtot
 from plotting import plotres
-from src.utils import remove_delay, find_circle
+from src.utils import remove_delay, find_circle, find_circle2
 import lmfit
 from matplotlib.patches import Circle
+
 
 
 myres = Resonator()
@@ -21,8 +22,7 @@ delay = myres.fitter.find_delay(freqs, S21)
 z_data = remove_delay(freqs, S21, delay)
 print(f'delay: {delay}')
 
-xc, yc, R = find_circle(np.real(z_data), np.imag(z_data))
-
+xc, yc, R = find_circle(np.real(z_data), np.imag(z_data)) #Use find_circle2 for the algebraic fit detailed in Chernov & Lesort, and Probst.
 
 #Begin results plot
 fig, ax = plotres.makeSummaryFigure()
