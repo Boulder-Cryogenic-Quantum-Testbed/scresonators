@@ -68,25 +68,29 @@ def find_circle2(x: np.array, y: np.array):
     '''
     implements the algebraic circle fitting technique detailed in Chernov & Lesort, and Probst, originally developed by Pratt
     '''
-    #There is a bug in here somewhere -- the radius is not right
-    z = x**2+y**2
+    # Center the data
+    x_mean, y_mean= np.mean(x), np.mean(y)
+    u = x - x_mean
+    v = y - y_mean
+
+    z = u**2+v**2
     Mzz = np.sum(z**2)
-    Mxz = np.sum(x*z)
-    Myz = np.sum(y*z)
-    Mxy = np.sum(x*y)
-    Mxx = np.sum(x*x)
-    Myy = np.sum(y*y)
-    Mx = np.sum(x)
-    My = np.sum(y)
+    Mxz = np.sum(u*z)
+    Myz = np.sum(v*z)
+    Mxy = np.sum(u*v)
+    Mxx = np.sum(u**2 )
+    Myy = np.sum(v**2)
+    Mx = np.sum(u)
+    My = np.sum(v)
     Mz = np.sum(z)
     n = len(x)
 
     #define the moments matrix
     M = np.array([[Mzz, Mxz, Myz, Mz],[Mxz, Mxx, Mxy, Mx],[Myz, Mxy, Myy, My],[Mz, Mx, My, n]])
     #This encodes the constraint B^2+C^2-4AD=1
-    B = np.array([[0,0,0,-2],[0,1,0,0],[0,0,1,0],[-2,0,0,0]])
+    B_mat = np.array([[0,0,0,-2],[0,1,0,0],[0,0,1,0],[-2,0,0,0]])
 
-    w, vr = eig(M, b=B)
+    w, vr = eig(M, b=B_mat)
     #the eigenvalue w[i] corresponds to the eigenvector vr[:,i]
 
     #Find index of smallest positive eigenvalue
@@ -105,16 +109,13 @@ def find_circle2(x: np.array, y: np.array):
         C = vr[2, ind]
         D = vr[3, ind]
 
-    #normalize
+    #Extract circle parameters 
     a = B**2+C**2-4*A*D
-    A = A/a
-    B = B/a
-    C = C/a
-    D = D/a
 
-    xc = -B/(2*A)
-    yc = -C/(2*A)
-    R = 1/(2*np.abs(A))
+    xc = -B / (2*A) + x_mean
+    yc = -C / (2*A )+ y_mean
+    R = np.sqrt(a)/(2*np.abs(A))
+
     return xc, yc, R
 
 
